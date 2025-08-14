@@ -1,15 +1,16 @@
-from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE
+from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE,PRIVATE_VIDEOS_FILE
 from FUNCTIONS.fileops import load, dump
 import os
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
+from pathlib import Path
 
 def clean_download_directory(DOWNLOAD_DIRECTORY):
     """Remove MP3 files that are corrupted or lack valid 'Video ID :' in metadata."""
     removed_files = []
     checked_files = 0
 
-    if not os.path.exists(DOWNLOAD_DIRECTORY):
+    if not Path(DOWNLOAD_DIRECTORY).exists():
         print(f"Warning: Download directory {DOWNLOAD_DIRECTORY} does not exist.")
         return
 
@@ -48,7 +49,7 @@ def clean_download_directory(DOWNLOAD_DIRECTORY):
 def extract_existing_video_ids(DOWNLOAD_DIRECTORY):
     """Extract video IDs from comment metadata in downloaded MP3 files."""
     existing_ids = set()
-    if not os.path.exists(DOWNLOAD_DIRECTORY):
+    if not Path(DOWNLOAD_DIRECTORY).exists():
         print(f"Warning: Download directory {DOWNLOAD_DIRECTORY} does not exist")
         return existing_ids
 
@@ -68,34 +69,31 @@ def extract_existing_video_ids(DOWNLOAD_DIRECTORY):
                 continue
     return existing_ids
 
-def create_videos_to_download(clean, DOWNLOAD_DIRECTORY):
+def create_videos_to_download(DOWNLOAD_DIRECTORY):
     """
     Create a download list by comparing the playlist with already downloaded files.
     Only missing videos will be added to the download list.
     """
-    if not os.path.exists(VIDEOS_TO_DOWNLOAD_FILE):
+    if not Path(VIDEOS_TO_DOWNLOAD_FILE).exists():
+
         playlist_videos = load(LIKED_VIDEOS_FILE)
-        # Support both dict and list formats for playlist_videos
-        if isinstance(playlist_videos, dict):
-            playlist_ids = set(playlist_videos.keys())
-        else:
-            playlist_ids = set(playlist_videos)
+        playlist_ids = set(playlist_videos)
 
-        if not clean:
-            clean_download_directory(DOWNLOAD_DIRECTORY)
-            existing_ids = extract_existing_video_ids(DOWNLOAD_DIRECTORY)
-            print(f"Found {len(existing_ids)} existing videos in download directory")
+        clean_download_directory(DOWNLOAD_DIRECTORY)
+        existing_ids = extract_existing_video_ids(DOWNLOAD_DIRECTORY)
+        print(f"Found {len(existing_ids)} existing videos in download directory")
 
-            # Only keep videos that are in the playlist but not already downloaded
-            to_download_ids = playlist_ids - existing_ids
-        else:
-            to_download_ids = playlist_ids
+        # Only keep videos that are in the playlist but not already downloaded
+        to_download_ids = playlist_ids - existing_ids
 
-        # If original playlist is dict, keep info; if list, just IDs
-        if isinstance(playlist_videos, dict):
-            videos_to_download = {vid: playlist_videos[vid] for vid in to_download_ids}
-        else:
-            videos_to_download = list(to_download_ids)
+        videos_to_download = list(to_download_ids)
+
+        if Path(PRIVATE_VIDEOS_FILE).exists():
+            private_videos = load(PRIVATE_VIDEOS_FILE)
+            for video in private_videos:
+                if video in videos_to_download:
+                    videos_to_download.remove(video)
+
 
         dump(videos_to_download, VIDEOS_TO_DOWNLOAD_FILE)
         print(f"Videos to download file created: {len(videos_to_download)} videos to download")

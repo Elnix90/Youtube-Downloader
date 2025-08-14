@@ -1,38 +1,45 @@
 from googleapiclient.errors import HttpError
-from CONSTANTS import PLAYLIST_VIDEOS_FILE
-from FUNCTIONS.fileops import load,dump
-import time
-import os
+from pathlib import Path
+from FUNCTIONS.fileops import load, dump
 
-def fetch_playlist_videos(youtube,playlist_id):
-    print("Fetching playlist videos...")
-    if not os.path.exists(PLAYLIST_VIDEOS_FILE):
-        playlist_videos = []
+
+def fetch_playlist_videos(youtube, playlist_id,file,clean=False):
+    print(f"Fetching videos from playlist {playlist_id}")
+
+    if clean or (not Path(file).exists()):
+
+        all_videos = []
         next_page_token = None
+
         while True:
             try:
                 request = youtube.playlistItems().list(
-                    part="snippet",
+                    part="contentDetails",
                     playlistId=playlist_id,
                     maxResults=50,
                     pageToken=next_page_token
                 )
                 response = request.execute()
-                playlist_videos.extend([item['snippet']['resourceId']['videoId'] for item in response['items']])
+
+                for item in response['items']:
+                    vid_id = item['contentDetails']['videoId']
+                    all_videos.append(vid_id)
+                    print(f"\r{len(all_videos)} videos found in playlist : {playlist_id}",end="",flush=True)
+
                 next_page_token = response.get('nextPageToken')
                 if not next_page_token:
                     break
+
             except HttpError as e:
-                print(f"Une erreur est survenue lors de la récupération des vidéos de la playlist : {e}")
+                print(f"Error while fetching playlist videos: {e}")
                 if "quotaExceeded" in str(e):
-                    print("Quota dépassé. Attente de 1 minute avant de réessayer...")
-                    time.sleep(60)
-                    continue
+                    raise Exception("Quota exceeded, please change your token or retry in 24h")
                 else:
                     raise
 
-        dump(playlist_videos,PLAYLIST_VIDEOS_FILE)
+        dump(all_videos, file)
+        print()
+        return all_videos
+    
     else:
-        playlist_videos = load(PLAYLIST_VIDEOS_FILE)
-
-    print(f"Found {len(playlist_videos)} videos in the playlist")
+        return load(file)

@@ -1,12 +1,17 @@
 from googleapiclient.errors import HttpError
-from CONSTANTS import VIDEOS_TO_ADD_IN_PLAYLIST_FILE,ERROR_ADDED_FILE,PLAYLIST_VIDEOS_FILE
+from CONSTANTS import VIDEOS_TO_ADD_IN_PLAYLIST_FILE,ERROR_ADDED_FILE,PRIVATE_VIDEOS_FILE
 from FUNCTIONS.fileops import load,dump
 import os
+from pathlib import Path
 
 def add_videos(youtube,playlist_id):
 
     videos_to_add = load(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
     error_added = []
+
+    if Path(PRIVATE_VIDEOS_FILE).exists():
+        private_videos = load(PRIVATE_VIDEOS_FILE)
+    else: private_videos = []
     
     n = len(videos_to_add)
     if n==0:
@@ -32,19 +37,25 @@ def add_videos(youtube,playlist_id):
 
             print(f"\r{i+1} / {n} videos added",end="")
 
-            videos_added = load(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
-            videos_added.remove(video_id)
-            dump(videos_added,VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
-
         except HttpError as e:
-            print(f"\nError adding {video_id} to playlist : {e}")
-            error_added.append(video_id)
+            error_json = e.content.decode() if hasattr(e, 'content') else str(e)
+            if 'failedPrecondition' in error_json:
+                print(f"\nVideo {video_id} is likely private or unavailable, skipping...")
+                private_videos.append(video_id)
+                dump(private_videos, PRIVATE_VIDEOS_FILE)
+            else:
+                print(f"\nError adding {video_id} to playlist: {e}")
+                error_added.append(video_id)
+                dump(error_added, ERROR_ADDED_FILE)
+
+        videos_added = load(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
+        videos_added.remove(video_id)
+        dump(videos_added,VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
 
     nerrs = len(error_added)
     if nerrs > 0:
-        print(f"{nerrs} videos failed to add -> added to error_added file")
-        dump(error_added,ERROR_ADDED_FILE)
+        print(f"\n{nerrs} videos failed to add -> added to error_added file")
+    else:
+        print()
 
-    print("\n")
-
-    os.remove(PLAYLIST_VIDEOS_FILE)
+    os.remove(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)

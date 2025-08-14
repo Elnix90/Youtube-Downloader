@@ -1,7 +1,7 @@
 import os
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
-from CONSTANTS import PLAYLIST_VIDEOS_FILE
+from CONSTANTS import LIKED_VIDEOS_FILE
 from FUNCTIONS.fileops import load
 
 def extract_video_id_from_file(filepath):
@@ -29,11 +29,11 @@ def final_verification(DOWNLOAD_DIRECTORY):
     """
     print("== Final Verification ==")
     # Load playlist
-    playlist_videos = load(PLAYLIST_VIDEOS_FILE)
-    if isinstance(playlist_videos, dict):
-        playlist_ids = set(playlist_videos.keys())
+    liked_videos = load(LIKED_VIDEOS_FILE)
+    if isinstance(liked_videos, dict):
+        playlist_ids = set(liked_videos.keys())
     else:
-        playlist_ids = set(playlist_videos)
+        playlist_ids = set(liked_videos)
 
     # Scan download directory
     files = [f for f in os.listdir(DOWNLOAD_DIRECTORY) if f.lower().endswith('.mp3')]
