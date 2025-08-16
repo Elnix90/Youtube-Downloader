@@ -4,20 +4,18 @@ import re
 import time
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, USLT, Encoding
-from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, ERROR_DOWNLOADED_FILE, UNAVAILABLE_VIDEOS_FILE
+from CONSTANTS import ERROR_DOWNLOADED_FILE, UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
 from FUNCTIONS.fileops import load, dump
+from FUNCTIONS.get_album_and_tags import get_album
 from pathlib import Path
 
 
 # Custom logger to silence yt-dlp completely
 class QuietLogger:
-    def debug(self, msg):
-        pass  # Ignore debug messages
-    def warning(self, msg):
-        pass  # Ignore warnings
-    def error(self, msg):
-        pass  # Ignore errors
+    def debug(self, msg):   pass
+    def warning(self, msg): pass
+    def error(self, msg):   pass
 
 def sanitize_filename(filename):
     filename = re.sub(r'[\\/*?:"<>|]', '', filename)
@@ -71,7 +69,7 @@ def safe_extract_info(ydl, url, private_videos, video_id):
         return None
 
 
-def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,show_title,progress_count,total_videos):
+def download_yt_dlp(url, loc, format, add_album, video_id, author_name, author_id, title, showed_title, progress_count, total_videos):
     if not os.path.exists(loc):
         os.makedirs(loc)
 
@@ -82,9 +80,9 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,sh
             percent = d.get('_percent_str', '').strip()
             speed = d.get('_speed_str', 'N/A').strip()
             eta = d.get('_eta_str', 'N/A').strip()
-            print(f"\r{progress_count}/{total_videos} | Downloading: {show_title} |  {percent} at {speed}, ETA: {eta}",end='')
+            print(f"\r{progress_count}/{total_videos} | Downloading: {showed_title} |  {percent} at {speed}, ETA: {eta}",end='')
         elif d['status'] == 'finished':
-            print(f"\r{progress_count}/{total_videos} | Post-processing: {show_title}                                                     ", end='')
+            print(f"\r{progress_count}/{total_videos} | Post-processing: {showed_title}                                                     ", end='')
 
 
     ydl_opts = {
@@ -96,7 +94,6 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,sh
         'logger' : QuietLogger(),
         'format': 'bestaudio/best' if format in ['mp3', 'wav'] else 'bestvideo+bestaudio/best',
         'postprocessor_args': [
-            '-metadata', 'album=Private',
             '-metadata', f'artist={author_name}',
             '-metadata', f'comment=Video ID : {video_id}\nAuthor ID : {author_id}\nAuthor Name : {author_name}'
         ],
@@ -105,6 +102,11 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,sh
         'postprocessors': [{'key': 'FFmpegMetadata'}],
         'progress_hooks' : [progress_hook]
     }
+
+    if add_album:
+        album_name = get_album(title, author_name)
+        ydl_opts['postprocessor_args'].extend(['-metadata', f'album={album_name}'])
+
 
     if format in ['mp3', 'wav']:
         ydl_opts['postprocessors'].insert(0, {
@@ -136,8 +138,8 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,sh
 
 
 
-def download_playlist(loc, format):
-    ids = load(VIDEOS_TO_DOWNLOAD_FILE)
+def download_playlist(file,loc, format,get_lyrics=True, add_album=True):
+    ids = load(file)
     if Path(UNAVAILABLE_VIDEOS_FILE).exists():
         unavailable_videos = set(load(UNAVAILABLE_VIDEOS_FILE))
     else:
@@ -157,7 +159,7 @@ def download_playlist(loc, format):
         if video_id in unavailable_videos:
             print(f"{progress_count}/{total_videos} | Skipping unavailable video: {video_id}")
             ids.remove(video_id)
-            dump(ids,VIDEOS_TO_DOWNLOAD_FILE)
+            dump(ids,file)
             idx += 1
             progress_count += 1
             continue
@@ -171,7 +173,7 @@ def download_playlist(loc, format):
                 unavailable_videos.add(video_id)
                 dump(list(unavailable_videos),UNAVAILABLE_VIDEOS_FILE)
                 ids.remove(video_id)
-                dump(ids,VIDEOS_TO_DOWNLOAD_FILE)
+                dump(ids,file)
                 idx += 1
                 continue
 
@@ -179,19 +181,22 @@ def download_playlist(loc, format):
             author_name = info.get('uploader', 'N/A')
             author_id = info.get('uploader_id', 'N/A')
 
-            show_title = title[:200] if len(title) > 200 else title
+            show_title = title[:100] if len(title) > 100 else title
 
             # Download video/audio
-            success, renamed_files, file_path = download_yt_dlp(url,loc,format,video_id,author_name,author_id,title,show_title,progress_count,total_videos)
+            success, renamed_files, file_path = download_yt_dlp(url,loc,format, add_album, video_id,author_name,author_id,title,show_title,progress_count,total_videos)
 
+            lyrics = False
+            
             if success and file_path:
-                print(f"\r{progress_count}/{total_videos} | Getting lyrics: ",end="")
-                lyrics = get_lyrics_from_syncedlyrics(f"{show_title} {author_name}")
-                if lyrics:
-                    print(f"\r{progress_count}/{total_videos} | Embedding lyrics: {show_title}                                                             ",end="")
-                    embed_lyrics_into_mp3(file_path, lyrics)
+                if get_lyrics:
+                    print(f"\r{progress_count}/{total_videos} | Getting lyrics",end="")
+                    lyrics, reason, query = get_lyrics_from_syncedlyrics(f"{title} {author_name}")
+                    if lyrics:
+                        print(f"\r{progress_count}/{total_videos} | Embedding lyrics: {show_title}                                                             ",end="")
+                        embed_lyrics_into_mp3(file_path, lyrics)
 
-                print(f"\r{progress_count}/{total_videos} | Downloaded: {show_title} {' | 📃 Lyrics Found' if lyrics else ''}                                                        ")
+                    print(f"\r{progress_count}/{total_videos} | Downloaded: {show_title}" + " "* (100 - len(show_title)) + f"{f'| 📃 Lyrics Found (query: {query})' if lyrics else f'| No Lyrics ({reason})'}")
 
                 # Update timestamp
                 now = time.time()
@@ -199,7 +204,7 @@ def download_playlist(loc, format):
 
                 all_renamed_files.extend(renamed_files)
                 ids.pop(idx)
-                dump(ids, VIDEOS_TO_DOWNLOAD_FILE)
+                dump(ids, file)
             else:
                 if renamed_files == "Private video" or success is False and file_path is None:
                     unavailable_videos.add(video_id)
@@ -223,4 +228,4 @@ def download_playlist(loc, format):
         for file in all_renamed_files:
             print(file)
 
-    os.remove(VIDEOS_TO_DOWNLOAD_FILE)
+    os.remove(file)

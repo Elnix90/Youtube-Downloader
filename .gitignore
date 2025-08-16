@@ -2,5 +2,7 @@ __pycache__/
 venv
 CREDS
 JSON
+MESS
 main_command.py
 Lyrics
+tests.py
