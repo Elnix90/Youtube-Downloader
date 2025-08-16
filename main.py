@@ -11,7 +11,11 @@ from FUNCTIONS.fileops import *
 
 import shutil
 
-def process_new_liked_videos(playlist_id=None,path=None,format=None):
+def process_new_liked_videos(playlist_id=None,path=None,format=None,get_lyrics=True,add_album=True):
+    """
+    Fetches all of you liked videos and the videos in a playlist of your choice and fill the playlist with your liked videos,
+    then downloads every liked video with lyrics
+    """
 
     if playlist_id == None : playlist_id = input("Music playlist ID: ")
     if path == None : path = input("Path to download: ")
@@ -19,6 +23,7 @@ def process_new_liked_videos(playlist_id=None,path=None,format=None):
 
     JSON_DIR.mkdir(exist_ok=True)
     CRED_DIR.mkdir(exist_ok=True)
+    Path(path).mkdir(exist_ok=True)
 
     youtube = get_authenticated_service()
 
@@ -26,10 +31,10 @@ def process_new_liked_videos(playlist_id=None,path=None,format=None):
     fetch_playlist_videos(youtube,"LL",LIKED_VIDEOS_FILE)
 
     create_videos_to_add_files()
-    add_videos(youtube,playlist_id)
+    add_videos(youtube,playlist_id,VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
 
     create_videos_to_download(path)
-    download_playlist(path,format)
+    download_playlist(VIDEOS_TO_DOWNLOAD_FILE,path,format,get_lyrics,add_album)
 
     remove_private_videos(youtube)
 

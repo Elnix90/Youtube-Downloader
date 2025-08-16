@@ -1,0 +1,29 @@
+lyrics
+official
+official video
+remix
+video clip
+feat
+ft
+edit
+radio
+remastered
+extended
+live
+acoustic
+instrumental
+cover
+music video
+hq
+video
+slowed
+slowed down
+music
+7clouds
+musique
+officielle
+edit
+spedup
+speedup
+\(.*?\)
+\[.*?\]

@@ -1,12 +1,17 @@
 from googleapiclient.errors import HttpError
-from CONSTANTS import VIDEOS_TO_ADD_IN_PLAYLIST_FILE,ERROR_ADDED_FILE,UNAVAILABLE_VIDEOS_FILE
+from CONSTANTS import ERROR_ADDED_FILE,UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.fileops import load,dump
 import os
 from pathlib import Path
 
-def add_videos(youtube,playlist_id):
+def add_videos(youtube,playlist_id,file):
 
-    videos_to_add = load(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
+    if Path(file).exists():
+        videos_to_add = load(file)
+    else:
+        print(f"File: {file} doesen't exists")
+        return
+    
     error_added = []
 
     if Path(UNAVAILABLE_VIDEOS_FILE).exists():
@@ -16,8 +21,6 @@ def add_videos(youtube,playlist_id):
     n = len(videos_to_add)
     if n==0:
         print("No videos to add")
-        if Path(VIDEOS_TO_ADD_IN_PLAYLIST_FILE).exists():
-            os.remove(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
         return
 
     print("Adding videos...")
@@ -50,14 +53,12 @@ def add_videos(youtube,playlist_id):
                 error_added.append(video_id)
                 dump(error_added, ERROR_ADDED_FILE)
 
-        videos_added = load(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
+        videos_added = load(file)
         videos_added.remove(video_id)
-        dump(videos_added,VIDEOS_TO_ADD_IN_PLAYLIST_FILE)
+        dump(videos_added,file)
 
     nerrs = len(error_added)
     if nerrs > 0:
         print(f"\n{nerrs} videos failed to add -> added to error_added file")
     else:
         print()
-
-    os.remove(VIDEOS_TO_ADD_IN_PLAYLIST_FILE)

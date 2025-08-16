@@ -2,6 +2,9 @@ from pathlib import Path
 
 JSON_DIR = Path("JSON")
 CRED_DIR = Path("CREDS")
+CONFIG_DIR = Path("CONFIG")
+ALBUMS_DIR = Path("ALBUMS")
+TAGS_DIR = Path("TAGS")
 
 CLIENT_SECRETS_FILE = CRED_DIR / "client_secret_cm.json"
 TOKEN_FILE = CRED_DIR / "token.json"
@@ -17,3 +20,6 @@ ERROR_DOWNLOADED_FILE = JSON_DIR / "error_downloaded.json"
 ERROR_LIKED_FILE = JSON_DIR / "error_liked.json"
 ERROR_ADDED_FILE = JSON_DIR / "error_added.json"
 UNAVAILABLE_VIDEOS_FILE = JSON_DIR / "unavailable_videos.json"
+
+UNWANTED_PATTERNS_FILE = CONFIG_DIR / "unwanted_patterns.json"
+SKIP_LYRICS_PATERN_FILE = CONFIG_DIR / "skip_lyrics_fetching_patterns.txt"

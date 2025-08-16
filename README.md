@@ -3,6 +3,7 @@
 This project automates the process of **fetching, downloading, and managing YouTube music videos**.  
 It integrates with the **YouTube Data API v3** to access your liked videos or any playlist you choose, and uses `yt-dlp` for high-quality downloads.  
 It also retrieves **artist names, track titles, and even song lyrics** for your library.
+You can also Automaticaly add albums by fetching the title and author name of the songs or video. (Fully customisable)
 
 ---
 
@@ -10,7 +11,7 @@ It also retrieves **artist names, track titles, and even song lyrics** for your 
 
 - **Fetch & Download**
   - Download videos or audio from your liked videos or any playlist you specify.
-  - Supports `mp3`, `wav`.
+  - Supports `mp3`, `wav`, and every format permitted by yt_dlp
   - Skips videos that are private or unavailable.
 
 - **Playlist Management**
@@ -19,14 +20,13 @@ It also retrieves **artist names, track titles, and even song lyrics** for your 
   - Maintain lists of skipped or failed videos for review.
 
 - **Metadata & Lyrics**
-  - Automatically extract artist, title, and uploader information.
+  - Can automatically extract artist, title, and uploader information.
   - Fetch lyrics with [syncedlyrics](https://github.com/moehmeni/syncedlyrics) (no token or api required)
-  - Clean up messy YouTube titles (removes “lyrics”, “nightcore”, “official video”, etc.).
+  - Can automaticlaly add an album to your file, depending on what's inside the filename and author name
 
 - **Error Handling**
   - Detects and skips private videos.
   - Keeps track of failed downloads in separate log files.
-  - Gracefully handles API errors from YouTube or Genius.
 
 ---
 
@@ -84,18 +84,24 @@ You can modify the main function to:
 - Change the output path and file format.
 - Disable playlist modifications and only download.
 
+I will make some other differents scripts like the main.py, to propose different logics to download, like a function who downloads only the content of a playlist
+
 ---
 
 ## 📂 Project Structure
 
 ```
-├── main.py                  # Entry point of the program
-├── FUNCTIONS/               # Core features: download, playlist ops, file handling
-├── CONSTANTS.py              # Paths and configuration constants
-├── requirements.txt          # Python dependencies
-├── README.md                 # This file
-├── CREDS                     # client-secret and token for google authenticating
-└── JSON                      # Where the big lists are downloaded
+├── main.py                           # Main function (fecthces liked and download liked explained [here](#usage))
+├── download_videos_from_playlist.py  # Download function to download a playlist
+├── ALBUMS                            # List of patterns to add to an album see [here](#features) to see how
+├── CONFIG                            # Same as ALBUMS, but for lyrics fetching
+├── CREDS                             # client-secret and token for google authenticating
+├── TAGS                              # Same as 2 before but not yet implemented
+├── FUNCTIONS/                        # Core features: download, playlist ops, file handling
+├── CONSTANTS.py                      # Paths constants
+├── requirements.txt                  # Python dependencies
+├── README.md                         # This file
+└── JSON                              # Where the big lists will downloaded (may be removed in the future)
 ```
 
 ---
@@ -113,6 +119,7 @@ You can modify the main function to:
 - Config file for persistent settings.
 - Batch processing with progress bars.
 - More robust metadata matching for lyrics.
+- easier customisation of tags, albums and lyrics
 
 ---
 
