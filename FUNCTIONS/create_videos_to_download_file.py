@@ -1,4 +1,4 @@
-from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE,PRIVATE_VIDEOS_FILE
+from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE,UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.fileops import load, dump
 import os
 from mutagen.mp3 import MP3
@@ -11,7 +11,6 @@ def clean_download_directory(DOWNLOAD_DIRECTORY):
     checked_files = 0
 
     if not Path(DOWNLOAD_DIRECTORY).exists():
-        print(f"Warning: Download directory {DOWNLOAD_DIRECTORY} does not exist.")
         return
 
     for filename in os.listdir(DOWNLOAD_DIRECTORY):
@@ -50,7 +49,6 @@ def extract_existing_video_ids(DOWNLOAD_DIRECTORY):
     """Extract video IDs from comment metadata in downloaded MP3 files."""
     existing_ids = set()
     if not Path(DOWNLOAD_DIRECTORY).exists():
-        print(f"Warning: Download directory {DOWNLOAD_DIRECTORY} does not exist")
         return existing_ids
 
     for filename in os.listdir(DOWNLOAD_DIRECTORY):
@@ -88,8 +86,8 @@ def create_videos_to_download(DOWNLOAD_DIRECTORY):
 
         videos_to_download = list(to_download_ids)
 
-        if Path(PRIVATE_VIDEOS_FILE).exists():
-            private_videos = load(PRIVATE_VIDEOS_FILE)
+        if Path(UNAVAILABLE_VIDEOS_FILE).exists():
+            private_videos = load(UNAVAILABLE_VIDEOS_FILE)
             for video in private_videos:
                 if video in videos_to_download:
                     videos_to_download.remove(video)

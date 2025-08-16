@@ -20,7 +20,7 @@ It also retrieves **artist names, track titles, and even song lyrics** for your 
 
 - **Metadata & Lyrics**
   - Automatically extract artist, title, and uploader information.
-  - Fetch lyrics from Genius for each song (requires Genius API token).
+  - Fetch lyrics with [syncedlyrics](https://github.com/moehmeni/syncedlyrics) (no token or api required)
   - Clean up messy YouTube titles (removes “lyrics”, “nightcore”, “official video”, etc.).
 
 - **Error Handling**
@@ -56,19 +56,12 @@ It also retrieves **artist names, track titles, and even song lyrics** for your 
 
 ## 🔑 API Setup
 
-### 1. YouTube Data API (OAuth 2.0)
+### YouTube Data API (OAuth 2.0)
 - Create a project in the [Google Cloud Console](https://console.cloud.google.com/).
 - Enable the **YouTube Data API v3**.
 - Create an **OAuth Client ID** with the type "Desktop app".
 - Download the `client_secret.json` file and place it in project-root/CREDS.
 
-### 2. Genius API
-- Create an account on [Genius](https://genius.com/).
-- Create an API client and copy your **Access Token**.
-- Store it in a `.env` file:
-  ```
-  GENIUS_API_TOKEN=your_token_here
-  ```
 
 ---
 
@@ -100,7 +93,6 @@ You can modify the main function to:
 ├── FUNCTIONS/               # Core features: download, playlist ops, file handling
 ├── CONSTANTS.py              # Paths and configuration constants
 ├── requirements.txt          # Python dependencies
-├── .env                      # API keys and tokens
 ├── README.md                 # This file
 ├── CREDS                     # client-secret and token for google authenticating
 └── JSON                      # Where the big lists are downloaded
@@ -111,7 +103,7 @@ You can modify the main function to:
 ## ⚠️ Notes & Limitations
 - You must be signed in with a Google account that has access to the playlists/videos you want to process.
 - Private videos will be skipped unless you provide cookies for authentication.
-- Lyrics fetching relies on Genius API results — not all songs will have lyrics available.
+- Lyrics fetching relies syncedlyrics not all songs will have lyrics
 - `yt-dlp` format support depends on YouTube’s availability.
 
 ---

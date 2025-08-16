@@ -4,11 +4,20 @@ import re
 import time
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, USLT, Encoding
-from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, ERROR_DOWNLOADED_FILE, PRIVATE_VIDEOS_FILE
-from FUNCTIONS.extract_lyrics import get_lyrics_from_genius
+from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, ERROR_DOWNLOADED_FILE, UNAVAILABLE_VIDEOS_FILE
+from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
 from FUNCTIONS.fileops import load, dump
 from pathlib import Path
 
+
+# Custom logger to silence yt-dlp completely
+class QuietLogger:
+    def debug(self, msg):
+        pass  # Ignore debug messages
+    def warning(self, msg):
+        pass  # Ignore warnings
+    def error(self, msg):
+        pass  # Ignore errors
 
 def sanitize_filename(filename):
     filename = re.sub(r'[\\/*?:"<>|]', '', filename)
@@ -54,26 +63,37 @@ def safe_extract_info(ydl, url, private_videos, video_id):
     except yt_dlp.utils.DownloadError as e:
         err_msg = str(e).lower()
         if 'private video' in err_msg:
-            print(f"Skipping private video: {video_id}")
+            # print(f"Skipping private video: {video_id}")
             private_videos.add(video_id)
-            dump(list(private_videos), PRIVATE_VIDEOS_FILE)
+            dump(list(private_videos), UNAVAILABLE_VIDEOS_FILE)
         else:
             print(f"Error fetching info for {video_id}: {e}")
         return None
 
 
-def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title):
+def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title,show_title,progress_count,total_videos):
     if not os.path.exists(loc):
         os.makedirs(loc)
 
     renamed_files = []
+
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            percent = d.get('_percent_str', '').strip()
+            speed = d.get('_speed_str', 'N/A').strip()
+            eta = d.get('_eta_str', 'N/A').strip()
+            print(f"\r{progress_count}/{total_videos} | Downloading: {show_title} |  {percent} at {speed}, ETA: {eta}",end='')
+        elif d['status'] == 'finished':
+            print(f"\r{progress_count}/{total_videos} | Post-processing: {show_title}                                                     ", end='')
+
 
     ydl_opts = {
         'outtmpl': {'default': f'{loc}/%(title)s.%(ext)s'},
         'quiet': True,
         'noprogress': True,
         'no_warnings': True,
-        'ignoreerrors': True,
+        'ignoreerrors' : True,
+        'logger' : QuietLogger(),
         'format': 'bestaudio/best' if format in ['mp3', 'wav'] else 'bestvideo+bestaudio/best',
         'postprocessor_args': [
             '-metadata', 'album=Private',
@@ -82,7 +102,8 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title):
         ],
         'add_metadata': True,
         'embed_metadata': True,
-        'postprocessors': [{'key': 'FFmpegMetadata'}]
+        'postprocessors': [{'key': 'FFmpegMetadata'}],
+        'progress_hooks' : [progress_hook]
     }
 
     if format in ['mp3', 'wav']:
@@ -116,11 +137,11 @@ def download_yt_dlp(url, loc, format, video_id, author_name, author_id, title):
 
 
 def download_playlist(loc, format):
-    ids = load(VIDEOS_TO_DOWNLOAD_FILE) or []
-    if Path(PRIVATE_VIDEOS_FILE).exists():
-        private_videos = set(load(PRIVATE_VIDEOS_FILE))
+    ids = load(VIDEOS_TO_DOWNLOAD_FILE)
+    if Path(UNAVAILABLE_VIDEOS_FILE).exists():
+        unavailable_videos = set(load(UNAVAILABLE_VIDEOS_FILE))
     else:
-        private_videos = set()
+        unavailable_videos = set()
     total_videos = len(ids)
     error_downloaded = {}
     all_renamed_files = []
@@ -132,53 +153,62 @@ def download_playlist(loc, format):
         video_id = ids[idx]
         url = f"https://youtube.com/watch?v={video_id}"
 
-        # Skip known private videos
-        if video_id in private_videos:
-            print(f"{progress_count}/{total_videos} Skipping private video: {video_id}")
+        # Skip known unavailable videos
+        if video_id in unavailable_videos:
+            print(f"{progress_count}/{total_videos} | Skipping unavailable video: {video_id}")
+            ids.remove(video_id)
+            dump(ids,VIDEOS_TO_DOWNLOAD_FILE)
             idx += 1
             progress_count += 1
             continue
 
         # Extract info
-        with yt_dlp.YoutubeDL({'quiet': True,'no_warnings': True,'ignoreerrors': True,'noprogress': True}) as ydl:
-            print(f"{progress_count}/{total_videos} Fetching video infos: {video_id}",end="")
-            info = safe_extract_info(ydl, url, private_videos, video_id)
+        with yt_dlp.YoutubeDL({'quiet': True,'no_warnings': True,'noprogress': True,'ignoreerrors' : True,'logger': QuietLogger()}) as ydl:
+            print(f"{progress_count}/{total_videos} | Fetching video infos: {video_id}",end="",flush=True)
+            info = safe_extract_info(ydl, url, unavailable_videos, video_id)
             if not info:
+                print(f"\r{progress_count}/{total_videos} | Skipping unavailable video: {video_id}")
+                unavailable_videos.add(video_id)
+                dump(list(unavailable_videos),UNAVAILABLE_VIDEOS_FILE)
+                ids.remove(video_id)
+                dump(ids,VIDEOS_TO_DOWNLOAD_FILE)
+                idx += 1
                 continue
 
             title = info.get('title', 'Unknown')
             author_name = info.get('uploader', 'N/A')
             author_id = info.get('uploader_id', 'N/A')
 
-        # Download video/audio
-        print(f"\r{progress_count}/{total_videos} Downloading: {title}                     ",end="",flush=True)
-        success, renamed_files, file_path = download_yt_dlp(url, loc, format, video_id, author_name, author_id, title)
+            show_title = title[:200] if len(title) > 200 else title
 
-        if success and file_path:
-            print(f"\r{progress_count}/{total_videos} Getting lyrics: {title}",end="")
-            lyrics = get_lyrics_from_genius(f"{title} {author_name}")
-            if lyrics:
-                print(f"\r{progress_count}/{total_videos} Embedding lyrics: {title}",end="")
-                embed_lyrics_into_mp3(file_path, lyrics)
+            # Download video/audio
+            success, renamed_files, file_path = download_yt_dlp(url,loc,format,video_id,author_name,author_id,title,show_title,progress_count,total_videos)
 
-            print(f"\r{progress_count}/{total_videos} Downloaded: {title} | {'Lyrics Found' if lyrics else 'No lyrics'}")
+            if success and file_path:
+                print(f"\r{progress_count}/{total_videos} | Getting lyrics: ",end="")
+                lyrics = get_lyrics_from_syncedlyrics(f"{show_title} {author_name}")
+                if lyrics:
+                    print(f"\r{progress_count}/{total_videos} | Embedding lyrics: {show_title}                                                             ",end="")
+                    embed_lyrics_into_mp3(file_path, lyrics)
 
-            # Update timestamp
-            now = time.time()
-            os.utime(file_path, (now, now))
+                print(f"\r{progress_count}/{total_videos} | Downloaded: {show_title} {' | 📃 Lyrics Found' if lyrics else ''}                                                        ")
 
-            all_renamed_files.extend(renamed_files)
-            ids.pop(idx)
-            dump(ids, VIDEOS_TO_DOWNLOAD_FILE)
-        else:
-            if renamed_files == "Private video" or success is False and file_path is None:
-                private_videos.add(video_id)
-                dump(list(private_videos), PRIVATE_VIDEOS_FILE)
-                print(f"{progress_count}/{total_videos} Marked as private: {video_id}")
+                # Update timestamp
+                now = time.time()
+                os.utime(file_path, (now, now))
+
+                all_renamed_files.extend(renamed_files)
+                ids.pop(idx)
+                dump(ids, VIDEOS_TO_DOWNLOAD_FILE)
             else:
-                error_downloaded[video_id] = renamed_files or "Unknown error"
+                if renamed_files == "Private video" or success is False and file_path is None:
+                    unavailable_videos.add(video_id)
+                    dump(list(unavailable_videos), UNAVAILABLE_VIDEOS_FILE)
+                    print(f"{progress_count}/{total_videos} Marked as private: {video_id}")
+                else:
+                    error_downloaded[video_id] = renamed_files or "Unknown error"
 
-            idx += 1
+                idx += 1
 
         progress_count += 1
 
