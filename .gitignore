@@ -1,6 +1,5 @@
 __pycache__/
 venv
-.env
 CREDS
 JSON
 main_command.py
