@@ -1,4 +1,4 @@
-from CONSTANTS import LIKED_VIDEOS_FILE,PLAYLIST_VIDEOS_FILE,VIDEOS_TO_ADD_IN_PLAYLIST_FILE,PRIVATE_VIDEOS_FILE
+from CONSTANTS import LIKED_VIDEOS_FILE,PLAYLIST_VIDEOS_FILE,VIDEOS_TO_ADD_IN_PLAYLIST_FILE,UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.fileops import load,dump
 from pathlib import Path
 
@@ -8,8 +8,8 @@ def create_videos_to_add_files():
     playlist_videos = load(PLAYLIST_VIDEOS_FILE)
 
     videos_to_add_in_playist = list(set(liked_videos) - set(playlist_videos))
-    if Path(PRIVATE_VIDEOS_FILE).exists():
-        private_videos = load(PRIVATE_VIDEOS_FILE)
+    if Path(UNAVAILABLE_VIDEOS_FILE).exists():
+        private_videos = load(UNAVAILABLE_VIDEOS_FILE)
         for video in private_videos:
             if video in videos_to_add_in_playist:
                 videos_to_add_in_playist.remove(video)

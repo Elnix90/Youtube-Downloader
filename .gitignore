@@ -3,4 +3,5 @@ venv
 .env
 CREDS
 JSON
-main_command.txt
+main_command.py
+Lyrics

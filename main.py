@@ -6,11 +6,10 @@ from FUNCTIONS.create_videos_to_download_file import create_videos_to_download
 from FUNCTIONS.download import download_playlist
 from FUNCTIONS.final_verification import final_verification
 from FUNCTIONS.remove_private_videos import remove_private_videos
-
 from CONSTANTS import *
-
 from FUNCTIONS.fileops import *
 
+import shutil
 
 def process_new_liked_videos(playlist_id=None,path=None,format=None):
 
@@ -37,6 +36,7 @@ def process_new_liked_videos(playlist_id=None,path=None,format=None):
     final_verification(path)
     print("\n\n\nDownloading programm ended successfully!!\n\n\n")
 
+    shutil.rmtree(JSON_DIR)
 
 
 if __name__ == '__main__':

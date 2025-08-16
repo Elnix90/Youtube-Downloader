@@ -1,12 +1,12 @@
 from googleapiclient.errors import HttpError
-from CONSTANTS import PRIVATE_VIDEOS_FILE
+from CONSTANTS import UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.fileops import load, dump
 import os
 from pathlib import Path
 def remove_private_videos(youtube, playlist_id="LL"):
 
-    if Path(PRIVATE_VIDEOS_FILE).exists():
-        private_videos = load(PRIVATE_VIDEOS_FILE) or []
+    if Path(UNAVAILABLE_VIDEOS_FILE).exists():
+        private_videos = load(UNAVAILABLE_VIDEOS_FILE) or []
     else: return
 
     removed_count = 0
@@ -33,7 +33,7 @@ def remove_private_videos(youtube, playlist_id="LL"):
 
                         # Update local private_videos list
                         private_videos.remove(video_id)
-                        dump(private_videos, PRIVATE_VIDEOS_FILE)
+                        dump(private_videos, UNAVAILABLE_VIDEOS_FILE)
 
                     except HttpError as e:
                         print(f"\nError removing video {video_id}: {e}")
@@ -45,4 +45,4 @@ def remove_private_videos(youtube, playlist_id="LL"):
         print(f"\rFinished removing videos. {removed_count} removed.")
 
     if len(private_videos) == 0:
-        os.remove(PRIVATE_VIDEOS_FILE)
+        os.remove(UNAVAILABLE_VIDEOS_FILE)
