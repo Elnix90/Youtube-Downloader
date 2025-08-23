@@ -1,14 +1,20 @@
 import re
 import unicodedata
-import os
-import syncedlyrics
-from pathlib import Path
-from CONSTANTS import UNWANTED_PATTERNS_FILE,SKIP_LYRICS_PATERN_FILE
+from typing import Set, Optional, Tuple
+import logging
+
+import syncedlyrics  # type: ignore
+
+from CONSTANTS import UNWANTED_PATTERNS_FILE, REMIX_PATTERNS_FILE
 from FUNCTIONS.fileops import load_patterns
 
+for noisy in ["syncedlyrics", "Musixmatch", "Lrclib", "NetEase", "Megalobiz", "Genius"]:
+    logging.getLogger(noisy).disabled = True
 
 
-def clean_song_query(query):
+
+def clean_song_query(query: str) -> str:
+    """Normalize and clean a song query string."""
     query = query.lower()
 
     # Normalize accents: à, é, ê -> a, e, e
@@ -16,12 +22,12 @@ def clean_song_query(query):
     query = query.encode('ASCII', 'ignore').decode('utf-8')
 
     # Remove unwanted patterns first
-    patterns_to_remove = load_patterns(UNWANTED_PATTERNS_FILE)
+    patterns_to_remove: Set[str] = load_patterns(UNWANTED_PATTERNS_FILE)
     for pattern in patterns_to_remove:
-        query = re.sub(pattern, '', query, flags=re.IGNORECASE)
+        query = re.sub(rf"\b{pattern}\b", '', query, flags=re.IGNORECASE)
 
     # Remove anything that's not a-z, A-Z, 0-9, space, or hyphen
-    query = re.sub(r'[^a-zA-Z0-9\s-]', '', query)
+    query = re.sub(r"[^a-zA-Z0-9\s\'\-]", '', query)
 
     # Remove hyphens surrounded by spaces
     query = re.sub(r'\s*-\s*', ' ', query)
@@ -33,24 +39,38 @@ def clean_song_query(query):
     return query.title()
 
 
-def get_lyrics_from_syncedlyrics(song_query):
+def get_lyrics_from_syncedlyrics(title: str, artist: str) -> Tuple[Optional[str], str]:
+    """
+    Try to fetch lyrics from syncedlyrics for the given song.
+    Returns (lyrics or None, query used).
+    """
+    title = title.lower()
+    artist = artist.lower()
 
-    anti_lyrics = load_patterns(SKIP_LYRICS_PATERN_FILE)
-    if any(anti in song_query.lower() for anti in anti_lyrics):
-        return None, "Skipped due to unwanted pattern found", ""
+    song_query: str = f"{title} {artist}"
 
-    query = clean_song_query(song_query)
+    plain_only: bool = True
 
-    print(" | Query: " + query,end='',flush=True)
-    lyrics = syncedlyrics.search(query,plain_only=True,providers=["NetEase","Lrclib","Megalobiz"])
 
-    #debug
+    # If a remix pattern is found, ignore the artist (to improve chances of getting correct lyrics)
+    anti_lyrics: Set[str] = load_patterns(REMIX_PATTERNS_FILE)
+    if any(anti.lower() in song_query for anti in anti_lyrics):
+        song_query = title
+        plain_only = False
+
+    # Sometimes the artist is already in the title, so remove it to avoid duplicates
+    if artist in title:
+        title = title.replace(artist, "")
+        song_query = title
+
+    query: str = clean_song_query(song_query)
+
+
+    lyrics: Optional[str] = syncedlyrics.search(query,plain_only=plain_only)
+
     if lyrics:
-        os.makedirs("Lyrics",exist_ok=True)
-        with open(f"Lyrics/{query}.txt", 'w',encoding='utf-8') as f:
-            f.write(lyrics)
-
-
-        return lyrics, "Found", query
-    else:
-        return None, "Not found", query
+        return lyrics, query
+    else: # Try without the artist
+        query = clean_song_query(title)
+        lyrics = syncedlyrics.search(query)
+        return lyrics, query
