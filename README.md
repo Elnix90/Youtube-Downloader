@@ -3,7 +3,8 @@
 This project automates the process of **fetching, downloading, and managing YouTube music videos**.  
 It integrates with the **YouTube Data API v3** to access your liked videos or any playlist you choose, and uses `yt-dlp` for high-quality downloads.  
 It also retrieves **artist names, track titles, and even song lyrics** for your library.
-You can also Automaticaly add albums by fetching the title and author name of the songs or video. (Fully customisable)
+You can also Automaticaly add lyrics or tags by fetching the title and uploader name of the songs or video (Fully customisable), and remove segments via sponsorblock
+
 
 ---
 
@@ -22,7 +23,8 @@ You can also Automaticaly add albums by fetching the title and author name of th
 - **Metadata & Lyrics**
   - Can automatically extract artist, title, and uploader information.
   - Fetch lyrics with [syncedlyrics](https://github.com/moehmeni/syncedlyrics) (no token or api required)
-  - Can automaticlaly add an album to your file, depending on what's inside the filename and author name
+  - Can automaticlaly add tags to your file, depending on what's inside the filename and uploader name
+  - can automaticly remove segments marked from sponsorblock
 
 - **Error Handling**
   - Detects and skips private videos.
@@ -52,6 +54,14 @@ You can also Automaticaly add albums by fetching the title and author name of th
    pip install -r requirements.txt
    ```
 
+4. **Set your environnement variables**
+    Create a .env file with the following content:
+    ```env
+    musicpath=path/to/your/list/musi.json
+    downloadpath=path/where/the/files/will/be/downloaded
+    playlistid=the_id_of_your_playlist
+    ```
+    Only downloadpath is really needed, as it will raise an error if not set, the 2 other are optionnal depending of what function you use
 ---
 
 ## 🔑 API Setup
@@ -72,30 +82,41 @@ Run the main script to fetch and process your liked videos:
 ```bash
 python main.py
 ```
+# There are 3 pre-build functions: 
 
-By default:
-- The script will check your liked videos playlist.
-- Add them to a playlist or skip them based on your configuration.
-- Download each song in the chosen format.
-- Fetch and save lyrics when available.
+  1. **process_new_liked_videos :** (Mainly abandonned to main_list_process dev)
 
-You can modify the main function to:
-- Use a different playlist ID.
-- Change the output path and file format.
-- Disable playlist modifications and only download.
+  - The script will check your liked videos playlist.
+  - Add them to a playlist or skip them based on your configuration.
+  - Download each song in the chosen format.
+  - Fetch and save lyrics when available.
 
-I will make some other differents scripts like the main.py, to propose different logics to download, like a function who downloads only the content of a playlist
+  You can modify the main function to:
+  - Use a different playlist ID.
+  - Change the output path and file format.
+  - Disable playlist modifications and only download.
+
+  I will make some other differents scripts like the main.py, to propose different logics to download, like a function who downloads only the content of a playlist
+
+  2. **download_videos_from_playlist :**
+
+  - I think this one's clear, but for more infos: download every video from a playlist
+
+  3. **main_list_process :**
+  - This is the very heart of my code now, it uses a Json list to know state of files, and videos downloaded.
+  - You can add tags to the list from your phone for exeample and the next time you run the programm, they will be added to your files
+
+
 
 ---
 
 ## 📂 Project Structure
 
 ```
-├── main.py                           # Main function (fecthces liked and download liked explained [here](#usage))
-├── download_videos_from_playlist.py  # Download function to download a playlist
-├── ALBUMS                            # List of patterns to add to an album see [here](#features) to see how
-├── CONFIG                            # Same as ALBUMS, but for lyrics fetching
-├── CREDS                             # client-secret and token for google authenticating
+├── main.py                           # Main function (fetches liked and download liked explained [here](#usage))
+├── .env                              # Your environnemnt variable file
+├── CONFIG                            # List of patterns to correctly fecth lyrics, by cleaning the messy title of youtube
+├── CREDS                             # client-secret and token for google authentication
 ├── TAGS                              # Same as 2 before but not yet implemented
 ├── FUNCTIONS/                        # Core features: download, playlist ops, file handling
 ├── CONSTANTS.py                      # Paths constants
@@ -110,16 +131,17 @@ I will make some other differents scripts like the main.py, to propose different
 - You must be signed in with a Google account that has access to the playlists/videos you want to process.
 - Private videos will be skipped unless you provide cookies for authentication.
 - Lyrics fetching relies syncedlyrics not all songs will have lyrics
+- Tags automaticly searching is only dependent of your customisation
 - `yt-dlp` format support depends on YouTube’s availability.
 
 ---
 
 ## 🚀 Planned Improvements
-- Interactive CLI or GUI for easier use.
+- Interactive CLI or GUI for easier use -> maybe in 2 years lol
 - Config file for persistent settings.
-- Batch processing with progress bars.
-- More robust metadata matching for lyrics.
-- easier customisation of tags, albums and lyrics
+- Batch processing with progress bars. -> Already a part of it is done, with global ETA and download progress
+- easier customisation of tags and lyrics
+- Usage of logging module for cleaner output -> My system must be improved cause i got issues with synced lyrics and they where resolved with logging module, see firsts lines of [extract_lyrics.py](https://github.com/Elnix90/Youtube-Downloader/blob/master/FUNCTIONS/extract_lyrics.py)
 
 ---
 

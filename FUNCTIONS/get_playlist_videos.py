@@ -1,15 +1,23 @@
-from googleapiclient.errors import HttpError
+from typing import Any, List, Union, Dict
+from googleapiclient.errors import HttpError # type: ignore
 from pathlib import Path
 from FUNCTIONS.fileops import load, dump
 
 
-def fetch_playlist_videos(youtube, playlist_id,file,clean=False):
-    print(f"Fetching videos from playlist {playlist_id}")
+def fetch_playlist_videos(
+    youtube: Any,
+    playlist_id: str,
+    file: Union[str, Path],
+    clean: bool = False,
+    verbose: bool = True,
+    errors:bool = True
+) -> List[str]:
+    print(f"[Fetching videos] Fetching videos from playlist {playlist_id}", end='')
 
-    if clean or (not Path(file).exists()):
-
-        all_videos = []
-        next_page_token = None
+    file_path = Path(file)
+    if clean or (not file_path.exists()):
+        all_videos: List[str] = []
+        next_page_token: Union[str, None] = None
 
         while True:
             try:
@@ -19,27 +27,31 @@ def fetch_playlist_videos(youtube, playlist_id,file,clean=False):
                     maxResults=50,
                     pageToken=next_page_token
                 )
-                response = request.execute()
+                response: Dict[str, Any] = request.execute()
 
-                for item in response['items']:
-                    vid_id = item['contentDetails']['videoId']
-                    all_videos.append(vid_id)
-                    print(f"\r{len(all_videos)} videos found in playlist : {playlist_id}",end="",flush=True)
+                items: List[Dict[str, Any]] = response.get('items', [])
+                for item in items:
+                    content_details: Dict[str, Any] = item.get('contentDetails', {})
+                    vid_id: str = content_details.get('videoId', "")
+                    if vid_id:
+                        all_videos.append(vid_id)
+                        if verbose : print(f"\r[Fetching videos] {len(all_videos)} videos found in playlist : {playlist_id}", end="", flush=True)
 
                 next_page_token = response.get('nextPageToken')
                 if not next_page_token:
                     break
 
             except HttpError as e:
-                print(f"Error while fetching playlist videos: {e}")
+                if errors : print(f"Error while fetching playlist videos: {e}")
                 if "quotaExceeded" in str(e):
                     raise Exception("Quota exceeded, please change your token or retry in 24h")
                 else:
                     raise
 
-        dump(all_videos, file)
+        dump(all_videos, file_path)
         print()
         return all_videos
-    
     else:
-        return load(file)
+        videos: List[str] = load(file_path)
+        if verbose : print(f"\r\033[K[Fetching videos] {len(videos)} videos found in file {file_path}")
+        return videos

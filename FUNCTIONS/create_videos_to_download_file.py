@@ -1,100 +1,96 @@
-from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE,UNAVAILABLE_VIDEOS_FILE
+from CONSTANTS import VIDEOS_TO_DOWNLOAD_FILE, LIKED_VIDEOS_FILE, UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.fileops import load, dump
 import os
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3
+from mutagen.mp3 import MP3  # type: ignore
+from mutagen.id3 import ID3  # type: ignore
 from pathlib import Path
+from typing import Any, List, Dict
+from FUNCTIONS.metadata import get_metadata_tag
 
-def clean_download_directory(DOWNLOAD_DIRECTORY):
-    """Remove MP3 files that are corrupted or lack valid 'Video ID :' in metadata."""
-    removed_files = []
-    checked_files = 0
 
-    if not Path(DOWNLOAD_DIRECTORY).exists():
+
+
+def clean_download_directory(download_directory: Path, verbose: bool = True) -> None:
+    """Remove MP3 files that are corrupted or lack valid metadata."""
+    removed_files: Dict[str,str] = {}
+    checked_files: int = 0
+
+    if not download_directory.exists():
         return
 
-    for filename in os.listdir(DOWNLOAD_DIRECTORY):
+    for filename in os.listdir(str(download_directory)):
         if filename.lower().endswith('.mp3'):
-            filepath = os.path.join(DOWNLOAD_DIRECTORY, filename)
-            checked_files += 1
-            try:
-                audio = MP3(filepath, ID3=ID3)
-                valid = False
-                if audio.tags is not None:
-                    comments = audio.tags.getall('COMM')
-                    for comment in comments:
-                        for line in comment.text[0].split('\n'):
-                            if line.strip().startswith('Video ID :'):
-                                valid = True
-                                break
-                        if valid:
-                            break
-                if not valid:
-                    print(f"Deleting {filename}: missing or malformed Video ID metadata.")
-                    os.remove(filepath)
-                    removed_files.append(filename)
-            except Exception as e:
-                print(f"Deleting {filename}: corrupted or unreadable file ({str(e)}).")
-                os.remove(filepath)
-                removed_files.append(filename)
-    print(f"\nChecked {checked_files} MP3 files.")
-    if removed_files:
-        print(f"Removed {len(removed_files)} invalid files:")
-        for f in removed_files:
-            print(f"  - {f}")
-    else:
-        print("All files are valid.")
+            filepath = download_directory / filename
+            data, state = get_metadata_tag(filepath)  # type: ignore
+            if state in (1, 2, 3):
+                if state == 1: reason = "missing or malformed metadata"
+                elif state == 2: reason = "corrupted or unreadable file"
+                else: reason = "data empty"
+                os.remove(str(filepath))
+                removed_files[filename] = reason
+        else:
+            pass
+            removed_files[filename] = "Not mp3"
+            os.remove(str(download_directory / filename))
+        checked_files += 1
+        if verbose: print(f"\r[Clean directory] Checked {checked_files} files.", end="", flush=True)
+            
 
-def extract_existing_video_ids(DOWNLOAD_DIRECTORY):
-    """Extract video IDs from comment metadata in downloaded MP3 files."""
-    existing_ids = set()
-    if not Path(DOWNLOAD_DIRECTORY).exists():
-        return existing_ids
+    if checked_files > 0 and verbose:
+        print()
+        for file, reason in removed_files.items():
+            print(f" - Removed {file}: {reason}")
+        else:
+            print("\r\033[F\033[K[Clean directory] All files are valid.")
 
-    for filename in os.listdir(DOWNLOAD_DIRECTORY):
+
+def extract_existing_video_ids(download_directory: Path) -> Dict[str, Dict[str, Any]]:
+    """Extract video IDs from metadata in downloaded MP3 files."""
+    existings: Dict[str, Dict[str, Any]] = {}
+
+    if not download_directory.exists():
+        return existings
+
+    for filename in os.listdir(str(download_directory)):
         if filename.lower().endswith('.mp3'):
-            filepath = os.path.join(DOWNLOAD_DIRECTORY, filename)
-            try:
-                audio = MP3(filepath, ID3=ID3)
-                if audio.tags is not None:
-                    comments = audio.tags.getall('COMM')
-                    for comment in comments:
-                        for line in comment.text[0].split('\n'):
-                            if line.strip().startswith('Video ID :'):
-                                vid = line.split(':', 1)[1].strip()
-                                existing_ids.add(vid)
-            except Exception:
-                continue
-    return existing_ids
+            filepath = download_directory / filename
+            data, state = get_metadata_tag(filepath)
+            if state == 0 and data is not None:
+                video_id = data.get('id')
+                if video_id is not None:
+                    data['filename'] = filename
+                    existings[video_id] = data
 
-def create_videos_to_download(DOWNLOAD_DIRECTORY):
+    return existings
+
+
+def create_videos_to_download(download_directory: Path) -> None:
     """
     Create a download list by comparing the playlist with already downloaded files.
     Only missing videos will be added to the download list.
     """
-    if not Path(VIDEOS_TO_DOWNLOAD_FILE).exists():
+    videos_file_path = Path(VIDEOS_TO_DOWNLOAD_FILE)
+    liked_videos_file = Path(LIKED_VIDEOS_FILE)
+    unavailable_file = Path(UNAVAILABLE_VIDEOS_FILE)
 
-        playlist_videos = load(LIKED_VIDEOS_FILE)
-        playlist_ids = set(playlist_videos)
+    if not videos_file_path.exists():
+        playlist_videos: Dict[str, Any] = load(liked_videos_file)
+        playlist_ids = set(playlist_videos.keys())
 
-        clean_download_directory(DOWNLOAD_DIRECTORY)
-        existing_ids = extract_existing_video_ids(DOWNLOAD_DIRECTORY)
-        print(f"Found {len(existing_ids)} existing videos in download directory")
+        clean_download_directory(download_directory)
+        existings = extract_existing_video_ids(download_directory)
+        print(f"Found {len(existings)} existing videos in download directory")
 
         # Only keep videos that are in the playlist but not already downloaded
-        to_download_ids = playlist_ids - existing_ids
+        to_download_ids = playlist_ids - set(existings.keys())
+        videos_to_download: List[str] = list(to_download_ids)
 
-        videos_to_download = list(to_download_ids)
+        if unavailable_file.exists():
+            private_videos: List[str] = load(unavailable_file)
+            videos_to_download = [vid for vid in videos_to_download if vid not in private_videos]
 
-        if Path(UNAVAILABLE_VIDEOS_FILE).exists():
-            private_videos = load(UNAVAILABLE_VIDEOS_FILE)
-            for video in private_videos:
-                if video in videos_to_download:
-                    videos_to_download.remove(video)
-
-
-        dump(videos_to_download, VIDEOS_TO_DOWNLOAD_FILE)
+        dump(videos_to_download, videos_file_path)
         print(f"Videos to download file created: {len(videos_to_download)} videos to download")
     else:
-        videos_to_download = load(VIDEOS_TO_DOWNLOAD_FILE)
+        videos_to_download: List[str] = load(videos_file_path)
         print(f"Videos to download file already exists, {len(videos_to_download)} remaining")
