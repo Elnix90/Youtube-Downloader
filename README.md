@@ -12,7 +12,7 @@ You can also Automaticaly add lyrics or tags by fetching the title and uploader 
 
 - **Fetch & Download**
   - Download videos or audio from your liked videos or any playlist you specify.
-  - Supports `mp3`, `wav`, and every format permitted by yt_dlp
+  - Supports only `mp3` due to tags, lyrics and metadatas usage but may extend to other formats in the future
   - Skips videos that are private or unavailable.
 
 - **Playlist Management**
