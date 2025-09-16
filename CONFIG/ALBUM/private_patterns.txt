@@ -1,0 +1,6 @@
+# Patterns listed here will be automaticly private, even if a Public is detected
+nightcore
+speedcore
+nightstep
+french
+fr
