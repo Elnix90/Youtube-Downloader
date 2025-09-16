@@ -46,6 +46,8 @@ pop
 ncs
 copyright free
 copyright
+and
+x
 \(.*?\)
 \[.*?\]
 \{.*?\}
