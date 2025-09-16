@@ -2,9 +2,11 @@ beautifulsoup4==4.13.4
 cachetools==5.5.2
 certifi==2025.8.3
 charset-normalizer==3.4.3
+colorama==0.4.6
 dotenv==0.9.9
 google-api-core==2.25.1
-google-api-python-client==2.179.0
+google-api-python-client==2.181.0
+google-api-python-client-stubs==1.30.0
 google-auth==2.40.3
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.2
@@ -13,6 +15,7 @@ httplib2==0.22.0
 idna==3.10
 mutagen==1.47.0
 oauthlib==3.3.1
+pillow==11.3.0
 proto-plus==1.26.1
 protobuf==6.32.0
 pyasn1==0.6.1
@@ -25,6 +28,7 @@ requests-oauthlib==2.0.0
 rsa==4.9.1
 soupsieve==2.7
 syncedlyrics==1.0.1
+types-httplib2==0.30.0.20250831
 typing_extensions==4.14.1
 uritemplate==4.2.0
 urllib3==2.5.0

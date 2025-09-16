@@ -1,157 +1,81 @@
-from __future__ import annotations
-
 from pathlib import Path
 import time
 import re
-import shutil
-from datetime import datetime,timedelta
-import subprocess
-from typing import Set ,Dict, List, Optional, Tuple, Union, TYPE_CHECKING, Any, cast
+from sqlite3 import Connection, Cursor
+from typing import TypeAlias, cast, Literal
+import requests
+import json
 
-import yt_dlp #type: ignore
-from mutagen.mp3 import MP3  # type: ignore
-from mutagen.id3 import ID3  # type: ignore
-from mutagen.id3._frames import USLT  # type: ignore
-from mutagen.id3._specs import Encoding  # type: ignore
+import yt_dlp 
+from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
+from yt_dlp.networking.exceptions import HTTPError 
 
-from CONSTANTS import ERROR_DOWNLOADED_FILE, UNAVAILABLE_VIDEOS_FILE
-from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
-from FUNCTIONS.fileops import load, dump
-from FUNCTIONS.list import Process_list
-from FUNCTIONS.create_videos_to_download_file import get_metadata_tag 
-from FUNCTIONS.metadata import write_metadata_tag
-from FUNCTIONS.sponsorblock import get_skip_segments, cut_segments_ffmpeg
-from FUNCTIONS.tags_system import compute_tags,set_tags
+from FUNCTIONS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, fprint, VideoInfo, youtube_required_info
+from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
+from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
+from logger import setup_logger
 
-if TYPE_CHECKING:
-    YtdlInfo = Dict[str, Any]
-else:
-    YtdlInfo = dict
+logger = setup_logger(__name__)
 
 
-class QuietLogger:
-    def debug(self, msg: str) -> None:
-        return None
-
-    def warning(self, msg: str) -> None:
-        return None
-
-    def error(self, msg: str) -> None:
-        return None
 
 
-def sanitize_filename(filename: str) -> str:
+
+def _sanitize_filename(filename: str) -> str:
+    old_filename = filename
     filename = filename or ""
     filename = filename.strip()
     filename = re.sub(r'[\\/:*?"<>|~.\x00-\x1F]', "", filename)
     filename = filename.rstrip(". ").strip()
     filename = re.sub(r"\s+", " ", filename)
+    logger.debug(f"[Sanitize Filename] Sanitized '{old_filename}' to '{filename}'")
     return filename
 
 
-def get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
+
+
+def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
+    """
+    Returns a unique filename not already present in the download dir.
+    If file exists and contains matching metadata ID, reuse it.
+    """
     counter = 1
-    filename = f"{base}{ext}"
-    filepath = loc / filename
+    filename = base
+    filepath = loc / f"{filename}{ext}"
 
     while filepath.exists():
-        data, state = get_metadata_tag(filepath)  # type: ignore
+        data, state = get_metadata_tag(filepath)
         if state == 0 and data is not None:
-            vid: str = data.get("id") # type: ignore
-            if vid == video_id:
-                return filename
-        filename = f"{base}_{counter}{ext}"
-        filepath = loc / filename
+            vid: str | None = data.get("video_id")
+            if vid is not None:
+                if vid == video_id:
+                    return filename
+
+        filename = f"{base}_{counter}"
+        filepath = loc / f"{filename}{ext}"
         counter += 1
 
+    logger.debug(f"[Get unique filename] computed '{filename}' ({counter - 1} duplicates)")
     return filename
 
 
-def embed_lyrics_into_mp3(mp3_path: Path, lyrics: str) -> bool:
-    try:
-        audio = MP3(str(mp3_path), ID3=ID3)  # type: ignore
-        if audio.tags is None: # type: ignore
-            audio.add_tags() # type: ignore
-        uslt = USLT(encoding=Encoding.UTF8, desc="Lyrics", text=lyrics)  # type: ignore
-        audio.tags.add(uslt) # type: ignore
-        audio.save() # type: ignore
-        return True
-    except Exception as e:
-        print(f"\nError embedding lyrics into {mp3_path}: {e}")
-        return False
-
-
-def safe_extract_info(ydl: Any, url: str, private_videos: set[str], video_id: str) -> Optional[YtdlInfo]:
-    try:
-        info = ydl.extract_info(url, download=False)  # type: ignore
-        if info is None:
-            private_videos.add(video_id)
-            dump(list(private_videos), UNAVAILABLE_VIDEOS_FILE)
-            return None
-        return cast(YtdlInfo, info)
-    except Exception as e:  # type: ignore
-        err_msg = str(e).lower()
-        if "private video" in err_msg or "private" in err_msg:
-            private_videos.add(video_id)
-            dump(list(private_videos), UNAVAILABLE_VIDEOS_FILE)
-            return None
-        print(f"Error fetching info for {video_id}: {e}")
-        return None
 
 
 
-def fprint(prefix: str,title: str, suffix: str, overwrite: bool = True, end: str = "",flush: bool = True) -> None:
-    term_width = shutil.get_terminal_size((80, 20)).columns
-    max_len = term_width - len(prefix) - len(suffix) - 3
-    if max_len < 1:
-        max_len = 1
-    if len(title) > max_len:
-        title = title[:max_len-1] + "…"
-        space_nb = 0
-    else:
-        space_nb = max_len - len(title)
-
-    print(f"{'\r\033[K' if overwrite else ''}{prefix}{title}{' ' * space_nb}{suffix}",end=end,flush=flush)
 
 
-def download_yt_dlp(
-    url: str,
-    loc: Path,
-    video_id: str,
-    uploader: str,
-    title: str,
-    progress_prefix: str,
-    use_sponsorblock: bool = True
-) -> Tuple[bool, List[str], Optional[Path], Optional[str], int, float]:
-    loc_path = Path(loc)
-    loc_path.mkdir(parents=True, exist_ok=True)
-    renamed_files: List[str] = []
+def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "bestaudio/best") -> Ydl_opt:
+    """
+    Returns yt-dlp options with proper format, output path, and headers.
+    """
+    outtmpl = str(loc / (filename if filename else "%(title)s.%(ext)s"))
 
-    def progress_hook(d: dict) -> None: # type: ignore
-        status: str = d.get("status","unknown") # type: ignore
-        if status == "downloading":
-            percent: str = d.get("_percent_str", "").strip() # type: ignore
-            speed: str = d.get("_speed_str", "N/A").strip() # type: ignore
-            eta: str = d.get("_eta_str", "N/A").strip() # type: ignore
-            fprint(progress_prefix,f" | Downloading: {title}",f" | {percent} at {speed}, ETA: {eta}")
-        elif status == "finished":
-            fprint(progress_prefix,f" | Post-processing: {title}","")
-
-    ydl_opts: dict = { # type: ignore
-        "outtmpl": {"default": str(loc_path / "%(title)s.%(ext)s")},
-
-        # No logs from yt_dlp, I handle all of this manually
-        "quiet": True,
-        "noprogress": True,
-        "no_warnings": True,
-        "ignoreerrors": True,
-        "logger": QuietLogger(),
-        # "verbose": True,
-
-        "format": "bestaudio/best",
-        "postprocessor_args": ["-metadata", f"artist={uploader}", "-metadata", f"title={title}"],
+    return {
+        "outtmpl": {"default": outtmpl},
+        "format": format_str,
         "add_metadata": True,
         "embed_metadata": True,
+        "verbose": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -159,267 +83,429 @@ def download_yt_dlp(
                 "preferredquality": "192"
             },
             {"key": "FFmpegMetadata"}
-            ],
-        "progress_hooks": [progress_hook],
+        ],
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+        'extractor_args': {
+            'youtube': ['formats=never_pot']
+        },
+        'fragment_retries': 2,
+        'retries': 3,
+
+        "quiet": True,
+        "noprogress": True,
+        "no_warnings": True,
+        "ignoreerrors": True,
+        "logger": QuietLogger(),
+        "verbose": False
     }
 
 
+
+
+
+
+
+# --- Safe conversion helpers ---
+def safe_str(value: object, default: str = "") -> str:
+    return str(value) if isinstance(value, str) else default if value is None else str(value)
+
+def safe_int(value: object, default: int = 0) -> int:
+    return int(value) if isinstance(value, int) else default
+
+def safe_float(value: object, default: float = 0.0) -> float:
+    return float(value) if isinstance(value, float) else default
+
+def safe_bool(value: object, default: bool = False) -> bool:
+    return bool(value) if value is not None else default
+
+
+
+
+
+
+
+
+
+SubtitleLine: TypeAlias = tuple[float, float, str]  # (start_seconds, end_seconds, text)
+
+
+def _parse_timestamp(ts: str) -> float:
+    """Convert timestamp (HH:MM:SS.mmm or HH:MM:SS,mmm) into seconds (float)"""
+    ts = ts.replace(",", ".")
+    parts = ts.split(":")
+    parts = [float(p) for p in parts]
+    if len(parts) == 3:
+        h, m, s = parts
+    elif len(parts) == 2:
+        h, m, s = 0.0, parts[0], parts[1]
+    else:
+        return 0.0
+    return h * 3600 + m * 60 + s
+
+
+
+
+def _vtt_to_synced(vtt: str) -> list[SubtitleLine]:
+    """Convert WebVTT subtitle text into (start, end, text) tuples"""
+    lines: list[SubtitleLine] = []
+    pattern = re.compile(r"(\d{2}:\d{2}:\d{2}[.,]\d{3}) --> (\d{2}:\d{2}:\d{2}[.,]\d{3})")
+
+    current_start: float | None = None
+    current_end: float | None = None
+    current_text: list[str] = []
+
+    for line in vtt.splitlines():
+        line = line.strip()
+        if not line:
+            if current_start is not None and current_end is not None and current_text:
+                lines.append((current_start, current_end, " ".join(current_text)))
+            current_start, current_end, current_text = None, None, []
+            continue
+
+        match = pattern.match(line)
+        if match:
+            current_start = _parse_timestamp(match.group(1))
+            current_end = _parse_timestamp(match.group(2))
+            current_text = []
+        elif current_start is not None:
+            current_text.append(line)
+
+    return lines
+
+
+
+
+def _srt_to_synced(srt: str) -> list[SubtitleLine]:
+    """Convert SRT subtitle text into (start, end, text) tuples"""
+    lines: list[SubtitleLine] = []
+    pattern = re.compile(r"(\d{2}:\d{2}:\d{2}[.,]\d{3}) --> (\d{2}:\d{2}:\d{2}[.,]\d{3})")
+
+    blocks = re.split(r"\n\s*\n", srt.strip())  # split by empty lines (subtitle blocks)
+
+    for block in blocks:
+        parts = block.strip().splitlines()
+        if len(parts) < 2:
+            continue
+
+        # first line might be the sequence number → skip if it's just a number
+        if re.match(r"^\d+$", parts[0].strip()):
+            parts = parts[1:]
+
+        if not parts:
+            continue
+
+        match = pattern.match(parts[0])
+        if not match:
+            continue
+
+        start = _parse_timestamp(match.group(1))
+        end = _parse_timestamp(match.group(2))
+        text = " ".join(p.strip() for p in parts[1:])
+        if text:
+            lines.append((start, end, text))
+
+    return lines
+
+
+
+def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLine]:
+    """
+    Fetch the subtitles.
+    Parameters:
+      - auto: If True, fetch the auto-generated subtitles; otherwise, fetch manual subtitles.
+    Returns:
+      - list of (start, end, text) for synced lyrics
+      - raw subtitle text (if available, e.g. SRT or VTT)
+    """
+    subtitles = info.get("subtitles", {}) or {}
+    automatic_subtitles = info.get("automatic_captions", {}) or {}
+
+    original_lang: str | None = None
+    if isinstance(info.get("language_code"), str):
+        original_lang = info.get("language_code")
+    elif isinstance(info.get("language"), str):
+        original_lang = info.get("language")
+
+    if not original_lang:
+        logger.debug(f"[Sub Fetch] No original language detected for {'automatic subtitles' if auto else 'manual subtitles'}")
+        return []
+
+    entries = automatic_subtitles.get(original_lang, []) if auto else subtitles.get(original_lang, [])
+    if not entries:
+        logger.debug(f"[Sub Fetch] No {'automatic' if auto else 'manual'} subtitles found for '{original_lang}'")
+        return []
+
+    for entry in entries:
+        sub_url = entry.get("url")
+        ext = entry.get("ext")
+        name = entry.get("name")
+
+        # skip translations for manual subtitles
+        if not auto and isinstance(name, str) and "from" in name.lower():
+            continue
+        if not auto and isinstance(sub_url, str) and "tlang=" in sub_url:
+            continue
+
+        if isinstance(sub_url, str) and ext in ("vtt", "srt"):
+            try:
+                r = requests.get(sub_url, timeout=15)
+                if r.status_code == 200:
+                    text = r.text
+                    if ext == "vtt":
+                        return _vtt_to_synced(text)
+                    elif ext == "srt":
+                        return _srt_to_synced(text)
+            except Exception as e:
+                logger.error(f"[Sub Fetch] Failed to fetch {'automatic' if auto else 'manual'} subtitles: {e}")
+                return []
+    return []
+
+
+
+
+def _safe_extract_info(id_or_url: str) -> tuple[Literal[0,1,2,3], VideoInfo]:
+    """
+    Fetches and returns the videos infos for a YouTube id or URL.
+    Returns a tuple of a status code and the formatted data in a dict if data is found:
+      0 -> data found and correctly extracted and formatted
+      1 -> no data returned by youtube but no exception raised
+      2 -> video private
+      3 -> unknown error, debug output is printed
+    """
+    if "https://youtube.com/watch?v=" in id_or_url:
+        url = id_or_url
+        video_id = id_or_url.replace("https://youtube.com/watch?v=", "")
+    else:
+        url = f"https://youtube.com/watch?v={id_or_url}"
+        video_id = id_or_url
+
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore
-            base = sanitize_filename(title)
-            new_filename = get_unique_filename(loc_path, base, f".{"mp3"}", video_id)
-            ydl.params["outtmpl"]["default"] = str((loc_path / Path(new_filename).stem).with_suffix(".%(ext)s")) # type: ignore
-            ydl.download([url])  # type: ignore
-            
-            final_path = loc_path / Path(new_filename).with_suffix(".mp3")
+        ydl_fetch_opt: Ydl_opt = {
+            "quiet": True,
+            "no_warnings": True,
+            "noprogress": True,
+            "ignoreerrors": True,
+            "logger": QuietLogger(),
+            "verbose": False,
 
-            sucessful_segments_cutted: int = 0
-            total_removed: float = 0.0
+            "writesubtitles": True,
+            "writeautomaticsub": True,
+            "subtitlesformat": "vtt",
+            "subtitleslangs": ["all"],  # request all available languages
+        }
 
-            if use_sponsorblock and final_path.exists():
-                fprint(progress_prefix, " | Fetching SponsorBlock segments...", "")
-                skips = get_skip_segments(video_id)
-                if skips:
-                    fprint(progress_prefix, f" | Removing {len(skips)} SponsorBlock segments...", "")
-                    temp_output = final_path.with_suffix(".tmp.mp3")
-                    try:
-                        total_removed = cut_segments_ffmpeg(final_path, temp_output, skips)
-                        sucessful_segments_cutted = len(skips)
-                    except subprocess.CalledProcessError:
-                        if temp_output.exists():
-                            temp_output.unlink()
-                    else:
-                        temp_output.replace(final_path)
+        with yt_dlp.YoutubeDL(ydl_fetch_opt) as ydl:  # pyright: ignore[reportArgumentType]
+            info = cast(ExtractedInfo, cast(object, ydl.extract_info(url, download=False)))
+
+            if not info:
+                logger.warning(f"[Safe Extract] Data is null for {video_id}")
+                return 1, {}
 
 
-        return True, renamed_files, loc_path, final_path.name, sucessful_segments_cutted, total_removed
-    
-    except Exception as e:  # type: ignore
-        msg = str(e)
-        if "private" in msg.lower():
-            return False, ["Private video"], None, None, 0, 0.0
-        return False, [msg], None, None, 0, 0.0
 
 
-def download_playlist(
-    file: Path,
+            manual_subs = _pick_subtitles(info, auto=False)
+            auto_subs = _pick_subtitles(info, auto=True)
+
+            data: VideoInfo = {
+                "video_id": safe_str(info.get("id")),
+                "title": safe_str(info.get("fulltitle", info.get("title"))),
+                "thumbnail_url": safe_str(info.get("thumbnail")),
+                "description": safe_str(info.get("description")),
+                "channel_id": safe_str(info.get("channel_id")),
+                "channel_url": safe_str(info.get("channel_url")),
+                "view_count": safe_int(info.get("view_count")),
+                "comment_count": safe_int(info.get("comment_count")),
+                "like_count": safe_int(info.get("like_count")),
+                "uploader": safe_str(info.get("uploader")),
+                "channel_follower_count": safe_int(info.get("channel_follower_count")),
+                "uploader_id": safe_str(info.get("uploader_id")),
+                "uploader_url": safe_str(info.get("uploader_url")),
+                "upload_date": safe_str(info.get("upload_date")),
+                "duration": safe_int(info.get("duration")),
+                "duration_string": safe_str(info.get("duration_string")),
+            }
+            if manual_subs:
+                logger.debug("[Safe extract] Got manual subs")
+                data["subtitles"] =json.dumps(manual_subs, ensure_ascii=False)
+            if auto_subs:
+                logger.debug("[Safe extract] Got auto subs")
+                data["auto_subs"] = json.dumps(auto_subs, ensure_ascii=False)
+
+            logger.info(f"[Safe Extract] Data correctly returned for {video_id} -> '{data['title']}'")
+            # print(data)
+            return 0, data
+
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "private video" in err_msg or "private" in err_msg:
+            logger.error(f"[Safe Extract] Private video: {video_id}")
+            return 2, {}
+        logger.error(f"[Safe Extract] Error fetching info for {video_id}: {e}")
+        return 3, {}
+
+
+
+
+
+
+
+
+def download_yt_dlp(
     loc: Path,
-    embed_metadata: bool = True,
-    get_lyrics: bool = True,
-    use_list: bool = False,
-    show_ETA: bool = True,
-    use_sponsorblock: bool =True,
-    add_tags: bool = True
-) -> str:
+    video_id: str,
+    title: str,
+    uploader: str,
+    max_retries: int = 3,
+    retry_delay: int = 5
+) -> tuple[bool, str, str | None]:
+    """
+    Download YouTube video as mp3 with retries and detailed error handling.
+
+    Returns:
+        success (bool)
+        message (str)
+        final filename (str)
+    """
+    url: str = f"https://youtube.com/watch?v={video_id}"
+    loc.mkdir(parents=True, exist_ok=True)
+
+    base = _sanitize_filename(title)
+    final_filename = _get_unique_filename(loc, base, ".mp3", video_id)
+    final_filename_with_ext = final_filename + ".mp3"
+    ydl_opts = _build_ydl_opts(loc, final_filename, format_str="bestaudio/best")
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.debug(f"[Download] Attempt {attempt} for video {video_id}")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
+                ydl.download([url]) # type:ignore
+            # Check file after download - optional: add call to your repair_mp3_file here
+            final_path = loc / final_filename_with_ext
+            if not final_path.exists():
+                raise FileNotFoundError(f"Expected file '{final_path}' not exists after download")
+
+            logger.info(f"[Download] Finished successfully: '{final_filename_with_ext}' from '{uploader}'")
+            return True, "", final_filename_with_ext
+
+        except (HTTPError, DownloadError, ExtractorError, UnavailableVideoError) as e:
+            logger.warning(f"[Download] Download error on attempt {attempt}: {e}")
+            if attempt < max_retries:
+                logger.info(f"[Download] Retrying in {retry_delay} seconds")
+                time.sleep(retry_delay)
+            else:
+                return False, f"Download failed after {max_retries} attempts: {e}", None
+
+        except FileNotFoundError as e:
+            logger.error(f"[Download] File after download missing: {e}")
+            return False, str(e), None
+
+        except Exception as e:
+            logger.error(f"[Download] Unexpected error on attempt {attempt}: {e}")
+            logger.debug("Exception details:", exc_info=True)
+            if attempt < max_retries:
+                logger.info(f"[Download] Retrying in {retry_delay} seconds")
+                time.sleep(retry_delay)
+            else:
+                return False, f"Unexpected error after {max_retries} attempts: {e}", None
+
+    return False, "Download failed after retries", None
+
+
+
+
+
+
+
+
+
+def download_video(
+    download_path: Path,
+    video_id: str,
+    progress_prefix: str,
+    info: bool,
+    cur: Cursor,
+    conn: Connection,
+    test_run: bool
+) -> float:
+
     Download_start_time: float = time.time()
 
-    pl: Optional[Process_list] = Process_list() if use_list else None
-    loc_path: Path = Path(loc)
-    loc_path.mkdir(parents=True, exist_ok=True)
-
-    if use_list:
-        pl = Process_list()
+    download_path.mkdir(parents=True, exist_ok=True)
 
 
-    avg_times: List[int] = []
-    eta_str: str = 'N/A'
+    if info: fprint(progress_prefix, f"Fetching infos for '{video_id}'")
+    logger.info(f"[Download] Fetching infos for '{video_id}'")
 
-    ids: List[str] = load(Path(file))
+    # Extracts youtube video's infos if the already present isn't enough
+    state: Literal[0,1,2,3] = 0
+    data = get_video_info_from_db(video_id=video_id,cur=cur)
+    if not all(key in youtube_required_info for key in data.keys()):
+        state, data = _safe_extract_info(id_or_url=video_id)
+    else:
+        logger.debug("[Download] Enough data in db, no need to fetch yt_dlp")
 
-    unavailable_videos: set[str] = set(load(UNAVAILABLE_VIDEOS_FILE)) if Path(UNAVAILABLE_VIDEOS_FILE).exists() else set()
-    total_videos: int = len(ids)
-
-    error_downloaded: Dict[str, str] = {}
-    all_renamed_files: List[str] = []
-
-    progress_count: int = 1
-    idx: int = 0
-
-    print(f"[Download] Downloading {total_videos} videos...")
-
-    while idx < len(ids):
-
-        start_time = round(time.time())
-
-        video_id: str = ids[idx]
-        url = f"https://youtube.com/watch?v={video_id}"
-        progress_prefix: str = f"{progress_count:{len(str(total_videos))}d}/{total_videos}"
-        if show_ETA:
-            progress_prefix += f" | ETA : {eta_str}"
-
-        with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "noprogress": True, "ignoreerrors": True, "logger": QuietLogger()}) as ydl:
-            fprint(progress_prefix,f" | Fetching video infos: {video_id}","",overwrite=show_ETA)
-            info = safe_extract_info(ydl, url, unavailable_videos, video_id)
-            if not info:
-                fprint(progress_prefix,f" | Skipping unavailable video: {video_id}","")
-                unavailable_videos.add(video_id)
-                dump(list(unavailable_videos), UNAVAILABLE_VIDEOS_FILE)
-                try:
-                    ids.remove(video_id)
-                except ValueError:
-                    pass
-                dump(ids, Path(file))
-                if use_list and pl is not None:
-                    pl.update(video_id, {"status": "unavailable"})
-                continue
-
-            id_val = str(info.get("id", "N/A"))
-            title = str(info.get("fulltitle", info.get("title", "Unknown")))
-            thumbnail = str(info.get("thumbnail", "N/A"))
-            description = str(info.get("description", "N/A"))
-            channel_id = str(info.get("channel_id", "N/A"))
-            channel_url = str(info.get("channel_url", "N/A"))
-            duration = int(info.get("duration", 0) or 0)
-            view_count = int(info.get("view_count", 0) or 0)
-            comment_count = int(info.get("comment_count", 0) or 0)
-            like_count = int(info.get("like_count", 0) or 0)
-            uploader = str(info.get("uploader", "N/A"))
-            channel_follower_count = int(info.get("channel_follower_count", 0) or 0)
-            uploader_id = str(info.get("uploader_id", "N/A"))
-            uploader_url = str(info.get("uploader_url", "N/A"))
-            upload_date = str(info.get("upload_date", "N/A"))
-            duration_string = str(info.get("duration_string", ""))
+    if state == 0: # Data ok, can proceed to download
 
 
+        title: str | None = data.get("title", None)
+        uploader: str | None = data.get("uploader", None)
 
-            metadata_obj: Dict[str, Union[str, int, float, list[str]]] = {
-                "id": id_val,
-                "title": title,
-                "thumbnail": thumbnail,
-                "description": description,
-                "channel_id": channel_id,
-                "channel_url": channel_url,
-                "duration": duration,
-                "view_count": view_count,
-                "comment_count": comment_count,
-                "like_count": like_count,
-                "uploader": uploader,
-                "channel_follower_count": channel_follower_count,
-                "uploader_id": uploader_id,
-                "uploader_url": uploader_url,
-                "upload_date": upload_date,
-                "duration_string": duration_string,
-            }
+        if not isinstance(title, str) or not isinstance(uploader, str):
 
-            
+            update_video_db(video_id,{"status": 3}, cur, conn)
+            if info: fprint(progress_prefix, f"title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
+            logger.error(f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
+            return time.time() - Download_start_time
 
-            success, renamed_files, returned_loc, filename, nb_cutted_seg, total_removed = download_yt_dlp(
-                url=url,
-                loc=loc_path,
-                video_id=video_id,
-                uploader=uploader,
-                title=title,
-                progress_prefix=progress_prefix,
-                use_sponsorblock=use_sponsorblock
-            )
-
-            if success and filename and returned_loc is not None:
-                filepath: Path = returned_loc / filename
-
-                query_used: str = ""
-                end_msg: str = ""
-                if get_lyrics:
-                    fprint(progress_prefix,f" | Getting lyrics : {title}","")
-                    lyrics, query_used = get_lyrics_from_syncedlyrics(title, uploader)
-                    if lyrics and filepath.exists() and filepath.stat().st_size > 0:
-                        metadata_obj["lyrics"] = lyrics
-                        metadata_obj["query_used"] = query_used
-                        fprint(progress_prefix,f" | Embedding lyrics: {title}","")
-                        embed_lyrics_into_mp3(filepath, lyrics)
-                        end_msg = " | 📃 Lyrics Found"
+        if info: fprint(progress_prefix,f"Downloading '{title}'")
 
 
-                # Update the file's last modified time
-                now: float = time.time()
-                filepath.touch()
-                filepath.stat()
-                file_path_utime: Tuple[float,float] = (now, now)
-                try:
-                    filepath.utime(file_path_utime) # type: ignore
-                except Exception:
-                    import os
-                    os.utime(str(filepath), file_path_utime)
+        download_success, message, final_filename = download_yt_dlp(
+            loc=download_path,
+            video_id=video_id,
+            title=title,
+            uploader=uploader
+        )
 
+        if download_success and final_filename:
+            filename: str = final_filename
+            filepath: Path = Path(download_path / filename)
 
-                if use_sponsorblock and nb_cutted_seg > 0:
-                    end_msg += f" | {nb_cutted_seg} Segment removed ({round(total_removed)} seconds)"
-                    metadata_obj['removed_segments_int'] = nb_cutted_seg
-                    metadata_obj['removed_segments_duration'] = total_removed
+            logger.debug(f"[Download] Downloaded finished, checking file intergity: '{filename}'")
+            if repair_mp3_file(filepath=filepath, test_run=test_run): # Newly downloaded file is readable and clean
 
-                new_filename: Optional[str] = None
-                if add_tags:
-                    tags: Set[str] = compute_tags(title,uploader)
-
-                    new_uploader: Optional[str] = set_tags(filepath,tags)
-
-                    metadata_obj['tags'] = list(tags)
-                    if new_uploader: metadata_obj['uploader'] = new_uploader
-
-                # Prepare metadata for embedding
-                if embed_metadata:
-
-                    metadata_obj["filename"] = new_filename if new_filename is not None else filename
-                    metadata_obj["date_added_int"] = round(now)
-                    metadata_obj["date_added_str"] = datetime.fromtimestamp(now).strftime('%Y-%m-%d %H:%M:%S')
-                    metadata_obj['status'] = "downloaded"
-
-
-                    # Embed metadata into the MP3 file
-                    fprint(progress_prefix,f" | Writing metadata: {title}","")
-                    if not write_metadata_tag(filepath, metadata_obj):
-                        end_msg += " | ❌ Metadata write failed"
-
-
-                # Finaly show the downloaded message
-                fprint(progress_prefix,f" | Downloaded: {title}",end_msg,end="\n")
-
-
-
-                if use_list and pl is not None:
-                    updated_data: Dict[str, Any] = metadata_obj if embed_metadata else {}
-                    pl.update(video_id, updated_data)
-
-                all_renamed_files.extend(renamed_files)
-                try:
-                    ids.pop(idx)
-                except IndexError:
-                    try:
-                        ids.remove(video_id)
-                    except ValueError:
-                        pass
-                dump(ids, Path(file))
+                # Update metadata
+                data["filename"] = final_filename
+                data["status"] = 0
+                logger.debug(f"[Download] Sucessfully downloaded '{title}")
+                if info: fprint(prefix=progress_prefix, title=f"Downloaded '{title}'")
+                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
 
             else:
-                if (renamed_files == ["Private video"]) or (success is False and filename is None):
-                    unavailable_videos.add(video_id)
-                    dump(list(unavailable_videos), UNAVAILABLE_VIDEOS_FILE)
-                    fprint(progress_prefix,f" | Error during download or processing : marked as unavailable: {video_id}","",overwrite=True,end="\n")
-                    if use_list and pl is not None:
-                        pl.update(video_id, {"status": "unavailable","reason": renamed_files[0]})
-                else:
-                    error_downloaded[video_id] = ", ".join(renamed_files) if renamed_files else "Unknown error"
-                    dump(error_downloaded, ERROR_DOWNLOADED_FILE)
-                idx += 1
+                if info: fprint(prefix=progress_prefix,title=" Downloaded file is corrupted, skipping rest of processing")
+                logger.error(f"[Download] Downloaded file is corrupted, skipping rest of processing")
 
-        
-        progress_count += 1
-        end_time: int = round(time.time())
-        avg_times.append(end_time - start_time)
-        if len(avg_times) > 10:
-            avg_times.pop(0)
-        
-        if show_ETA:
-            eta_seconds = int((sum(avg_times) / len(avg_times)) * (total_videos - progress_count + 1))
-            eta_str = str(timedelta(seconds=eta_seconds))
+            return time.time() - Download_start_time
 
+        else:
+            if message == "Private video":
+                data["status"] = 2
+                if info: fprint(prefix=progress_prefix, title=f"Video {video_id} is private, skipping")
+                logger.warning(f"[Download] Video {video_id} is private, skipping")
+            else:
+                data["status"] = 3
+                if info: fprint(prefix=progress_prefix, title=f"Video {video_id} failed to download, reason : {message}")
+                logger.error(f"[Download] Video {video_id} failed to download, reason : {message}")
+            
+            update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+            return time.time() - Download_start_time
 
-
-    if error_downloaded:
-        print(f"\n[Download] Some videos could not be downloaded. See {ERROR_DOWNLOADED_FILE} for details.")
-
-    Download_end_time: float = time.time()
-
-    Download_total_time: float = Download_end_time - Download_start_time
-
-    file.unlink(missing_ok=True)
-    return str(timedelta(seconds=int(Download_total_time)))
+    else: # Data is null or unavavailable, probalby unavailable video, skipping
+        data["status"] = 3
+        if info: fprint(progress_prefix, f"Failed to fetch infos for '{video_id}', skipping")
+        logger.error(f"[Download] Failed to fetch infos for '{video_id}', skipping")
+        update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+        return time.time() - Download_start_time

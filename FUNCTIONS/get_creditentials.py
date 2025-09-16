@@ -1,44 +1,55 @@
-from __future__ import annotations
-
 import os
-from typing import Optional, Any
-from google.oauth2.credentials import Credentials  # type: ignore
-from google.auth.exceptions import RefreshError  # type: ignore
-from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
-from google.auth.transport.requests import Request  # type: ignore
-from googleapiclient.discovery import build  # type: ignore
+from google.oauth2.credentials import Credentials
+from google.auth.exceptions import RefreshError
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build, Resource  # pyright: ignore[reportUnknownVariableType]
 
 from CONSTANTS import TOKEN_FILE, CLIENT_SECRETS_FILE
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 SCOPES: list[str] = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 API_SERVICE_NAME: str = "youtube"
 API_VERSION: str = "v3"
 
 
-def get_authenticated_service() -> Any:
+def get_authenticated_service(info: bool = True) -> Resource:
     """
     Authenticate with the YouTube API and return a service resource.
     Handles refreshing and saving tokens automatically.
     """
-    creds: Optional[Any] = None  # Use Any due to missing stubs
+    creds: Credentials | None = None
 
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES) # type: ignore
+    if os.path.exists(path=TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(filename=TOKEN_FILE, scopes=SCOPES)  # pyright: ignore[reportUnknownMemberType]
 
-    if not creds or not getattr(creds, "valid", False):
-        if creds and getattr(creds, "expired", False) and getattr(creds, "refresh_token", None):
+
+    if not creds or not creds.valid:
+        if creds is not None and creds.expired and creds.refresh_token is not None:  # pyright: ignore[reportUnknownMemberType]
             try:
-                creds.refresh(Request())
+                creds.refresh(Request())  # pyright: ignore[reportUnknownMemberType]
             except RefreshError:
-                print("Token expired, please reconnect")
+                if info:
+                    print("[Get Credentials] Token expired, please reconnect")
+                logger.warning("[Get Credentials] Token expired, please reconnect")
                 os.remove(TOKEN_FILE)
-                flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES) # type: ignore
-                creds = flow.run_local_server(port=0) # type: ignore
+                flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                    CLIENT_SECRETS_FILE, SCOPES
+                )
+                creds = flow.run_local_server(port=0)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES) # type: ignore
-            creds = flow.run_local_server(port=0) # type: ignore
+            flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+                CLIENT_SECRETS_FILE, SCOPES
+            )
+            creds = flow.run_local_server(port=0)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 
-        with open(TOKEN_FILE, "w", encoding="utf-8") as token:
-            token.write(creds.to_json())
+        if creds is not None:
+            with open(TOKEN_FILE, "w", encoding="utf-8") as token:
+                token.write(creds.to_json())  # pyright: ignore[reportUnusedCallResult, reportUnknownMemberType, reportUnknownArgumentType]
 
-    return build(API_SERVICE_NAME, API_VERSION, credentials=creds) # type: ignore
+    logger.info("[Get Credentials] Successfully logged")
+
+    # Explicit cast to satisfy basedpyright typing
+    return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
