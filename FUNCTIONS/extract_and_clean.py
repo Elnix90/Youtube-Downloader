@@ -24,6 +24,7 @@ def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: 
     removed_files: dict[str, str] = {}
     valid_files: VideoInfoMap = {}
     checked_files: int = 0
+    lrc_or_png: int = 0
 
     if not download_directory.exists():
         if info: print(f"[Clean & Extract] Directory does not exist: {download_directory}")
@@ -42,6 +43,7 @@ def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: 
         if not filename.lower().endswith(".mp3"):
             if filename.lower().endswith((".lrc", ".png")) and filepath.with_suffix(".mp3").exists(): # If no mp3 associated file:
                 logger.debug(f"[Clean & Extract] Keeping '{filename}' (.lrc or .png)")
+                lrc_or_png += 1
                 continue
             removed_files[filename] = "Not mp3"
             if not test_run and remove:
@@ -83,7 +85,7 @@ def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: 
         if info:
             fprint(prefix="[Clean & Extract] ",title=f"Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s")
 
-    logger.info(f"[Clean & Extract] Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s")
+    logger.info(f"[Clean & Extract] Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
 
     if info:
         if checked_files == 0:

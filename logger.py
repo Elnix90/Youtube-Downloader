@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Any
 
-from CONSTANTS import LOGS_DIR, LOGS_CONSOLE_GLOBALLY,LOGGING_LEVEL
+from CONSTANTS import LOGS_DIR, LOGS_CONSOLE_GLOBALLY,LOGGING_LEVEL_CONSOLE,LOGGING_LEVEL_LOGFILES
 
 
 from colorama import Fore, Style, init as colorama_init
@@ -31,7 +31,7 @@ def setup_logger(name: str, to_console: bool = False) -> logging.Logger:
         to_console = True
 
     logger = logging.getLogger(name)
-    logger.setLevel(LOGGING_LEVEL)
+    logger.setLevel(logging.DEBUG)
 
     if not logger.handlers:
         os.makedirs(LOGS_DIR, exist_ok=True)
@@ -45,7 +45,7 @@ def setup_logger(name: str, to_console: bool = False) -> logging.Logger:
         # File handler
         log_path = os.path.join(LOGS_DIR, f"{name}.log")
         fh = logging.FileHandler(log_path, encoding='utf-8')
-        fh.setLevel(logging.DEBUG)
+        fh.setLevel(LOGGING_LEVEL_LOGFILES)
         fh.setFormatter(file_formatter)
         logger.addHandler(fh)
 
@@ -56,7 +56,7 @@ def setup_logger(name: str, to_console: bool = False) -> logging.Logger:
                 datefmt='%Y-%m-%d %H:%M:%S'
             )
             ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
+            ch.setLevel(LOGGING_LEVEL_CONSOLE)
             ch.setFormatter(console_formatter)
             logger.addHandler(ch)
 
