@@ -23,7 +23,7 @@ def main_list_process(
     recompute_album: bool = True,
 
     get_lyrics: bool = True,
-    recompute_lyrics: bool = True,
+    recompute_lyrics: bool = False,
 
     get_thumbnail: bool = True,
     thumbnail_format: Literal["pad", "crop"] = "pad",
@@ -47,7 +47,7 @@ def main_list_process(
     test_run: bool = False,
 
     clean: bool = False,
-    remove_no_longer_in_playlist: bool = True,
+    remove_no_longer_in_playlist: bool = False,
     remove_malformatted: bool = True,
     create_db_if_not: bool = True,
     add_folder_files_not_in_list: bool = True
