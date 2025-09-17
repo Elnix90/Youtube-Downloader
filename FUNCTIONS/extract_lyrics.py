@@ -69,11 +69,10 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | Non
         song_query = title
 
     ##### CHECK THIS SOMETHING ISN'T WORKING
-    logger.error("Check this, title in artist isn't working")
+    # logger.error("Check this, title in artist isn't working")
     # Sometimes the artist is already in the title, so remove it to avoid duplicates
     if artist in title:
-        title = title.replace(artist, "")
-        # song_query = title
+        song_query = title
 
     query: str = clean_song_query(song_query)
 
@@ -85,5 +84,5 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | Non
         lyrics = syncedlyrics.search(query)
 
 
-    logger.info(f"[Get Lyrics] {'Sucessfully got' if lyrics else "Failed to get"} lyrics for '{orig_artist} {orig_title}' with query '{query}'")
+    logger.info(f"[Get Lyrics] {'Sucessfully got' if lyrics else "Failed to get"} lyrics for '{orig_artist}' by '{orig_title}' with query '{query}'")
     return lyrics

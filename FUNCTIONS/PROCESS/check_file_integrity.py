@@ -60,10 +60,9 @@ def check_file_integrity_for_video(
                 return True ,time.time() - start_processing
         else:
             missings: set[str] = set(youtube_required_info) - set(fusion.keys())
-            n_missings = len(missings)
-            print(missings)
 
-            logger.warning(f"[File Checking] Metadata incomplete missing {n_missings} keys, re-downloading: '{filepath.name}'")
+
+            logger.warning(f"[File Checking] Metadata incomplete missing {missings} keys, re-downloading: '{filepath.name}'")
             return True ,time.time() - start_processing
 
 
@@ -81,48 +80,3 @@ def check_file_integrity_for_video(
         return True ,time.time() - start_processing
 
 
-
-
-# def check_file_integrity(
-#     music_path: Path,
-#     videos_file: Path,
-#     cur: Cursor,
-#     conn: Connection,
-#     retry_unavailable: bool,
-#     retry_private: bool,
-#     info: bool,
-#     test_run: bool,
-#     remove_malformatted: bool
-# ) -> list[str]:
-#     """
-#     Iterate over all videos and check integrity.
-#     Returns the list of video_ids that need to be downloaded.
-#     """
-#     ids_present_in_down_dir: VideoInfoMap = clean_and_extract_video_ids(music_path, info=info,test_run=test_run, remove=remove_malformatted)
-
-    
-
-#     videos_to_download: list[str] = []
-#     video_to_check: list[str] = load(file=videos_file)
-
-
-#     for video_id in video_to_check:
-#         try:
-#             needs_download = check_file_integrity_for_video(
-#                 video_id=video_id,
-#                 music_path=music_path,
-#                 youtube_required_info=youtube_required_info,
-#                 ids_present_in_down_dir=ids_present_in_down_dir,
-#                 retry_unavailable=retry_unavailable,
-#                 retry_private=retry_private,
-#                 cur=cur,
-#                 conn=conn,
-#                 test_run=test_run
-
-#             )
-#             if needs_download:
-#                 videos_to_download.append(video_id)
-#         except Exception as e:
-#             logger.error(f"[File Checking] Unexpected error while checking '{video_id}': {e}")
-
-#     return videos_to_download

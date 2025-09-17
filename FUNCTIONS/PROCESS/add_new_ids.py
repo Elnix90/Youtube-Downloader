@@ -61,7 +61,6 @@ def add_new_ids_to_database(
         vi: VideoInfo = ids_presents_in_down_dir.get(video_id, {})
         video_data: VideoInfo = {**default_fields, **vi, "video_id": video_id}
 
-        print(f"Updating : {video_data.get('title')}")
         try:
             insert_video_db(video_data=video_data, cur=cur, conn=conn)
             added_ids += 1

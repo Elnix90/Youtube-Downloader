@@ -98,7 +98,6 @@ youtube_required_info: set[str] = {
     "video_id",
     "title",
     "thumbnail_url",
-    "description",
     "channel_id",
     "channel_url",
     "duration",
@@ -180,7 +179,7 @@ def normalize(text: str) -> str:
 
 def fprint(prefix: str,title: str, overwrite: bool = True, end: Literal["", "\n"] = "",flush: bool = True) -> None:
     term_width = shutil.get_terminal_size((80, 20)).columns
-    max_len = term_width - len(prefix) - 3
+    max_len = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
     if len(title) > max_len:
