@@ -39,7 +39,8 @@ if not (db_file.exists() and db_file.is_file()):
 
 
 LOGS_CONSOLE_GLOBALLY: bool = True
-LOGGING_LEVEL: int = logging.DEBUG
+LOGGING_LEVEL_CONSOLE: int = logging.WARNING
+LOGGING_LEVEL_LOGFILES: int = logging.DEBUG
 NOT_OVERLAP_FPRINT: bool = False
 
 
