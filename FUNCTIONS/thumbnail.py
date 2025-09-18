@@ -161,7 +161,7 @@ def has_embedded_cover(mp3_path: Path) -> bytes | None:
 
         for tag in audio.tags.values():  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             if isinstance(tag, APIC) and tag.type == 3:  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-                if tag.data and len(tag.data) > 0:# type: ignore  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+                if tag.data and len(tag.data) > 0:  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
                     logger.debug(f"[Cover Check] Embedded cover image found in '{mp3_path.name}'")
                     return tag.data  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
                 else:

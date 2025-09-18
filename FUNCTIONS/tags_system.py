@@ -4,7 +4,7 @@ import re
 
 from CONSTANTS import TAGS_DIR
 from FUNCTIONS.metadata import read_id3_tag, write_id3_tag
-from FUNCTIONS.helpers import normalize, contains_whole_word
+from FUNCTIONS.helpers import sanitize_text, contains_whole_word
 from FUNCTIONS.fileops import load_patterns
 
 from logger import setup_logger
@@ -108,8 +108,8 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
 
 
     # Normalize inputs
-    title_norm = normalize(title)
-    uploader_norm = normalize(uploader)
+    title_norm = sanitize_text(title)
+    uploader_norm = sanitize_text(uploader)
 
 
 
@@ -132,7 +132,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
                         break
                 else:
                     # word/phrase rule
-                    word = normalize(line.strip())
+                    word = sanitize_text(line.strip())
                     if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                         tags.add(tag_name)
                         logger.debug(f"[Compute Tags] Added '{tag_name}' (keyword '{word}')")
@@ -152,7 +152,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
                         logger.debug(f"[Compute Tags] Prevented '{tag_name}' (regex '{pattern}')")
                         break
                 else:
-                    word = normalize(line.strip())
+                    word = sanitize_text(line.strip())
                     if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                         present = True
                         logger.debug(f"[Compute Tags] Prevented '{tag_name}' (keyword '{word}')")

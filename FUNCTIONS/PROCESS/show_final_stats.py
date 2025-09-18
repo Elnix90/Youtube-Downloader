@@ -3,7 +3,7 @@ from typing import Any
 
 from pathlib import Path
 from sqlite3 import Cursor
-from FUNCTIONS.extract_and_clean import clean_and_extract_video_ids
+from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.helpers import VideoInfoMap
 
 from logger import setup_logger
@@ -31,8 +31,8 @@ def show_final_stats(
     """
     Show infos from the process, how much videos are correctly formatted and downloaded, and how much aren't
     """
-    ids_present_in_down_dir: VideoInfoMap = clean_and_extract_video_ids(download_path,info=False, test_run=test_run, remove=remove_malformatted)
 
+    ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(download_path,info=False, test_run=test_run, remove=remove_malformatted)
 
     list_without_unavailable: VideoInfoMap = {}
 

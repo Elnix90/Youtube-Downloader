@@ -8,4 +8,5 @@ TESTS
 .env
 LOGS
 music.db
+music.db-journal
 typings

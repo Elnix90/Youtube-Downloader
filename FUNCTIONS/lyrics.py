@@ -3,17 +3,12 @@ import re
 import json
 import os
 
+from FUNCTIONS.helpers import lyrics_lrc_path_for_mp3
+
 
 from logger import setup_logger
 logger = setup_logger(__name__)
 
-
-
-
-
-def _lyrics_lrc_path_for_mp3(mp3_path: Path) -> Path:
-    """Return the corresponding .lrc path for an mp3 Path"""
-    return mp3_path.with_suffix(".lrc")
 
 
 
@@ -51,7 +46,7 @@ def embed_lyrics_into_mp3(
             # fallback to raw lyrics
             lrc_text = lyrics
 
-        lrc_path = _lyrics_lrc_path_for_mp3(filepath)
+        lrc_path = lyrics_lrc_path_for_mp3(mp3_path=filepath)
         logger.debug(f"[Embed lyrics] Writing LRC to '{lrc_path}'")
         if not test_run:
             # Ensure parent exists
@@ -75,7 +70,7 @@ def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
     Remove the corresponding .lrc file (if present). Keep the same signature for compatibility.
     """
     try:
-        lrc_path = _lyrics_lrc_path_for_mp3(filepath)
+        lrc_path = lyrics_lrc_path_for_mp3(filepath)
         if not lrc_path.exists():
             logger.debug(f"[Remove lyrics] No .lrc file to remove at '{lrc_path}'")
             return True
@@ -100,7 +95,7 @@ def has_embedded_lyrics(mp3_path: Path) -> str | None:
     Kept name to remain compatible with existing callers.
     """
     try:
-        lrc_path = _lyrics_lrc_path_for_mp3(mp3_path)
+        lrc_path = lyrics_lrc_path_for_mp3(mp3_path)
         if not lrc_path.exists():
             logger.debug(f"[Lyrics Check] No .lrc file for '{mp3_path.name}'")
             return None

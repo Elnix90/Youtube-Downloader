@@ -1,4 +1,3 @@
-import os
 from google.oauth2.credentials import Credentials
 from google.auth.exceptions import RefreshError
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -22,7 +21,7 @@ def get_authenticated_service(info: bool = True) -> Resource:
     """
     creds: Credentials | None = None
 
-    if os.path.exists(path=TOKEN_FILE):
+    if TOKEN_FILE.exists():
         creds = Credentials.from_authorized_user_file(filename=TOKEN_FILE, scopes=SCOPES)  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -31,10 +30,9 @@ def get_authenticated_service(info: bool = True) -> Resource:
             try:
                 creds.refresh(Request())  # pyright: ignore[reportUnknownMemberType]
             except RefreshError:
-                if info:
-                    print("[Get Credentials] Token expired, please reconnect")
+                if info: print("[Get Credentials] Token expired, please reconnect")
                 logger.warning("[Get Credentials] Token expired, please reconnect")
-                os.remove(TOKEN_FILE)
+                TOKEN_FILE.unlink(missing_ok=True)
                 flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     CLIENT_SECRETS_FILE, SCOPES
                 )

@@ -10,7 +10,7 @@ import yt_dlp
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 from yt_dlp.networking.exceptions import HTTPError 
 
-from FUNCTIONS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, fprint, VideoInfo, youtube_required_info
+from FUNCTIONS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, fprint, VideoInfo, youtube_required_info, sanitize_text
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
 from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
 from logger import setup_logger
@@ -21,15 +21,7 @@ logger = setup_logger(__name__)
 
 
 
-def _sanitize_filename(filename: str) -> str:
-    old_filename = filename
-    filename = filename or ""
-    filename = filename.strip()
-    filename = re.sub(r'[\\/:*?"<>|~.\x00-\x1F]', "", filename)
-    filename = filename.rstrip(". ").strip()
-    filename = re.sub(r"\s+", " ", filename)
-    logger.debug(f"[Sanitize Filename] Sanitized '{old_filename}' to '{filename}'")
-    return filename
+
 
 
 
@@ -119,12 +111,6 @@ def safe_float(value: object, default: float = 0.0) -> float:
 
 def safe_bool(value: object, default: bool = False) -> bool:
     return bool(value) if value is not None else default
-
-
-
-
-
-
 
 
 
@@ -372,7 +358,7 @@ def download_yt_dlp(
     url: str = f"https://youtube.com/watch?v={video_id}"
     loc.mkdir(parents=True, exist_ok=True)
 
-    base = _sanitize_filename(title)
+    base = sanitize_text(title)
     final_filename = _get_unique_filename(loc, base, ".mp3", video_id)
     final_filename_with_ext = final_filename + ".mp3"
     ydl_opts = _build_ydl_opts(loc, final_filename, format_str="bestaudio/best")
@@ -381,7 +367,7 @@ def download_yt_dlp(
         try:
             logger.debug(f"[Download] Attempt {attempt} for video {video_id}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
-                ydl.download([url]) # type:ignore
+                ydl.download([url])
             # Check file after download - optional: add call to your repair_mp3_file here
             final_path = loc / final_filename_with_ext
             if not final_path.exists():

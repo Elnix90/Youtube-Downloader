@@ -4,6 +4,7 @@ from sqlite3 import Cursor
 
 from FUNCTIONS.fileops import load
 from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db
+from FUNCTIONS.helpers import fprint
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -54,9 +55,9 @@ def remove_ids_not_in_list(
 
         if not test_run: _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
         removed_ids += 1
-        if info: print(f"\r[Removing Ids] Removed {removed_ids} from list", end="", flush=True)
+        if info: fprint(prefix="",title=f"[Removing Ids] Removed {removed_ids} from list")
 
-    
+
     if info: print()
     if removed_ids == 0:
         logger.info("[Removing Ids] No video to remove from the database")

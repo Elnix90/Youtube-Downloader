@@ -12,17 +12,20 @@ LOGS_DIR: Path = Path("LOGS")
 CONFIG_DIR: Path = Path("CONFIG")
 PATTERN_DIR: Path = CONFIG_DIR / "PATTERNS"
 TAGS_DIR: Path = CONFIG_DIR / "TAGS"
-ALBUM_DIR: Path = Path("ALBUMS")
 
 
 CLIENT_SECRETS_FILE: Path = CRED_DIR / "client_secret_cm.json"
 TOKEN_FILE: Path = CRED_DIR / "token.json"
 
+
 PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / "playlist_videos.json"
 UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / "unwanted_patterns.txt"
 REMIX_PATTERNS_FILE: Path = PATTERN_DIR / "remix_patterns.txt"
-PUBLIC_PATTERNS_FILE: Path = ALBUM_DIR / "public_patterns.txt"
-PRIVATE_PATTERNS_FILE: Path = ALBUM_DIR / "private_patterns.txt"
+PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / "private_patterns.txt"
+TRUSTED_ARTISTS: Path = PATTERN_DIR / "trusted_artists.txt"
+
+MAX_LYRICS_RETRIES: int = 1
+
 
 
 _ = load_dotenv()

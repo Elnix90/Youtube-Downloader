@@ -53,8 +53,8 @@ def fetch_playlist_videos(
     errors: bool = True
 ) -> None:
 
-    if info: fprint(prefix="", title=f"[Fetching videos] Fetching videos from playlist {playlist_id}")
-    logger.info(f"[Fetching videos] Fetching videos from playlist {playlist_id}")
+    if info: fprint(prefix="", title=f"[Fetching videos] Fetching videos from playlist '{playlist_id}'")
+    logger.info(f"[Fetching videos] Fetching videos from playlist '{playlist_id}'")
 
     file_path = Path(file)
     if clean or (not file_path.exists()):
@@ -66,11 +66,10 @@ def fetch_playlist_videos(
             if status == 0 and ids:
                 all_videos = ids
                 dump(data=all_videos, file=file_path)
-                if info: print(f"\r[Fetching videos] {len(all_videos)} videos found in playlist : {playlist_id}")
-                logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist : {playlist_id}")
+                if info: print(f"\r[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
+                logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist :' {playlist_id}'")
                 return
-            elif info:
-                print(f"\r[Fetching videos] yt_dlp failed (status {status}), falling back to OAuth client")
+            elif info: print(f"\r[Fetching videos] yt_dlp failed (status {status}), falling back to OAuth client")
 
         # OAuth fallback (or special playlists)
         youtube = get_authenticated_service(info=info)
@@ -90,14 +89,12 @@ def fetch_playlist_videos(
                     vid_id: str = content_details.get('videoId', "")  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     if vid_id:
                         all_videos.append(vid_id)  # pyright: ignore[reportUnknownArgumentType]
-                        if info:
-                            fprint(prefix="", title=f"\r[Fetching videos] {len(all_videos)} videos found in playlist : {playlist_id}")
+                        if info: fprint(prefix="", title=f"\r[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
                 next_page_token = response.get('nextPageToken')  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 if not next_page_token:
                     break
             except HttpError as e:
-                if errors:
-                    print(f"\n[Fetching videos] Error while fetching playlist videos: {e}")
+                if errors: print(f"\n[Fetching videos] Error while fetching playlist videos: {e}")
                 logger.error(f"[Fetching videos] Error while fetching playlist videos: {e}")
                 if "quotaExceeded" in str(e):
                     raise Exception("[Fetching videos] Quota exceeded, please change your token or retry in 24h")
@@ -106,9 +103,8 @@ def fetch_playlist_videos(
 
         dump(data=all_videos, file=file_path)
         print()
-        logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist : {playlist_id}")
+        logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
     else:
         videos: list[str] = load(file_path)
-        logger.info(f"[Fetching videos] {len(videos)} videos found in file {file_path}")
-        if info:
-            print(f"\r\033[K[Fetching videos] {len(videos)} videos found in file {file_path}")
+        logger.info(f"[Fetching videos] {len(videos)} videos found in file '{file_path}'")
+        if info: print(f"\r\033[K[Fetching videos] {len(videos)} videos found in file '{file_path}'")
