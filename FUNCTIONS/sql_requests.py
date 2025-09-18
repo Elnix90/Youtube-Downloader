@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from typing import Literal
 import json
 
@@ -67,39 +68,29 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         subtitles TEXT,
         syncedlyrics TEXT,
         auto_subs TEXT,
-        try_lyrics_if_not BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)),
+        try_lyrics_if_not BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)) DEFAULT (1),
+        lyrics_retries INTEGER CHECK (lyrics_retries >= 0) DEFAULT (0),
 
-        update_thumbnail BOOLEAN NOT NULL CHECK (update_thumbnail IN (0,1)),
-        remove_thumbnail BOOLEAN NOT NULL CHECK (remove_thumbnail IN (0,1)),
-        remove_lyrics BOOLEAN NOT NULL CHECK (remove_lyrics IN (0,1)),
+        update_thumbnail BOOLEAN NOT NULL CHECK (update_thumbnail IN (0,1)) DEFAULT (0),
+        remove_thumbnail BOOLEAN NOT NULL CHECK (remove_thumbnail IN (0,1)) DEFAULT (0),
+        remove_lyrics BOOLEAN NOT NULL CHECK (remove_lyrics IN (0,1)) DEFAULT (0),
 
-        recompute_tags BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)),
-        recompute_album BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)),
+        recompute_tags BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)) DEFAULT (1),
+        recompute_album BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)) DEFAULT (1),
 
         remix_of TEXT,
         filename TEXT,
-        status INTEGER NOT NULL CHECK (status in (0,1,2,3)),
+        status INTEGER NOT NULL CHECK (status in (0,1,2,3)) DEFAULT (3),
         reason TEXT,
 
-        date_added REAL DEFAULT (strftime('%s','now') + (strftime('%f','now') - strftime('%S','now'))),
-        date_modified REAL DEFAULT (strftime('%s','now') + (strftime('%f','now') - strftime('%S','now')))
+        date_added REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0),
+        date_modified REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
     )
     """)
     logger.debug("[Init DB] Initialized videos")
 
 
-    _ = cur.execute("""
-        CREATE TRIGGER IF NOT EXISTS videos_update_modified
-        BEFORE UPDATE ON videos
-        FOR EACH ROW
-        BEGIN
-            UPDATE videos
-            SET 
-                date_modified = (strftime('%s','now') + (strftime('%f','now') - strftime('%S','now')))
-            WHERE video_id = OLD.video_id;
-        END;
-    """)
-    logger.debug("[Init DB] Initialized auto update trigger")
+
 
 
     _ = cur.execute("""
@@ -113,6 +104,9 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
     """)
     logger.debug("[Init DB] Initialized removed_segments")
 
+
+
+
     _ = cur.execute("""
     CREATE TABLE IF NOT EXISTS tags (
         tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,6 +114,9 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
     )
     """)
     logger.debug("[Init DB] Initialized tags")
+
+
+
 
     _ = cur.execute("""
     CREATE TABLE IF NOT EXISTS video_tags (
@@ -180,12 +177,12 @@ def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Co
 
     placeholders = ", ".join("?" for _ in video_row)
     columns = ", ".join(video_row.keys())
-    sql = f"INSERT INTO videos ({columns}) VALUES ({placeholders})"
+    sql = f"INSERT OR IGNORE INTO videos ({columns}) VALUES ({placeholders})"
     _ = cur.execute(sql, tuple(video_row.values()))
 
     _apply_skips_and_tags(video_id=video_row["video_id"], data=video_data, cur=cur)  # pyright: ignore[reportArgumentType]
     conn.commit()
-    logger.info(f"[Insert Video] Inserted {video_row['video_id']} with {len(video_row)} fields")
+    logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
 
 
 
@@ -197,9 +194,19 @@ def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
+    # Secutity to avoid rewriting date added
+    if "date_added" in update_fields:
+        del update_fields["date_added"]
+
+    # Secutity to avoid rewriting date added
+    if "date_modified" in update_fields:
+        del update_fields["date_modified"]
+
     # Update only valid DB fields
     EXCLUDE_FOR_MAIN = {"skips", "tags"}
     video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
+    
+    video_update_data["date_modified"] = time.time()
 
     if video_update_data:
         set_clause = ", ".join(f"{k} = ?" for k in video_update_data.keys())
@@ -209,7 +216,7 @@ def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor
 
     _apply_skips_and_tags(video_id=video_id, data=update_fields, cur=cur)
     conn.commit()
-    logger.debug(f"[Update Video] Updated {video_id} with {len(video_update_data)} fields")
+    logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
 
 
 
@@ -237,10 +244,9 @@ def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection) -
 
 
 def get_videos_in_list(cur: sqlite3.Cursor) -> list[str]:
-    _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added")
+    _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
     rows = cur.fetchall()
-    return list[str]([row["video_id"] for row in rows])  # pyright: ignore[reportAny]
-
+    return [row["video_id"] for row in rows]  # pyright: ignore[reportAny]
 
 
 
@@ -277,10 +283,7 @@ def safe_float(row: sqlite3.Row, key: str) -> float:
 
 
 def safe_bool(row: sqlite3.Row, key: str) -> bool:
-    # print(f"Safebool: (key: {key})", end="")
     value = row[key] if key in row.keys() else None
-    # print(" value:", value, end="  -> ")
-    # print("isinstance bool: ",isinstance(value, int))
     return bool(value) if isinstance(value, int) else False
 
 
@@ -307,7 +310,6 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
 
     return {
         "video_id": safe_str(row, "video_id"),
-        # "id": safe_int(row,"id"),
         "title": safe_str(row, "title"),
         "thumbnail_url": safe_str(row, "thumbnail_url"),
         "description": safe_str(row, "description"),
@@ -337,6 +339,7 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
         "remove_thumbnail": safe_bool(row, "remove_thumbnail"),
 
         "remove_lyrics": safe_bool(row, "remove_lyrics"),
+        "lyrics_retries": safe_int(row,"lyrics_retries"),
 
         "tags": safe_str_list(row, "tags"),
 

@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import Literal
 
 from FUNCTIONS.fileops import load_patterns
-from FUNCTIONS.helpers import normalize, contains_whole_word
+from FUNCTIONS.helpers import sanitize_text, contains_whole_word
 from FUNCTIONS.metadata import write_id3_tag
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-from CONSTANTS import PUBLIC_PATTERNS_FILE, PRIVATE_PATTERNS_FILE
+from CONSTANTS import TRUSTED_ARTISTS, PRIVATE_PATTERNS_FILE
 
 
 
@@ -21,11 +21,11 @@ def compute_album(title: str, uploader: str) -> str:
     Uses normalized text and regex/keyword patterns from files.
     """
 
-    title_norm = normalize(text=title)
-    uploader_norm = normalize(text=uploader)
+    title_norm = sanitize_text(text=title)
+    uploader_norm = sanitize_text(text=uploader)
 
     # Load patterns
-    public_patterns: set[str] = load_patterns(file=PUBLIC_PATTERNS_FILE)
+    public_patterns: set[str] = load_patterns(file=TRUSTED_ARTISTS)
     private_patterns: set[str] = load_patterns(file=PRIVATE_PATTERNS_FILE)
 
     album: Literal["Private","Public"] = "Private"
@@ -38,7 +38,7 @@ def compute_album(title: str, uploader: str) -> str:
                 album = "Public"
                 break
         else:
-            word = normalize(pat)
+            word = sanitize_text(pat)
             if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                 logger.debug(f"[Compute Album] Matched public keyword '{word}' for '{title} {uploader}'")
                 album = "Public"
@@ -52,7 +52,7 @@ def compute_album(title: str, uploader: str) -> str:
                 logger.debug(f"[Compute Album] Matched private pattern '{pat}' for '{title} {uploader}'")
                 return "Private"
         else:
-            word = normalize(pat)
+            word = sanitize_text(pat)
             if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                 logger.debug(f"[Compute Album] Matched private keyword '{word}' for '{title} {uploader}'")
                 return "Private"

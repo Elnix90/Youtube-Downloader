@@ -26,9 +26,11 @@ def process_album_for_video(
 
     start_processing: float = time.time()
 
-    title: str = video_info.get("title", "")
     uploader: str = video_info.get("uploader", "")
     file_order_to_recompute: bool = video_info.get("recompute_album", True)
+
+    title: str = filepath.name
+
 
     if info:
         fprint(prefix=progress_prefix, title=f"Getting album for '{title}'")
@@ -49,11 +51,11 @@ def process_album_for_video(
 
     if success:
         if info:
-            fprint(progress_prefix, f"Embedded album '{computed_album}' into '{filepath.name}'")
-        logger.info(f"[Album] Embedded album '{computed_album}' into '{filepath.name}'")
+            fprint(progress_prefix, f"Embedded album '{computed_album}' into '{title}'")
+        logger.info(f"[Album] Embedded album '{computed_album}' into '{title}'")
     else:
         if error:
-            print(f"\n[Album] Error embedding album into {filepath.name}")
-        logger.error(f"[Album] Error embedding album into {filepath.name}")
+            print(f"\n[Album] Error embedding album into '{title}'")
+        logger.error(f"[Album] Error embedding album into '{title}'")
 
     return time.time() - start_processing

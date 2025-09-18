@@ -28,13 +28,12 @@ def embed_metadata_for_video(
     start_processing: float = time.time()
 
     video_info = get_video_info_from_db(video_id=video_id, cur=cur)
-    title = video_info.get('title', '')
     date = str(video_info.get('date_added',))
+
+    title: str = filepath.name
 
     if info: fprint(prefix=progress_prefix, title=f"Embedding metadata for '{title}'")
     logger.debug(f"[Metadata] Embedding metadata for '{title}'")
-
-
 
 
     # Embed the id in the dat field, to sort the video in the player
@@ -47,8 +46,8 @@ def embed_metadata_for_video(
             test_run=test_run
         )
         if not success_date:
-            if error: print(f"\n[Metadata] Failed to embed date for {filepath.name}")
-            logger.warning(f"[Metadata] Failed to embed date for '{filepath.name}'")
+            if error: print(f"\n[Metadata] Failed to embed date for '{title}'")
+            logger.warning(f"[Metadata] Failed to embed date for '{title}'")
         else:
             if info: fprint(prefix=progress_prefix, title=f"Embedded date for '{title}'")
             logger.debug(f"[Metadata] Embedded date for '{title}'")
@@ -63,8 +62,8 @@ def embed_metadata_for_video(
     )
 
     if not success_meta:
-        if error: print(f"\n[Metadata] Failed to embed metadata for {filepath.name}")
-        logger.warning(f"[Metadata] Failed to embed metadata for {filepath.name}")
+        if error: print(f"\n[Metadata] Failed to embed metadata for '{title}'")
+        logger.warning(f"[Metadata] Failed to embed metadata for '{title}'")
     else:
         if info: fprint(prefix=progress_prefix, title=f"Embedded metadata for '{title}'")
         logger.debug(f"[Metadata] Embedded metadata for '{title}'")

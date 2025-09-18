@@ -8,6 +8,7 @@ from FUNCTIONS.lyrics import embed_lyrics_into_mp3, remove_lyrics_from_mp3, has_
 
 from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
 from FUNCTIONS.helpers import VideoInfo, fprint
+from CONSTANTS import MAX_LYRICS_RETRIES
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -28,14 +29,16 @@ def process_lyrics_for_video(
     """
     Process lyrics for a given video: create/update/remove .lrc file (no MP3 embedding).
     Works directly with the SQLite database using VideoInfo.
-    """
+    """ 
 
-    title: str | None = video_info.get("title")
+    start_processing: float = time.time()
+
     uploader: str | None = video_info.get("uploader")
     try_lyrics_if_not: bool = video_info.get("try_lyrics_if_not", False)
     remove_lyrics: bool = video_info.get("remove_lyrics", False)
+    lyrics_retries: int = video_info.get("lyrics_retries",0)
 
-    start_processing: float = time.time()
+    title: str = filepath.name
 
     lyrics_file_path: Path = filepath.with_suffix(".lrc")
     file_lyrics: str | None = has_embedded_lyrics(mp3_path=filepath)
@@ -81,15 +84,24 @@ def process_lyrics_for_video(
     else:
         lyrics = None
 
+    update_fields: VideoInfo = {}
+
+
+    # Do not compute lyrics, only take those from lyrics music if exists
+    if lyrics_retries > MAX_LYRICS_RETRIES:
+        update_fields["try_lyrics_if_not"] = False
+        recompute_lyrics = False
+
 
     # --- CASE A: Fetch or update lyrics ---
     if not remove_lyrics:
-        if info: fprint(progress_prefix, f"Processing lyrics for '{title}'")
+        if info: fprint(prefix=progress_prefix, title=f"Processing lyrics for '{title}'")
         logger.info(f"[Lyrics] Processing lyrics for '{title}'")
 
         embed_lyrics_into_file: bool = recompute_lyrics
-        update_fields: VideoInfo = {}
 
+
+        # If the video is set as a remix
         if remix_of is not None and remix_lyrics is not None:
             embed_lyrics_into_file = False
             try:
@@ -104,11 +116,11 @@ def process_lyrics_for_video(
                 if success:
                     update_fields["lyrics"] = lrcs
                     update_video_db(video_id=video_id, update_fields=update_fields, cur=cur, conn=conn)
-                    if info: fprint(prefix=progress_prefix, title=f"Lyrics created from remix '{remix_of}' for '{filepath.name}'")
-                    logger.info(f"[Lyrics] Lyrics created from remix '{remix_of}' for '{filepath.name}'")
+                    if info: fprint(prefix=progress_prefix, title=f"Lyrics created from remix '{remix_of}' for '{title}'")
+                    logger.info(f"[Lyrics] Lyrics created from remix '{remix_of}' for '{title}'")
                 else:
-                    if error: print(f"\nFailed to write remix_lyrics .lrc for '{filepath.name}'")
-                    logger.error(f"[Lyrics] Failed to write remix_lyrics .lrc for '{filepath.name}'")
+                    if error: print(f"\nFailed to write remix_lyrics .lrc for '{title}'")
+                    logger.error(f"[Lyrics] Failed to write remix_lyrics .lrc for '{title}'")
             except Exception as e:
                 if error: print(f"\nError updating remix_lyrics for '{title}': {e}")
                 logger.error(f"[Lyrics] Error updating remix_lyrics for '{title}': {e}")
@@ -151,12 +163,14 @@ def process_lyrics_for_video(
                 if lyrics is not None:
                     embed_lyrics_into_file = True
                 else:
-                    if error: print(f"\nNo lyrics found for '{title}' by '{uploader}'")
+                    if info: fprint(prefix=progress_prefix,title=f"\nNo lyrics found for '{title}' by '{uploader}'")
                     logger.info(f"[Lyrics] No lyrics found for '{title}' by '{uploader}'")
                     embed_lyrics_into_file = False
 
+                update_fields["lyrics_retries"] = lyrics_retries + 1
+
         else:
-            logger.warning("[Lyrics] Try lyrics if not is False or not asked to recompute lyrics")
+            logger.info("[Lyrics] Try lyrics if not is False, not asked to recompute lyrics or reached max retries")
 
 
         if embed_lyrics_into_file:
@@ -173,11 +187,11 @@ def process_lyrics_for_video(
                     if success:
                         update_fields["lyrics"] = lrcs
                         update_video_db(video_id=video_id, update_fields=update_fields, cur=cur, conn=conn)
-                        if info: fprint(prefix=progress_prefix, title=f"Lyrics updated for '{filepath.name}'")
-                        logger.info(f"[Lyrics] Lyrics updated for '{filepath.name}'")
+                        if info: fprint(prefix=progress_prefix, title=f"Lyrics updated for '{title}'")
+                        logger.info(f"[Lyrics] Lyrics updated for '{title}'")
                     else:
-                        if error: print(f"\nFailed to write lyrics .lrc for '{filepath.name}'")
-                        logger.error(f"[Lyrics] Failed to write lyrics .lrc for '{filepath.name}'")
+                        if error: print(f"\nFailed to write lyrics .lrc for '{title}'")
+                        logger.error(f"[Lyrics] Failed to write lyrics .lrc for '{title}'")
                 except Exception as e:
                     if error: print(f"\nError updating lyrics for '{title}': {e}")
                     logger.error(f"[Lyrics] Error updating lyrics for '{title}': {e}")
@@ -187,19 +201,19 @@ def process_lyrics_for_video(
 
     # --- CASE B: Remove lyrics (.lrc) ---
     elif remove_lyrics and filepath.exists():
-        logger.debug(f"[Lyrics] Removing lyrics (.lrc) for '{filepath.name}'")
+        logger.debug(f"[Lyrics] Removing lyrics (.lrc) for '{title}'")
         try:
             success = remove_lyrics_from_mp3(filepath, error, test_run)
             if success:
                 update_video_db(video_id, {"remove_lyrics": False}, cur, conn)
-                if info: fprint(progress_prefix, f"Lyrics removed from {filepath.name}")
-                logger.info(f"[Lyrics] Lyrics removed from {filepath.name}")
+                if info: fprint(progress_prefix, f"Lyrics removed from {title}")
+                logger.info(f"[Lyrics] Lyrics removed from {title}")
             else:
-                if error: print(f"\nFailed to remove lyrics for {filepath.name}")
-                logger.error(f"[Lyrics] Failed to remove lyrics for {filepath.name}")
+                if error: print(f"\nFailed to remove lyrics for '{title}'")
+                logger.error(f"[Lyrics] Failed to remove lyrics for '{title}'")
         except Exception as e:
-            if error: print(f"\nError removing lyrics from {video_id}: {e}")
-            logger.error(f"[Lyrics] Error removing lyrics from {video_id}: {e}")
+            if error: print(f"\nError removing lyrics from '{video_id}': {e}")
+            logger.error(f"[Lyrics] Error removing lyrics from '{video_id}': {e}")
 
     # --- CASE C: File missing ---
     elif not filepath.exists():

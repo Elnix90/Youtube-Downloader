@@ -13,7 +13,7 @@ logger = setup_logger(__name__)
 
 
 
-def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: bool, remove: bool) -> VideoInfoMap:
+def extract_and_clean_video_ids(download_directory: Path, info: bool, test_run: bool, remove: bool) -> VideoInfoMap:
     """
     Cleans the directory by removing non-MP3 or invalid files,
     and returns a mapping of valid video IDs to metadata.
@@ -68,7 +68,7 @@ def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: 
             else:
                 removed_files[filename] = "Missing video ID in metadata"
                 if not test_run and remove: os.remove(filepath)
-                logger.warning(f"[Clean & Extract] Removed '{filename}': Missing video ID in metadata")
+                logger.info(f"[Clean & Extract] Removed '{filename}': Missing video ID in metadata")
         else:
             if state == 1:
                 reason = "Missing or malformed metadata"
@@ -80,10 +80,10 @@ def clean_and_extract_video_ids(download_directory: Path, info: bool, test_run: 
 
             removed_files[filename] = reason
             if not test_run and remove: os.remove(filepath)
-            logger.warning(f"[Clean & Extract] Removed '{filename}': {reason}")
+            logger.info(f"[Clean & Extract] Removed '{filename}': {reason}")
 
         if info:
-            fprint(prefix="[Clean & Extract] ",title=f"Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s")
+            fprint(prefix="[Clean & Extract] ",title=f"Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
 
     logger.info(f"[Clean & Extract] Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
 

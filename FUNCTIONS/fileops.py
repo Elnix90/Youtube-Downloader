@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from FUNCTIONS.helpers import normalize
+from FUNCTIONS.helpers import sanitize_text
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -26,11 +26,11 @@ def load(file: Path) -> list[str]:
         return []
 
     except FileNotFoundError:
-        raise FileNotFoundError(f"Error: {file} doesn't exist")
+        raise FileNotFoundError(f"Error: '{file}' doesn't exist")
     except json.JSONDecodeError as e:
-        raise ValueError(f"Error: {file} cannot be decoded -> {e}")
+        raise ValueError(f"Error: '{file}' cannot be decoded -> {e}")
     except Exception as e:
-        raise RuntimeError(f"Unexpected error loading {file}: {e}")
+        raise RuntimeError(f"Unexpected error loading '{file}': {e}")
 
 
 
@@ -69,7 +69,7 @@ def load_patterns(file: Path) -> set[str]:
         return set()
     try:
         lines = file.read_text(encoding="utf-8").splitlines()
-        patterns ={normalize(line.strip()) for line in lines if line.strip() and not line.startswith("#")}
+        patterns ={sanitize_text(line.strip()) for line in lines if line.strip() and not line.startswith("#")}
         logger.debug(f"[Load patterns] Sucessfully loaded {len(patterns)} patterns from '{file}'")
         return patterns
     except Exception as e:

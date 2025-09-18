@@ -3,11 +3,11 @@ import unicodedata
 import logging
 import syncedlyrics
 
-from CONSTANTS import UNWANTED_PATTERNS_FILE, REMIX_PATTERNS_FILE
+from CONSTANTS import UNWANTED_PATTERNS_FILE, REMIX_PATTERNS_FILE, TRUSTED_ARTISTS
 from FUNCTIONS.fileops import load_patterns
 
 
-
+from FUNCTIONS.helpers import contains_whole_word, sanitize_text
 from logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -26,10 +26,10 @@ def clean_song_query(query: str) -> str:
 
     # Normalize accents: à, é, ê -> a, e, e
     query = unicodedata.normalize('NFKD', query)
-    query = query.encode('ASCII', 'ignore').decode('utf-8')
+    query = query.encode(encoding='ASCII', errors='ignore').decode(encoding='utf-8')
 
     # Remove unwanted patterns first
-    patterns_to_remove: set[str] = load_patterns(UNWANTED_PATTERNS_FILE)
+    patterns_to_remove: set[str] = load_patterns(file=UNWANTED_PATTERNS_FILE)
     for pattern in patterns_to_remove:
         query = re.sub(rf"\b{pattern}\b", '', query, flags=re.IGNORECASE)
 
@@ -62,27 +62,31 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | Non
 
     song_query: str = f"{title} {artist}"
 
-
     # If a remix pattern is found, ignore the artist (to improve chances of getting correct lyrics)
     anti_lyrics: set[str] = load_patterns(REMIX_PATTERNS_FILE)
     if any(anti.lower() in song_query for anti in anti_lyrics):
         song_query = title
+        logger.debug("[Get Lyrics] Removed artist from query due to unwanted pattern found")
 
-    ##### CHECK THIS SOMETHING ISN'T WORKING
-    # logger.error("Check this, title in artist isn't working")
-    # Sometimes the artist is already in the title, so remove it to avoid duplicates
+
+    # Sometimes the artist is already in the title, so ignore it to avoid duplicates
     if artist in title:
         song_query = title
+        logger.debug("[Get Lyrics] Removed artist from query cause it is in the title (using only title)")
 
-    query: str = clean_song_query(song_query)
+
+
+    # Add the trusted artist to the query if found in the title
+    trusted_artists: set[str] = load_patterns(file=TRUSTED_ARTISTS)
+    for trusted_artist in trusted_artists:
+        if contains_whole_word(text=sanitize_text(text=title), word=trusted_artist) and not contains_whole_word(text=sanitize_text(text=title), word=artist):
+            song_query = title +trusted_artist
+            logger.debug("[Get Lyrics] Used title + trusted artist as song query")
+
+
+    query: str = clean_song_query(query=song_query)
 
     lyrics: str | None = syncedlyrics.search(query)
-
-    if lyrics is None: # Try without the artist
-        query = clean_song_query(title)
-        logger.warning("[Get Lyrics] Failed to get lyric with artist name, trying without it...")
-        lyrics = syncedlyrics.search(query)
-
 
     logger.info(f"[Get Lyrics] {'Sucessfully got' if lyrics else "Failed to get"} lyrics for '{orig_artist}' by '{orig_title}' with query '{query}'")
     return lyrics

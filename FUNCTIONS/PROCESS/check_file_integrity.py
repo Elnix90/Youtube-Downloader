@@ -7,9 +7,11 @@ from FUNCTIONS.sql_requests import update_video_db, get_video_info_from_db
 from FUNCTIONS.helpers import VideoInfo, VideoInfoMap, youtube_required_info
 
 
-
 from logger import setup_logger
 logger = setup_logger(__name__)
+
+
+
 
 
 def check_file_integrity_for_video(
@@ -31,7 +33,7 @@ def check_file_integrity_for_video(
 
     
     # --- Fetch all existing DB data ---
-    video_data = get_video_info_from_db(video_id, cur)
+    video_data = get_video_info_from_db(video_id=video_id, cur=cur)
 
     logger.info(f"Checking file integrity for {video_id}")
 
@@ -41,11 +43,13 @@ def check_file_integrity_for_video(
         metadata: VideoInfo = ids_present_in_down_dir.get(video_id, {})
         filename: str = metadata.get("filename", video_data.get("filename", ""))
         filepath = download_path / filename if filename else None
+
         if not filepath or not filepath.exists():
             logger.debug(f"[File Checking] Missing filename or file not found for '{video_id}'")
             return True ,time.time() - start_processing
 
- 
+        title: str = filepath.name
+
         # Merge DB data with extracted metadata
         fusion: VideoInfo = metadata | video_data
 
@@ -53,16 +57,16 @@ def check_file_integrity_for_video(
             if repair_mp3_file(filepath,test_run):
                 fusion["status"] = 0  # downloaded
                 update_video_db(video_id, fusion, cur, conn)
-                logger.info(f"[File Checking] File valid and repaired: '{filepath.name}'")
+                logger.info(f"[File Checking] File valid and repaired: '{title}'")
                 return False ,time.time() - start_processing
             else:
-                logger.warning(f"[File Checking] Corrupted file, re-downloading: '{filepath.name}'")
+                logger.warning(f"[File Checking] Corrupted file, re-downloading: '{title}'")
                 return True ,time.time() - start_processing
         else:
             missings: set[str] = set(youtube_required_info) - set(fusion.keys())
 
 
-            logger.warning(f"[File Checking] Metadata incomplete missing {missings} keys, re-downloading: '{filepath.name}'")
+            logger.warning(f"[File Checking] Metadata incomplete missing {missings} keys, re-downloading: '{title}'")
             return True ,time.time() - start_processing
 
 

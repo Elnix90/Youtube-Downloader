@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from FUNCTIONS.PROCESS.add_new_ids import add_new_ids_to_database
 from FUNCTIONS.PROCESS.remove_ids_not_in_list import remove_ids_not_in_list
-from FUNCTIONS.extract_and_clean import clean_and_extract_video_ids
+from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.PROCESS.add_lyrics import process_lyrics_for_video
 from FUNCTIONS.PROCESS.add_tags import process_tags_for_video
 from FUNCTIONS.PROCESS.add_thumbails import process_thumbnail_for_video
@@ -77,7 +77,7 @@ def process_all(
     # Initialise the database if not (create it)
     init_db(cur=cur, conn=conn)
 
-    ids_present_in_down_dir: VideoInfoMap = clean_and_extract_video_ids(download_path, info=info,test_run=test_run, remove=remove_malformatted)
+    ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(download_path, info=info,test_run=test_run, remove=remove_malformatted)
 
 
 
@@ -160,19 +160,17 @@ def process_all(
             )
 
         data: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)
-        # print("\n",data.get("remix_of"),"\n")
-
+        
         filename: str | None = data.get("filename")
-        title: str | None = data.get("title")
         filepath: Path | None = download_path / filename if filename else None
         removed_segments_int: int = data.get("removed_segments_int",0)
         removed_segments_duration: float = data.get("removed_segments_duration",0.0)
 
 
 
-        if filepath is None or not filepath.exists() or title is None:
-            if info: fprint(progress_prefix, f"Missing filename, title or file not found for '{title}' '{video_id}', skipping rest of processing")
-            logger.debug(f"[Sponsorblock] Missing filename, title or file not found for '{title}' '{video_id}', skipping rest of processing")
+        if filepath is None or not filepath.exists():
+            if info: fprint(progress_prefix, f"Missing filename, title or file not found for '{video_id}', skipping rest of processing")
+            logger.debug(f"[Sponsorblock] Missing filename, title or file not found for '{video_id}', skipping rest of processing")
             progress_count += 1
             continue
 
@@ -183,7 +181,6 @@ def process_all(
         if use_sponsorblock:
             cut_duration += remove_sponsorblock_segments_for_video(
                 video_id=video_id,
-                title=title,
                 filepath=filepath,
                 removed_segments_int=removed_segments_int,
                 removed_segments_duration=removed_segments_duration,

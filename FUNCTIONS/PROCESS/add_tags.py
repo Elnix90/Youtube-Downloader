@@ -35,7 +35,7 @@ def process_tags_for_video(
     start_processing: float = time.time()
 
 
-    title: str = video_info.get("title", "")
+    title: str = filepath.name
     uploader: str = video_info.get("uploader", "")
     existing_tags: set[str] = set(video_info.get("tags", []))
     file_order_to_recompute: bool = video_info.get("recompute_tags", True)

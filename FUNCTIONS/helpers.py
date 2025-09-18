@@ -3,7 +3,7 @@ import shutil
 from typing import TypedDict, Literal
 import unicodedata
 import re
-
+from pathlib import Path
 
 from CONSTANTS import NOT_OVERLAP_FPRINT
 
@@ -43,11 +43,10 @@ class VideoInfo(TypedDict, total=False):
     syncedlyrics: str
     auto_subs: str
     try_lyrics_if_not: bool
-
+    lyrics_retries: int
 
     update_thumbnail: bool
     remove_thumbnail: bool
-
 
     remove_lyrics: bool
 
@@ -160,26 +159,47 @@ class Ydl_opt(TypedDict, total=False):
 
 
 
-def normalize(text: str) -> str:
-    """
-    Lowercase, remove accents, strip punctuation.
-    Example: "Beyoncé - Official Video!" -> "beyonce official video"
-    """
-    text = text.lower()
+def sanitize_text(text: str) -> str:
+    old_filename = text
+    text = text or ""
+    text = text.strip()
+
+    # Normalize Unicode (NFKD decomposes accents/emoji)
+    text = unicodedata.normalize("NFKD", text)
+
+    # Remove accents/diacritics (keep base ASCII letters)
     text = "".join(
-        c for c in unicodedata.normalize("NFD", text)
-        if unicodedata.category(c) != "Mn"
+        c for c in text
+        if not unicodedata.combining(c)
     )
-    return re.sub(r"[^a-z0-9 ]", " ", text)
+
+    # Remove non-ASCII characters
+    text = text.encode("ascii", "ignore").decode("ascii")
+
+    # Remove filesystem-forbidden chars
+    text = re.sub(r'[\\/:*?"<>|~.\x00-\x1F]', "", text)
+
+    # Collapse spaces
+    text = re.sub(r"\s+", " ", text)
+
+    # Only allow safe characters: letters, digits, space, dash, underscore, parentheses, dot
+    text = re.sub(r"[^A-Za-z0-9 _\-\(\).]", "", text)
+
+    # Trim trailing dots/spaces again
+    text = text.rstrip(". ").strip()
+
+    logger.debug(f"[Sanitize Filename] Sanitized '{old_filename}' to '{text}'")
+    return text.title()
 
 
 
 
 
 
-def fprint(prefix: str,title: str, overwrite: bool = True, end: Literal["", "\n"] = "",flush: bool = True) -> None:
-    term_width = shutil.get_terminal_size((80, 20)).columns
-    max_len = term_width - len(prefix)
+
+def fprint(prefix: str, title: str, overwrite: bool = True,flush: bool = True) -> None:
+    term_width: int = shutil.get_terminal_size(fallback=(80, 20)).columns
+    max_len: int = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
     if len(title) > max_len:
@@ -188,7 +208,7 @@ def fprint(prefix: str,title: str, overwrite: bool = True, end: Literal["", "\n"
     else:
         space_nb = max_len - len(title)
 
-    print(f"{'\r\033[K' if overwrite else ''}{prefix}{title}{' ' * space_nb}",end=end if not NOT_OVERLAP_FPRINT else "\n",flush=flush)
+    print(f"{'\r\033[K' if overwrite else ''}{prefix}{title}{' ' * space_nb}",end="" if not NOT_OVERLAP_FPRINT else "\n",flush=flush)
 
 
 
@@ -207,6 +227,7 @@ def wait(progress_prefix: str, eta_str: str, d: int = 0):
 
 
 
+
 def contains_whole_word(text: str, word: str) -> bool:
     """
     Return True if `word` exists as a whole word inside `text`.
@@ -216,3 +237,19 @@ def contains_whole_word(text: str, word: str) -> bool:
         return False
     pattern = r"\b" + re.escape(word) + r"\b"
     return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+
+
+def lyrics_lrc_path_for_mp3(mp3_path: Path) -> Path:
+    """Return the corresponding .lrc path for an mp3 Path"""
+    return mp3_path.with_suffix(".lrc")
+
+
+def thumbnail_png_path_for_mp3(mp3_path: Path) -> Path:
+    """Return the corresponding .png path for an mp3 Path"""
+    return mp3_path.with_suffix(".png")
+
+
+
+
