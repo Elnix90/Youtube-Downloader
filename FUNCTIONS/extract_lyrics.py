@@ -19,7 +19,7 @@ for noisy in ["syncedlyrics", "Musixmatch", "Lrclib", "NetEase", "Megalobiz", "G
 
 
 
-def clean_song_query(query: str) -> str:
+def _clean_song_query(query: str) -> str:
     old_query = query
     """Normalize and clean a song query string"""
     query = query.lower()
@@ -52,7 +52,7 @@ def clean_song_query(query: str) -> str:
 
 
 
-def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | None:
+def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> tuple[str | None, str]:
     """
     Try to fetch lyrics from syncedlyrics for the given song.
     Returns (lyrics or None, query used).
@@ -75,7 +75,6 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | Non
         logger.debug("[Get Lyrics] Removed artist from query cause it is in the title (using only title)")
 
 
-
     # Add the trusted artist to the query if found in the title
     trusted_artists: set[str] = load_patterns(file=TRUSTED_ARTISTS)
     for trusted_artist in trusted_artists:
@@ -84,9 +83,8 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> str | Non
             logger.debug("[Get Lyrics] Used title + trusted artist as song query")
 
 
-    query: str = clean_song_query(query=song_query)
-
+    query: str = _clean_song_query(query=song_query)
     lyrics: str | None = syncedlyrics.search(query)
 
     logger.info(f"[Get Lyrics] {'Sucessfully got' if lyrics else "Failed to get"} lyrics for '{orig_artist}' by '{orig_title}' with query '{query}'")
-    return lyrics
+    return lyrics, query

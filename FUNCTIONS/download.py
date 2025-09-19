@@ -1,4 +1,5 @@
 from pathlib import Path
+from re import Match
 import time
 import re
 from sqlite3 import Connection, Cursor
@@ -16,8 +17,6 @@ from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
 from logger import setup_logger
 
 logger = setup_logger(__name__)
-
-
 
 
 
@@ -182,7 +181,7 @@ def _srt_to_synced(srt: str) -> list[SubtitleLine]:
         if not parts:
             continue
 
-        match = pattern.match(parts[0])
+        match: Match[str] | None = pattern.match(parts[0])
         if not match:
             continue
 
@@ -205,8 +204,8 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
       - list of (start, end, text) for synced lyrics
       - raw subtitle text (if available, e.g. SRT or VTT)
     """
-    subtitles = info.get("subtitles", {}) or {}
-    automatic_subtitles = info.get("automatic_captions", {}) or {}
+    subtitles: dict[str, list[dict[str, str]]] = info.get("subtitles", {}) or {}
+    automatic_subtitles: dict[str, list[dict[str, str]]] = info.get("automatic_captions", {}) or {}
 
     original_lang: str | None = None
     if isinstance(info.get("language_code"), str):
@@ -282,18 +281,16 @@ def _safe_extract_info(id_or_url: str) -> tuple[Literal[0,1,2,3], VideoInfo]:
             "subtitleslangs": ["all"],  # request all available languages
         }
 
-        with yt_dlp.YoutubeDL(ydl_fetch_opt) as ydl:  # pyright: ignore[reportArgumentType]
-            info = cast(ExtractedInfo, cast(object, ydl.extract_info(url, download=False)))
+        with yt_dlp.YoutubeDL(params=ydl_fetch_opt) as ydl:  # pyright: ignore[reportArgumentType]
+            info: ExtractedInfo = cast(ExtractedInfo, cast(object, ydl.extract_info(url=url, download=False)))
 
             if not info:
                 logger.warning(f"[Safe Extract] Data is null for {video_id}")
                 return 1, {}
 
 
-
-
-            manual_subs = _pick_subtitles(info, auto=False)
-            auto_subs = _pick_subtitles(info, auto=True)
+            manual_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=False)
+            auto_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=True)
 
             data: VideoInfo = {
                 "video_id": safe_str(info.get("id")),
@@ -358,10 +355,10 @@ def download_yt_dlp(
     url: str = f"https://youtube.com/watch?v={video_id}"
     loc.mkdir(parents=True, exist_ok=True)
 
-    base = sanitize_text(title)
-    final_filename = _get_unique_filename(loc, base, ".mp3", video_id)
-    final_filename_with_ext = final_filename + ".mp3"
-    ydl_opts = _build_ydl_opts(loc, final_filename, format_str="bestaudio/best")
+    base: str = sanitize_text(text=title)
+    final_filename: str = _get_unique_filename(loc=loc, base=base, ext=".mp3", video_id=video_id)
+    final_filename_with_ext: str = final_filename + ".mp3"
+    ydl_opts: Ydl_opt = _build_ydl_opts(loc=loc, filename=final_filename, format_str="bestaudio/best")
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -405,8 +402,6 @@ def download_yt_dlp(
 
 
 
-
-
 def download_video(
     download_path: Path,
     video_id: str,
@@ -422,16 +417,16 @@ def download_video(
     download_path.mkdir(parents=True, exist_ok=True)
 
 
-    if info: fprint(progress_prefix, f"Fetching infos for '{video_id}'")
+    if info: fprint(prefix=progress_prefix, title=f"Fetching infos for '{video_id}'")
     logger.info(f"[Download] Fetching infos for '{video_id}'")
 
     # Extracts youtube video's infos if the already present isn't enough
     state: Literal[0,1,2,3] = 0
     data = get_video_info_from_db(video_id=video_id,cur=cur)
-    if not all(key in youtube_required_info for key in data.keys()):
+    if not all(key in youtube_required_info and value for key, value in data.items()):
         state, data = _safe_extract_info(id_or_url=video_id)
     else:
-        logger.debug("[Download] Enough data in db, no need to fetch yt_dlp")
+        logger.debug("[Extract] Enough data in db, no need to fetch yt_dlp")
 
     if state == 0: # Data ok, can proceed to download
 
@@ -442,7 +437,7 @@ def download_video(
         if not isinstance(title, str) or not isinstance(uploader, str):
 
             update_video_db(video_id,{"status": 3}, cur, conn)
-            if info: fprint(progress_prefix, f"title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
+            if info: fprint(progress_prefix, f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             logger.error(f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             return time.time() - Download_start_time
 

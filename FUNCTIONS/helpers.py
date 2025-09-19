@@ -1,6 +1,6 @@
 import time
 import shutil
-from typing import TypedDict, Literal
+from typing import TypeAlias, TypedDict, Literal
 import unicodedata
 import re
 from pathlib import Path
@@ -17,7 +17,6 @@ logger = setup_logger(__name__)
 
 class VideoInfo(TypedDict, total=False):
     video_id: str
-    # id: int
     title: str
     thumbnail_url: str
     description: str
@@ -41,6 +40,7 @@ class VideoInfo(TypedDict, total=False):
     lyrics: str
     subtitles: str
     syncedlyrics: str
+    syncedlyrics_query: str
     auto_subs: str
     try_lyrics_if_not: bool
     lyrics_retries: int
@@ -64,8 +64,7 @@ class VideoInfo(TypedDict, total=False):
     date_modified: int
 
 
-VideoInfoMap = dict[str, VideoInfo]
-
+VideoInfoMap: TypeAlias = dict[str, VideoInfo]
 
 
 class ExtractedInfo(TypedDict, total=False):
@@ -202,13 +201,14 @@ def fprint(prefix: str, title: str, overwrite: bool = True,flush: bool = True) -
     max_len: int = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
-    if len(title) > max_len:
-        title = title[:max_len-1] + "…"
+    sanitized_title: str = sanitize_text(text=title)
+    if len(sanitized_title) > max_len:
+        sanitized_title = sanitized_title[:max_len-1] + "…"
         space_nb = 0
     else:
-        space_nb = max_len - len(title)
+        space_nb = max_len - len(sanitized_title)
 
-    print(f"{'\r\033[K' if overwrite else ''}{prefix}{title}{' ' * space_nb}",end="" if not NOT_OVERLAP_FPRINT else "\n",flush=flush)
+    print(f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",end="" if not NOT_OVERLAP_FPRINT else "\n",flush=flush)
 
 
 
@@ -253,3 +253,8 @@ def thumbnail_png_path_for_mp3(mp3_path: Path) -> Path:
 
 
 
+def remove_data_from_video_info(data: VideoInfo, to_remove: list[str]) -> VideoInfo:
+    for r in to_remove:
+        if r in data:
+            del data[r]
+    return data

@@ -32,9 +32,7 @@ def check_file_integrity_for_video(
 
 
     
-    # --- Fetch all existing DB data ---
     video_data = get_video_info_from_db(video_id=video_id, cur=cur)
-
     logger.info(f"Checking file integrity for {video_id}")
 
 
@@ -48,7 +46,7 @@ def check_file_integrity_for_video(
             logger.debug(f"[File Checking] Missing filename or file not found for '{video_id}'")
             return True ,time.time() - start_processing
 
-        title: str = filepath.name
+        title: str = metadata.get("title", "")
 
         # Merge DB data with extracted metadata
         fusion: VideoInfo = metadata | video_data

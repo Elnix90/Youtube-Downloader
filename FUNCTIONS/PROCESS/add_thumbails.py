@@ -7,7 +7,7 @@ import time
 
 from FUNCTIONS.thumbnail import has_embedded_cover, embed_image_in_mp3, download_and_pad_image, remove_image_from_mp3
 from FUNCTIONS.sql_requests import update_video_db
-from FUNCTIONS.helpers import VideoInfo, fprint, thumbnail_png_path_for_mp3
+from FUNCTIONS.helpers import fprint, thumbnail_png_path_for_mp3
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -15,7 +15,12 @@ logger = setup_logger(__name__)
 
 def process_thumbnail_for_video(
     video_id: str,
-    video_info: VideoInfo,
+
+    title: str,
+    update_thumbnail: bool,
+    remove_thumbnail: bool,
+    thumbnail_url: str,
+
     filepath: Path,
     thumbnail_format: Literal["pad", "crop"],
     progress_prefix: str,
@@ -32,18 +37,9 @@ def process_thumbnail_for_video(
     """
     start_processing: float = time.time()
 
-
-
-    title: str = filepath.name
-    update_thumbnail: bool = bool(video_info.get("update_thumbnail", False))
-    remove_thumbnail: bool = bool(video_info.get("remove_thumbnail", False))
-    thumbnail_url: str = video_info.get("thumbnail_url", "")
     this_thumbnail_path: Path = thumbnail_png_path_for_mp3(mp3_path=filepath)
-
-
     embed_from_local_file: bool = False
     download_thumbnail: bool = recompute_thumbnails
-
 
     # Special calse: asked to emove thumbnail
     if remove_thumbnail:

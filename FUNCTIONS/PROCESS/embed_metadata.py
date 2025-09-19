@@ -1,21 +1,22 @@
 from pathlib import Path
 import json
-from sqlite3 import Cursor
 import time
 
-from FUNCTIONS.helpers import fprint
-from FUNCTIONS.metadata import write_id3_tag
-from FUNCTIONS.sql_requests import get_video_info_from_db
-from logger import setup_logger
 
+from FUNCTIONS.helpers import VideoInfo, fprint, remove_data_from_video_info
+from FUNCTIONS.metadata import write_id3_tag
+
+
+from logger import setup_logger
 logger = setup_logger(__name__)
 
 
+
+
 def embed_metadata_for_video(
-    video_id: str,
+    video_info: VideoInfo,
     filepath: Path,
     progress_prefix: str,
-    cur: Cursor,
     test_run: bool,
     info: bool,
     error: bool,
@@ -27,10 +28,11 @@ def embed_metadata_for_video(
 
     start_processing: float = time.time()
 
-    video_info = get_video_info_from_db(video_id=video_id, cur=cur)
+
+    video_info = remove_data_from_video_info(video_info,["date_modified"])
     date = str(video_info.get('date_added',))
 
-    title: str = filepath.name
+    title: str = video_info.get("title", "")
 
     if info: fprint(prefix=progress_prefix, title=f"Embedding metadata for '{title}'")
     logger.debug(f"[Metadata] Embedding metadata for '{title}'")

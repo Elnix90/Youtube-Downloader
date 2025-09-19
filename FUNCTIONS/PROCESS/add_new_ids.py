@@ -3,7 +3,7 @@ from sqlite3 import Connection, Cursor
 
 
 from FUNCTIONS.fileops import load
-from FUNCTIONS.sql_requests import get_videos_in_list, insert_video_db, update_video_db
+from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_list, insert_video_db, update_video_db
 from FUNCTIONS.helpers import VideoInfoMap, VideoInfo, fprint, youtube_required_info
 
 from logger import setup_logger
@@ -46,29 +46,30 @@ def add_new_ids_to_database(
     else:
         to_add: list[str] = [video_id for video_id in video_ids if video_id not in existing_video_ids]
 
-
-
-
-
+    correct_ids: int = 0
     added_ids: int = 0
     updated_ids: int = 0
 
     for video_id in to_add:
         # If the video is in the download dir, and coreectly formatted it will get some data, that i'll use later if the list entry is empty or corrupted
-        vi: VideoInfo = ids_presents_in_down_dir.get(video_id, {})
-        video_data: VideoInfo = {**vi, "video_id": video_id}
+        video_data: VideoInfo = ids_presents_in_down_dir.get(video_id, {})
 
         try:
             if video_id not in existing_video_ids:
+                video_data["video_id"] = video_id 
                 insert_video_db(video_data=video_data, cur=cur, conn=conn)
                 added_ids += 1
 
             else:
-                if all(key in video_data and video_data[key] is not None for key in youtube_required_info):
-                    update_video_db(video_id=video_id, update_fields=video_data, cur=cur, conn=conn)
-                    updated_ids += 1
+                db_data = get_video_info_from_db(video_id=video_id, cur=cur)
+                if not all(key in db_data and db_data[key] is not None for key in youtube_required_info):
+                    if all(key in video_data and video_data[key] is not None for key in youtube_required_info):
+                        update_video_db(video_id=video_id, update_fields=video_data, cur=cur, conn=conn)
+                        updated_ids += 1
+                else:
+                    correct_ids += 1
 
-            if info: fprint("",f"[Adding ids] Added {added_ids} ids, Updated {updated_ids} ids")
+            if info: fprint("",f"[Adding ids] Added {added_ids} ids, Updated {updated_ids} ids, {correct_ids} ids ok")
 
 
         except Exception as e:

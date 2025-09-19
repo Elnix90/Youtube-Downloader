@@ -1,7 +1,7 @@
 from pathlib import Path
 import time
 
-from FUNCTIONS.helpers import VideoInfo, fprint
+from FUNCTIONS.helpers import fprint
 from FUNCTIONS.album_system import compute_album, set_album
 
 from logger import setup_logger
@@ -11,7 +11,8 @@ logger = setup_logger(__name__)
 
 
 def process_album_for_video(
-    video_info: VideoInfo,
+    uploader: str,
+    title: str,
     filepath: Path,
     progress_prefix: str,
     info: bool,
@@ -26,19 +27,13 @@ def process_album_for_video(
 
     start_processing: float = time.time()
 
-    uploader: str = video_info.get("uploader", "")
-    file_order_to_recompute: bool = video_info.get("recompute_album", True)
-
-    title: str = filepath.name
-
-
     if info:
         fprint(prefix=progress_prefix, title=f"Getting album for '{title}'")
     logger.info(f"[Album] Getting album for '{title}'")
 
     computed_album: str = "Private"
 
-    if file_order_to_recompute and title and uploader and recompute_album:
+    if title and uploader and recompute_album:
         computed_album = compute_album(title=title, uploader=uploader)
 
     success: bool = set_album(
@@ -50,12 +45,10 @@ def process_album_for_video(
 
 
     if success:
-        if info:
-            fprint(progress_prefix, f"Embedded album '{computed_album}' into '{title}'")
+        if info: fprint(progress_prefix, f"Embedded album '{computed_album}' into '{title}'")
         logger.info(f"[Album] Embedded album '{computed_album}' into '{title}'")
     else:
-        if error:
-            print(f"\n[Album] Error embedding album into '{title}'")
+        if error: print(f"\n[Album] Error embedding album into '{title}'")
         logger.error(f"[Album] Error embedding album into '{title}'")
 
     return time.time() - start_processing

@@ -126,13 +126,15 @@ def process_all(
     if info: print(f"[PROCESSING] Processing {total_videos} videos...")
     logger.info(f"[PROCESSING] Processing {total_videos} videos...")
 
-    # raise
+
 
     for video_id in video_ids:
 
         start_processing: float = time.time()
 
         progress_prefix = f"{progress_count:{len(str(total_videos))}d}/{total_videos} | {eta_str} | "
+
+
 
 
         need_download, checking_duration = check_file_integrity_for_video(
@@ -174,13 +176,30 @@ def process_all(
             progress_count += 1
             continue
 
+        title: str = data.get("title", "")
+        uploader: str = data.get("uploader", "")
 
+        try_lyrics_if_not: bool = data.get("try_lyrics_if_not", False)
+        remove_lyrics: bool = data.get("remove_lyrics", False)
+        lyrics_retries: int = data.get("lyrics_retries",0)
+        subtitles: str | None = data.get("subtitles")
+        syncedlyrics: str | None = data.get("syncedlyrics")
+        auto_subs: str | None = data.get("auto_subs")
+        skips: list[tuple[float, float]] | None = data.get("skips")
+        duration: int | None = data.get("duration", 0)
+        remix_of: str | None = data.get("remix_of")
 
+        update_thumbnail: bool = bool(data.get("update_thumbnail", False))
+        remove_thumbnail: bool = bool(data.get("remove_thumbnail", False))
+        thumbnail_url: str = data.get("thumbnail_url", "")
+
+        existing_tags: set[str] = data.get("existing_tags", set[str])
 
 
         if use_sponsorblock:
             cut_duration += remove_sponsorblock_segments_for_video(
                 video_id=video_id,
+                title=title,
                 filepath=filepath,
                 removed_segments_int=removed_segments_int,
                 removed_segments_duration=removed_segments_duration,
@@ -195,9 +214,21 @@ def process_all(
 
         if get_lyrics:
             lyrics_duration += process_lyrics_for_video(
+                uploader=uploader,
+                try_lyrics_if_not=try_lyrics_if_not,
+                remove_lyrics=remove_lyrics,
+                lyrics_retries=lyrics_retries,
+                title=title,
+
+                subtitles=subtitles,
+                syncedlyrics=syncedlyrics,
+                auto_subs=auto_subs,
+
+                skips=skips,
+                duration=duration,
+                remix_of=remix_of,
                 video_id=video_id,
                 filepath=filepath,
-                video_info=data,
                 progress_prefix=progress_prefix,
                 info=info,
                 error=error,
@@ -211,7 +242,10 @@ def process_all(
         if get_thumbnail:
             thumbnail_duration += process_thumbnail_for_video(
                 video_id=video_id,
-                video_info=data,
+                title=title,
+                update_thumbnail=update_thumbnail,
+                remove_thumbnail=remove_thumbnail,
+                thumbnail_url=thumbnail_url,
                 filepath=filepath,
                 thumbnail_format=thumbnail_format,
                 progress_prefix=progress_prefix,
@@ -227,7 +261,10 @@ def process_all(
         if add_tags:
             calculating_duration += process_tags_for_video(
                 video_id=video_id,
-                video_info=data,
+                title=title,
+                uploader=uploader,
+                existing_tags=existing_tags,
+
                 filepath=filepath,
                 progress_prefix=progress_prefix,
                 info=info,
@@ -245,7 +282,8 @@ def process_all(
 
         if add_album:
             calculating_duration += process_album_for_video(
-                video_info=data,
+                uploader=uploader,
+                title=title,
                 filepath=filepath,
                 progress_prefix=progress_prefix,
                 recompute_album=recompute_album,
@@ -257,10 +295,9 @@ def process_all(
 
         if embed_metadata:
             metadata_duration += embed_metadata_for_video(
-                video_id=video_id,
+                video_info=data,
                 filepath=filepath,
                 progress_prefix=progress_prefix,
-                cur=cur,
                 info=info,
                 error=error,
                 test_run=test_run
