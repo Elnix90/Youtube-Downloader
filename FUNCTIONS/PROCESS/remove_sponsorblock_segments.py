@@ -14,6 +14,7 @@ logger = setup_logger(__name__)
 
 def remove_sponsorblock_segments_for_video(
     video_id: str,
+    title: str,
     filepath: Path,
     removed_segments_int: int,
     removed_segments_duration: float,
@@ -38,7 +39,6 @@ def remove_sponsorblock_segments_for_video(
 
     skips = [(row["segment_start"], row["segment_end"]) for row in cur.fetchall()]  # pyright: ignore[reportAny]
 
-    title: str = filepath.name
 
     # --- If values are defined (not None) ---
 

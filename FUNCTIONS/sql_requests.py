@@ -4,7 +4,7 @@ from typing import Literal
 import json
 
 from CONSTANTS import db_file
-from FUNCTIONS.helpers import VideoInfo
+from FUNCTIONS.helpers import VideoInfo, remove_data_from_video_info
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -67,6 +67,7 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         lyrics TEXT,
         subtitles TEXT,
         syncedlyrics TEXT,
+        syncedlyrics_query TEXT,
         auto_subs TEXT,
         try_lyrics_if_not BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)) DEFAULT (1),
         lyrics_retries INTEGER CHECK (lyrics_retries >= 0) DEFAULT (0),
@@ -195,12 +196,7 @@ def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
     # Secutity to avoid rewriting date added
-    if "date_added" in update_fields:
-        del update_fields["date_added"]
-
-    # Secutity to avoid rewriting date added
-    if "date_modified" in update_fields:
-        del update_fields["date_modified"]
+    update_fields = remove_data_from_video_info(update_fields,["date_added","date_updated"])
 
     # Update only valid DB fields
     EXCLUDE_FOR_MAIN = {"skips", "tags"}
@@ -331,9 +327,9 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
 
         "lyrics": safe_str(row, "lyrics"),
         "subtitles": safe_str(row, "subtitle"),
+        "syncedlyrics": safe_str(row, "syncedlyrics"),
         "auto_subs": safe_str(row, "auto_subs"),
         "try_lyrics_if_not": safe_bool(row, "try_lyrics_if_not"),
-        "syncedlyrics": safe_str(row, "syncedlyrics"),
 
         "update_thumbnail": safe_bool(row, "update_thumbnail"),
         "remove_thumbnail": safe_bool(row, "remove_thumbnail"),
@@ -411,13 +407,11 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
 
     video_info_copy = video_info.copy()
 
-    # print(video_info)
 
     for key, value in video_info_copy.items():
         if value is None or (isinstance(value, str) and value == ""):
             del video_info[key]
 
-    # print(video_info)
 
     return video_info
 

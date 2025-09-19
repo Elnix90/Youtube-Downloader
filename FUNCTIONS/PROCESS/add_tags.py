@@ -4,7 +4,7 @@ import time
 
 
 from FUNCTIONS.sql_requests import update_video_db
-from FUNCTIONS.helpers import VideoInfo, fprint
+from FUNCTIONS.helpers import fprint
 from FUNCTIONS.tags_system import compute_tags, set_tags
 
 from logger import setup_logger
@@ -13,7 +13,10 @@ logger = setup_logger(__name__)
 
 def process_tags_for_video(
     video_id: str,
-    video_info: VideoInfo,
+    title: str,
+    uploader: str,
+    existing_tags: set[str],
+    
     filepath: Path,
     progress_prefix: str,
     info: bool,
@@ -34,18 +37,12 @@ def process_tags_for_video(
 
     start_processing: float = time.time()
 
-
-    title: str = filepath.name
-    uploader: str = video_info.get("uploader", "")
-    existing_tags: set[str] = set(video_info.get("tags", []))
-    file_order_to_recompute: bool = video_info.get("recompute_tags", True)
-
     if info: fprint(prefix=progress_prefix, title=f"Getting tags for '{title}'")
     logger.info(f"[Tags] Getting tags for '{title}'")
 
     computed_tags: set[str] = set()
 
-    if file_order_to_recompute and title and uploader and recompute_tags:
+    if title and uploader and recompute_tags:
         computed_tags = compute_tags(title, uploader, error=error)
 
 
