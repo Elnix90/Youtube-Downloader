@@ -1,0 +1,71 @@
+# Configuration pour YouTube Music Downloader
+
+[paths]
+# Répertoires principaux
+json_dir = "JSON"
+cred_dir = "CREDS" 
+logs_dir = "LOGS"
+config_dir = "CONFIG"
+
+# Chemins de téléchargement et base de données
+download_path = "/path/to/music"  # À modifier selon vos besoins
+db_path = "music.db"
+
+# Fichiers de configuration
+client_secrets_file = "client_secret_cm.json"
+token_file = "token.json"
+playlist_videos_file = "playlist_videos.json"
+
+[patterns]
+# Fichiers de motifs
+unwanted_patterns_file = "unwanted_patterns.txt"
+remix_patterns_file = "remix_patterns.txt"
+private_patterns_file = "private_patterns.txt" 
+trusted_artists_file = "trusted_artists.txt"
+
+[processing]
+# Configuration du traitement principal
+max_lyrics_retries = 1
+
+# Paramètres par défaut pour le téléchargement
+playlist_id = "LL"  # "LL" = vidéos likées
+embed_metadata = true
+add_album = true
+recompute_album = true
+
+get_lyrics = true
+recompute_lyrics = false
+
+get_thumbnail = true
+thumbnail_format = "pad"  # "pad" ou "crop"
+recompute_thumbnails = false
+
+use_sponsorblock = true
+sponsorblock_categories = ["music_offtopic", "sponsor", "intro", "outro"]
+
+add_tags = true
+tag_separator = " ~ "
+tag_start_delimiter = "["
+tag_end_delimiter = "]"
+tag_inner_separator = ","
+recompute_tags = true
+
+retry_unavailable = false
+retry_private = false
+
+info = true
+error = true
+test_run = false
+
+clean = false
+remove_no_longer_in_playlist = false
+remove_malformatted = true
+create_db_if_not = true
+add_folder_files_not_in_list = true
+
+[logging]
+# Configuration des logs
+console_globally = true
+level_console = "WARNING"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+level_logfiles = "DEBUG"
+not_overlap_fprint = false

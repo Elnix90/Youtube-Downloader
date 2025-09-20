@@ -1,50 +1,84 @@
 from pathlib import Path
-from dotenv import load_dotenv
-import os
+import tomli
 import logging
+import sys
 
+# Charger la configuration TOML
+CONFIG_FILE = Path("config.toml")
+if not CONFIG_FILE.exists():
+    print(f"Erreur: Le fichier de configuration '{CONFIG_FILE}' n'existe pas.")
+    print("Veuillez créer ce fichier ou utiliser config.toml.example comme modèle.")
+    sys.exit(1)
 
-JSON_DIR: Path = Path("JSON")
-CRED_DIR: Path = Path("CREDS")
-LOGS_DIR: Path = Path("LOGS")
+with open(CONFIG_FILE, "rb") as f:
+    config = tomli.load(f)
 
+# Validation de la configuration
+def validate_config():
+    required_sections = ["paths", "patterns", "processing", "logging"]
+    for section in required_sections:
+        if section not in config:
+            raise ValueError(f"Section manquante dans config.toml: [{section}]")
+    
+    # Vérifier les chemins critiques
+    download_path = Path(config["paths"]["download_path"])
+    if not download_path.parent.exists():
+        print(f"Attention: Le répertoire parent de download_path n'existe pas: {download_path.parent}")
+    
+    db_path = Path(config["paths"]["db_path"])
+    if not db_path.exists() and not db_path.parent.exists():
+        print(f"Attention: Le répertoire parent de db_path n'existe pas: {db_path.parent}")
 
-CONFIG_DIR: Path = Path("CONFIG")
+validate_config()
+
+# Répertoires de base
+JSON_DIR: Path = Path(config["paths"]["json_dir"])
+CRED_DIR: Path = Path(config["paths"]["cred_dir"])
+LOGS_DIR: Path = Path(config["paths"]["logs_dir"])
+
+CONFIG_DIR: Path = Path(config["paths"]["config_dir"])
 PATTERN_DIR: Path = CONFIG_DIR / "PATTERNS"
 TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 
+# Chemins critiques
+DOWNLOAD_PATH: Path = Path(config["paths"]["download_path"])
+DB_PATH: Path = Path(config["paths"]["db_path"])
 
-CLIENT_SECRETS_FILE: Path = CRED_DIR / "client_secret_cm.json"
-TOKEN_FILE: Path = CRED_DIR / "token.json"
+# Fichiers de credentials et données
+CLIENT_SECRETS_FILE: Path = CRED_DIR / config["paths"]["client_secrets_file"]
+TOKEN_FILE: Path = CRED_DIR / config["paths"]["token_file"]
+PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / config["paths"]["playlist_videos_file"]
 
+# Fichiers de patterns
+UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["unwanted_patterns_file"]
+REMIX_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["remix_patterns_file"]
+PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["private_patterns_file"]
+TRUSTED_ARTISTS: Path = PATTERN_DIR / config["patterns"]["trusted_artists_file"]
 
-PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / "playlist_videos.json"
-UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / "unwanted_patterns.txt"
-REMIX_PATTERNS_FILE: Path = PATTERN_DIR / "remix_patterns.txt"
-PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / "private_patterns.txt"
-TRUSTED_ARTISTS: Path = PATTERN_DIR / "trusted_artists.txt"
+# Configuration de traitement
+MAX_LYRICS_RETRIES: int = config["processing"]["max_lyrics_retries"]
 
-MAX_LYRICS_RETRIES: int = 1
+# Configuration de logging
+LOGS_CONSOLE_GLOBALLY: bool = config["logging"]["console_globally"]
+NOT_OVERLAP_FPRINT: bool = config["logging"]["not_overlap_fprint"]
 
+# Mapping des niveaux de logging
+LOGGING_LEVELS = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL
+}
 
-
-_ = load_dotenv()
-
-download_env: str | None = os.getenv("downloadpath")
-if download_env is None:
-    raise EnvironmentError("Environment variable 'downloadpath' is not set")
-DOWNLOAD_PATH: Path = Path(download_env)
-
-db_file = Path(os.getenv("dbpath", ""))
-if not (db_file.exists() and db_file.is_file()):
-    print("Warning: Database does not exists")
-
-
-
-LOGS_CONSOLE_GLOBALLY: bool = True
-LOGGING_LEVEL_CONSOLE: int = logging.WARNING
-LOGGING_LEVEL_LOGFILES: int = logging.DEBUG
-NOT_OVERLAP_FPRINT: bool = False
+LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS.get(
+    config["logging"]["level_console"].upper(), 
+    logging.WARNING
+)
+LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS.get(
+    config["logging"]["level_logfiles"].upper(), 
+    logging.DEBUG
+)
 
 
 # STATUS_MAP = {
