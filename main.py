@@ -4,6 +4,7 @@ from datetime import timedelta
 
 
 from CONSTANTS import JSON_DIR, CRED_DIR, DOWNLOAD_PATH, PLAYLIST_VIDEOS_FILE
+from config_loader import get_processing_defaults
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
 from FUNCTIONS.PROCESS.show_final_stats import show_final_stats
 from FUNCTIONS.sql_requests import get_db_connection
@@ -17,47 +18,88 @@ logger = setup_logger(__name__)
 
 
 def main_list_process(
-    playlist_id: str = "LL",
-    embed_metadata: bool = True,
-    add_album: bool = True,
-    recompute_album: bool = True,
+    playlist_id: str = None,
+    embed_metadata: bool = None,
+    add_album: bool = None,
+    recompute_album: bool = None,
 
-    get_lyrics: bool = True,
-    recompute_lyrics: bool = False,
+    get_lyrics: bool = None,
+    recompute_lyrics: bool = None,
 
-    get_thumbnail: bool = True,
-    thumbnail_format: Literal["pad", "crop"] = "pad",
-    recompute_thumbnails: bool = False,
+    get_thumbnail: bool = None,
+    thumbnail_format: Literal["pad", "crop"] = None,
+    recompute_thumbnails: bool = None,
 
-    use_sponsorblock: bool = True,
-    categories: list[str] = ["music_offtopic", "sponsor", "intro", "outro"],  # pyright: ignore[reportCallInDefaultInitializer]
+    use_sponsorblock: bool = None,
+    categories: list[str] = None,
 
-    add_tags: bool = True,
-    sep: str = " ~ ",
-    start_def: str = "[",
-    end_def: str = "]",
-    tag_sep: str = ",",
-    recompute_tags: bool = True,
+    add_tags: bool = None,
+    sep: str = None,
+    start_def: str = None,
+    end_def: str = None,
+    tag_sep: str = None,
+    recompute_tags: bool = None,
 
-    retry_unavailable: bool = False,
-    retry_private: bool = False,
+    retry_unavailable: bool = None,
+    retry_private: bool = None,
 
-    info: bool = True,
-    error: bool = True,
-    test_run: bool = False,
+    info: bool = None,
+    error: bool = None,
+    test_run: bool = None,
 
-    clean: bool = False,
-    remove_no_longer_in_playlist: bool = False,
-    remove_malformatted: bool = True,
-    create_db_if_not: bool = True,
-    add_folder_files_not_in_list: bool = True
+    clean: bool = None,
+    remove_no_longer_in_playlist: bool = None,
+    remove_malformatted: bool = None,
+    create_db_if_not: bool = None,
+    add_folder_files_not_in_list: bool = None
 ) -> None:
     """
     Custom downloading function, that use a main database of videos to know what to do:
     it fetches the playlist videos of the user, then append the infos to a SQL database (the main database) This database contains many infos,
     When the programm is run, all infos present on the list will be verified in the files and added to them if not present of false,
     the database behaves as main source of information, it is very important, more than the metadata info fields themselves.
+    
+    Les paramètres None utiliseront les valeurs par défaut du fichier config.toml
     """
+
+    # Charger les valeurs par défaut depuis config.toml
+    defaults = get_processing_defaults()
+    
+    # Utiliser les valeurs par défaut si les paramètres sont None
+    playlist_id = playlist_id if playlist_id is not None else defaults["playlist_id"]
+    embed_metadata = embed_metadata if embed_metadata is not None else defaults["embed_metadata"]
+    add_album = add_album if add_album is not None else defaults["add_album"]
+    recompute_album = recompute_album if recompute_album is not None else defaults["recompute_album"]
+    
+    get_lyrics = get_lyrics if get_lyrics is not None else defaults["get_lyrics"]
+    recompute_lyrics = recompute_lyrics if recompute_lyrics is not None else defaults["recompute_lyrics"]
+    
+    get_thumbnail = get_thumbnail if get_thumbnail is not None else defaults["get_thumbnail"]
+    thumbnail_format = thumbnail_format if thumbnail_format is not None else defaults["thumbnail_format"]
+    recompute_thumbnails = recompute_thumbnails if recompute_thumbnails is not None else defaults["recompute_thumbnails"]
+    
+    use_sponsorblock = use_sponsorblock if use_sponsorblock is not None else defaults["use_sponsorblock"]
+    categories = categories if categories is not None else defaults["categories"]
+    
+    add_tags = add_tags if add_tags is not None else defaults["add_tags"]
+    sep = sep if sep is not None else defaults["sep"]
+    start_def = start_def if start_def is not None else defaults["start_def"]
+    end_def = end_def if end_def is not None else defaults["end_def"]
+    tag_sep = tag_sep if tag_sep is not None else defaults["tag_sep"]
+    recompute_tags = recompute_tags if recompute_tags is not None else defaults["recompute_tags"]
+    
+    retry_unavailable = retry_unavailable if retry_unavailable is not None else defaults["retry_unavailable"]
+    retry_private = retry_private if retry_private is not None else defaults["retry_private"]
+    
+    info = info if info is not None else defaults["info"]
+    error = error if error is not None else defaults["error"]
+    test_run = test_run if test_run is not None else defaults["test_run"]
+    
+    clean = clean if clean is not None else defaults["clean"]
+    remove_no_longer_in_playlist = remove_no_longer_in_playlist if remove_no_longer_in_playlist is not None else defaults["remove_no_longer_in_playlist"]
+    remove_malformatted = remove_malformatted if remove_malformatted is not None else defaults["remove_malformatted"]
+    create_db_if_not = create_db_if_not if create_db_if_not is not None else defaults["create_db_if_not"]
+    add_folder_files_not_in_list = add_folder_files_not_in_list if add_folder_files_not_in_list is not None else defaults["add_folder_files_not_in_list"]
 
 
     All_processing_start: float = time.time()
