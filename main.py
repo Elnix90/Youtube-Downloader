@@ -17,30 +17,34 @@ logger = setup_logger(__name__)
 
 
 def main_list_process(
+
     playlist_id: str = "LL",
-    embed_metadata: bool = True,
-    add_album: bool = True,
-    recompute_album: bool = True,
-
-    get_lyrics: bool = True,
-    recompute_lyrics: bool = False,
-
-    get_thumbnail: bool = True,
-    thumbnail_format: Literal["pad", "crop"] = "pad",
-    recompute_thumbnails: bool = False,
 
     use_sponsorblock: bool = True,
-    categories: list[str] = ["music_offtopic", "sponsor", "intro", "outro"],  # pyright: ignore[reportCallInDefaultInitializer]
-
+    get_lyrics: bool = True,
+    get_thumbnail: bool = True,
     add_tags: bool = True,
+    add_album: bool = True,
+    embed_metadata: bool = True,
+
+    force_recompute_album: bool = False,
+    force_recompute_lyrics: bool = True,
+    force_recompute_thumbnails: bool = False,
+    force_recompute_tags: bool = False,
+    force_recompute_yt_info: bool = False,
+
+
+    thumbnail_format: Literal["pad", "crop"] = "pad",
+
+    sponsorblock_categories: list[str] = ["music_offtopic", "sponsor", "intro", "outro"],  # pyright: ignore[reportCallInDefaultInitializer]
+
     sep: str = " ~ ",
     start_def: str = "[",
     end_def: str = "]",
     tag_sep: str = ",",
-    recompute_tags: bool = True,
 
-    retry_unavailable: bool = False,
-    retry_private: bool = False,
+    retry_unavailable: bool = True,
+    retry_private: bool = True,
 
     info: bool = True,
     error: bool = True,
@@ -50,7 +54,8 @@ def main_list_process(
     remove_no_longer_in_playlist: bool = False,
     remove_malformatted: bool = True,
     create_db_if_not: bool = True,
-    add_folder_files_not_in_list: bool = True
+    add_folder_files_not_in_list: bool = True,
+    force_mp3_presence: bool = True
 ) -> None:
     """
     Custom downloading function, that use a main database of videos to know what to do:
@@ -87,32 +92,73 @@ def main_list_process(
 
 
         processing_time: dict[str, float | None] = process_all(
+            # download_path=DOWNLOAD_PATH,
+            # playlist_video_file=PLAYLIST_VIDEOS_FILE,
+
+            # force_recompute_yt_info=force_recompute_yt_info,
+            # embed_metadata=embed_metadata,
+            # get_lyrics=get_lyrics,
+            # force_recompute_lyrics=force_recompute_lyrics,
+            # get_thumbnail=get_thumbnail,
+            # thumbnail_format=thumbnail_format,
+            # force_recompute_thumbnails=force_recompute_thumbnails,
+            # use_sponsorblock=use_sponsorblock,
+            # sponsorblock_categories=categories,
+            # add_tags=add_tags,
+            # sep=sep,
+            # start_def=start_def,
+            # end_def=end_def,
+            # tag_sep=tag_sep,
+            # force_recompute_tags=force_recompute_tags,
+            # add_album=add_album,
+            # force_recompute_album=force_recompute_album,
+            # retry_unavailable=retry_unavailable,
+            # retry_private=retry_private,
+            # info=info,
+            # error=error,
+            # test_run=test_run,
+            # remove_malformatted=remove_malformatted,
+            # remove_no_longer_in_playlist=remove_no_longer_in_playlist,
+            # add_folder_files_not_in_list=add_folder_files_not_in_list,
+            # force_mp3_presence=force_mp3_presence,
+            # cur=cur,
+            # conn=conn
             download_path=DOWNLOAD_PATH,
             playlist_video_file=PLAYLIST_VIDEOS_FILE,
-            embed_metadata=embed_metadata,
-            get_lyrics=get_lyrics,
-            recompute_lyrics=recompute_lyrics,
-            get_thumbnail=get_thumbnail,
-            thumbnail_format=thumbnail_format,
-            recompute_thumbnails=recompute_thumbnails,
+
             use_sponsorblock=use_sponsorblock,
-            categories=categories,
+            get_lyrics=get_lyrics,
+            get_thumbnail=get_thumbnail,
+            embed_metadata=embed_metadata,
             add_tags=add_tags,
+            add_album=add_album,
+
+            force_recompute_lyrics=force_recompute_lyrics,
+            force_recompute_thumbnails=force_recompute_thumbnails,
+            force_recompute_tags=force_recompute_tags,
+            force_recompute_album=force_recompute_album,
+            force_recompute_yt_info=force_recompute_yt_info,
+
+            sponsorblock_categories=sponsorblock_categories,
+            thumbnail_format=thumbnail_format,
+
             sep=sep,
             start_def=start_def,
             end_def=end_def,
             tag_sep=tag_sep,
-            recompute_tags=recompute_tags,
-            add_album=add_album,
-            recompute_album=recompute_album,
+
             retry_unavailable=retry_unavailable,
             retry_private=retry_private,
+
             info=info,
             error=error,
             test_run=test_run,
+
             remove_malformatted=remove_malformatted,
             remove_no_longer_in_playlist=remove_no_longer_in_playlist,
             add_folder_files_not_in_list=add_folder_files_not_in_list,
+            force_mp3_presence=force_mp3_presence,
+
             cur=cur,
             conn=conn
         )
@@ -149,7 +195,8 @@ def main_list_process(
                 metadata_duration=metadata_duration,
                 cur=cur,
                 test_run=test_run,
-                remove_malformatted=remove_malformatted
+                remove_malformatted=remove_malformatted,
+                force_mp3_presence=force_mp3_presence
             )
 
 

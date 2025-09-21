@@ -29,34 +29,33 @@ def process_thumbnail_for_video(
     cur: Cursor,
     conn: Connection,
     test_run: bool,
-    recompute_thumbnails: bool
+    force_recompute_thumbnails: bool
 ) -> float:
     """
     Process thumbnail for a single video: extract, download, embed, or update.
-    Uses VideoInfo + update_video_metadata.
     """
     start_processing: float = time.time()
 
     this_thumbnail_path: Path = thumbnail_png_path_for_mp3(mp3_path=filepath)
     embed_from_local_file: bool = False
-    download_thumbnail: bool = recompute_thumbnails
+    download_thumbnail: bool = force_recompute_thumbnails
 
-    # Special calse: asked to emove thumbnail
+    # Asked to remove thumbnail
     if remove_thumbnail:
         success_remove = remove_image_from_mp3(mp3_path=filepath, image_path=this_thumbnail_path, test_run=test_run)
         if success_remove:
             update_video_db(video_id=video_id, update_fields={"update_thumbnail": False},cur=cur, conn=conn)
-            fprint(prefix=progress_prefix, title="[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
+            fprint(prefix=progress_prefix, title=f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
             logger.info(f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
         else:
             if error: print(f"\n[Remove thumbnail] Error removing thumbnail and file for '{filepath}'")
             logger.error(f"[Remove thumbnail] Error removing thumbnail and file for '{filepath}'")
-        download_thumbnail = False
+        return time.time() - start_processing
 
-    # --- CASE A: File exists ---
+    # File exists
     elif filepath.exists():
-        if info: fprint(progress_prefix, f"Checking thumbnail for '{title}'")
-        logger.info(f"[Thumbnail] Checking thumbnail for '{title}'")
+        if info: fprint(progress_prefix, f"Checking thumbnail for", stitle=title)
+        logger.verbose(f"[Thumbnail] Checking thumbnail for '{title}'")
 
         embedded_bytes = has_embedded_cover(filepath)
 
@@ -65,7 +64,7 @@ def process_thumbnail_for_video(
             try:
                 with open(this_thumbnail_path, "wb") as f:
                     _ = f.write(embedded_bytes)
-                logger.info(f"[Thumbnail] Extracted embedded cover to '{this_thumbnail_path.name}'")
+                logger.info(f"[Thumbnail] Extracted embedded cover to '{title}'")
             except Exception as e:
                 logger.warning(f"[Thumbnail] Failed to extract embedded cover: {e}")
 
@@ -83,7 +82,7 @@ def process_thumbnail_for_video(
 
         # Case 3: Embedded image already exists and no update is needed
         elif embedded_bytes is not None and not update_thumbnail:
-            if info: fprint(progress_prefix, f"Embedded cover already exists — skipping update for '{title}'")
+            if info: fprint(progress_prefix, f"Embedded cover already exists — skipping update for", stitle=title)
             logger.debug(f"[Thumbnail] Embedded cover already exists — skipping update for '{title}'")
 
         # Case 4: Local file exists but no embedded cover, and update not explicitly requested
@@ -92,17 +91,10 @@ def process_thumbnail_for_video(
             embed_from_local_file = True
 
 
-    # --- CASE B: File missing ---
-    elif not filepath.exists():
+    # File missing
+    else:
         logger.error(f"[Thumbnail] Filepath doesn't exist -> cannot embed thumbnail: '{filepath}'")
         if error: print(f"\n[Thumbnail] Filepath doesn't exist -> cannot embed thumbnail: '{filepath}'")
-
-
-    # If code goes here, the world explode
-    else:
-        logger.error(f"[Thumbnail] WTF error, code shoudln't be reachable :'{filepath}'")
-        if error: print(f"\n[Thumbnail] WTF error, code shoudln't be reachable : '{filepath}'")
-
 
 
     # Downloads or embed if asked
@@ -117,7 +109,7 @@ def process_thumbnail_for_video(
                     embed_success: bool = embed_image_in_mp3(mp3_path=filepath, image_path=this_thumbnail_path,test_run=test_run)
                     if embed_success is True:
                         update_video_db(video_id=video_id, update_fields={"update_thumbnail": False}, cur=cur, conn=conn)
-                        if info: fprint(prefix=progress_prefix, title=f"{'Downloaded & e' if download_thumbnail else 'E'}mbedded cover for '{title}'")
+                        if info: fprint(prefix=progress_prefix, title=f"{'Downloaded & e' if download_thumbnail else 'E'}mbedded cover for", stitle=title)
                         logger.info(f"[Thumbnail] Embedded cover for '{title}'")
                     else:
                         if error: print(f"\nFailed to embed into '{title}'")

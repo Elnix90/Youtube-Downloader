@@ -1,7 +1,7 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import os
-import logging
+
 
 
 JSON_DIR: Path = Path("JSON")
@@ -17,12 +17,14 @@ TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 CLIENT_SECRETS_FILE: Path = CRED_DIR / "client_secret_cm.json"
 TOKEN_FILE: Path = CRED_DIR / "token.json"
 
-
 PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / "playlist_videos.json"
+CORRECT_NOT_IN_DIR_FILE: Path = JSON_DIR / "correct_not_in_db.json"
+UNAVAILABLE_VIDEOS_FILE: Path = JSON_DIR / "unavailable_videos.json"
+
 UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / "unwanted_patterns.txt"
 REMIX_PATTERNS_FILE: Path = PATTERN_DIR / "remix_patterns.txt"
 PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / "private_patterns.txt"
-TRUSTED_ARTISTS: Path = PATTERN_DIR / "trusted_artists.txt"
+TRUSTED_ARTISTS_FILE: Path = PATTERN_DIR / "trusted_artists.txt"
 
 MAX_LYRICS_RETRIES: int = 1
 
@@ -42,10 +44,10 @@ if not (db_file.exists() and db_file.is_file()):
 
 
 LOGS_CONSOLE_GLOBALLY: bool = True
-LOGGING_LEVEL_CONSOLE: int = logging.WARNING
-LOGGING_LEVEL_LOGFILES: int = logging.DEBUG
-NOT_OVERLAP_FPRINT: bool = False
-
+LOGGING_LEVEL_CONSOLE: int = 30
+LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVEL_CONSOLE
+OVERLAP_FPRINT: bool = True
+OVERWRITE_UNCHANGED: bool = True
 
 # STATUS_MAP = {
 #     0: "downloaded",

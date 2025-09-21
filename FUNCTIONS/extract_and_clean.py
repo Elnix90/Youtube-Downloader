@@ -13,7 +13,13 @@ logger = setup_logger(__name__)
 
 
 
-def extract_and_clean_video_ids(download_directory: Path, info: bool, test_run: bool, remove: bool) -> VideoInfoMap:
+def extract_and_clean_video_ids(
+    download_directory: Path,
+    info: bool,
+    test_run: bool,
+    remove: bool,
+    force_mp3_presence: bool
+) -> VideoInfoMap:
     """
     Cleans the directory by removing non-MP3 or invalid files,
     and returns a mapping of valid video IDs to metadata.
@@ -41,10 +47,11 @@ def extract_and_clean_video_ids(download_directory: Path, info: bool, test_run: 
 
         # Case 1: Not an MP3 (but keep .lrc and .png files)
         if not filename.lower().endswith(".mp3"):
-            if filename.lower().endswith((".lrc", ".png")) and filepath.with_suffix(".mp3").exists(): # If no mp3 associated file:
-                logger.debug(f"[Clean & Extract] Keeping '{filename}' (.lrc or .png)")
-                lrc_or_png += 1
-                continue
+            if filename.lower().endswith((".lrc", ".png")):
+                if not force_mp3_presence or filepath.with_suffix(".mp3").exists(): # If no mp3 associated file:
+                    logger.verbose(f"[Clean & Extract] Keeping '{filename}' (.lrc or .png)")
+                    lrc_or_png += 1
+                    continue
             removed_files[filename] = "Not mp3"
             if not test_run and remove:
                 filepath.unlink(missing_ok=True)
@@ -64,7 +71,7 @@ def extract_and_clean_video_ids(download_directory: Path, info: bool, test_run: 
             if video_id:
                 filename = data.get("filename")
                 valid_files[video_id] = data
-                logger.debug(f"[Clean & Extract] Valid MP3: '{filename}' with ID '{video_id}'")
+                logger.verbose(f"[Clean & Extract] Valid MP3: '{filename}' with ID '{video_id}'")
             else:
                 removed_files[filename] = "Missing video ID in metadata"
                 if not test_run and remove: os.remove(filepath)

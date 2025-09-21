@@ -9,7 +9,7 @@ from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-from CONSTANTS import TRUSTED_ARTISTS, PRIVATE_PATTERNS_FILE
+from CONSTANTS import TRUSTED_ARTISTS_FILE, PRIVATE_PATTERNS_FILE
 
 
 
@@ -25,7 +25,7 @@ def compute_album(title: str, uploader: str) -> str:
     uploader_norm = sanitize_text(text=uploader)
 
     # Load patterns
-    public_patterns: set[str] = load_patterns(file=TRUSTED_ARTISTS)
+    public_patterns: set[str] = load_patterns(file=TRUSTED_ARTISTS_FILE)
     private_patterns: set[str] = load_patterns(file=PRIVATE_PATTERNS_FILE)
 
     album: Literal["Private","Public"] = "Private"
@@ -34,13 +34,13 @@ def compute_album(title: str, uploader: str) -> str:
         if pat.startswith("re:"):
             pattern = pat[3:].strip()
             if re.search(pattern, title_norm) or re.search(pattern, uploader_norm):
-                logger.debug(f"[Compute Album] Matched public pattern '{pat}' for '{title} {uploader}'")
+                logger.verbose(f"[Compute Album] Matched public pattern '{pat}' for '{title} {uploader}'")
                 album = "Public"
                 break
         else:
             word = sanitize_text(pat)
             if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
-                logger.debug(f"[Compute Album] Matched public keyword '{word}' for '{title} {uploader}'")
+                logger.verbose(f"[Compute Album] Matched public keyword '{word}' for '{title} {uploader}'")
                 album = "Public"
                 break
 
@@ -49,16 +49,16 @@ def compute_album(title: str, uploader: str) -> str:
         if pat.startswith("re:"):
             pattern = pat[3:].strip()
             if re.search(pattern, title_norm) or re.search(pattern, uploader_norm):
-                logger.debug(f"[Compute Album] Matched private pattern '{pat}' for '{title} {uploader}'")
+                logger.verbose(f"[Compute Album] Matched private pattern '{pat}' for '{title} {uploader}'")
                 return "Private"
         else:
             word = sanitize_text(pat)
             if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
-                logger.debug(f"[Compute Album] Matched private keyword '{word}' for '{title} {uploader}'")
+                logger.verbose(f"[Compute Album] Matched private keyword '{word}' for '{title} {uploader}'")
                 return "Private"
 
     if album =="Private":
-        logger.debug(f"[Compute Album] No match, defaulted to 'Private' for '{title} {uploader}'")
+        logger.verbose(f"[Compute Album] No match, defaulted to 'Private' for '{title} {uploader}'")
     return album
 
 
@@ -81,7 +81,7 @@ def set_album(
 
     success = write_id3_tag(filepath=filepath, frame_id="TALB", data=album, test_run=test_run)
     if success:
-        logger.info(f"[Set Album] Album set to '{album}' for '{filepath}'")
+        logger.verbose(f"[Set Album] Album set to '{album}' for '{filepath}'")
         return True
     else:
         logger.error(f"[Set Album] Failed to set album '{album}' for '{filepath}'")
