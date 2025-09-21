@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 import shutil
 from typing import TypeAlias, TypedDict, Literal
@@ -5,7 +6,7 @@ import unicodedata
 import re
 from pathlib import Path
 
-from CONSTANTS import NOT_OVERLAP_FPRINT
+from CONSTANTS import OVERLAP_FPRINT
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -53,6 +54,7 @@ class VideoInfo(TypedDict, total=False):
     tags: list[str]
     recompute_tags: bool
     recompute_album: bool
+    recompute_yt_info: bool
 
     remix_of: str
 
@@ -60,8 +62,53 @@ class VideoInfo(TypedDict, total=False):
     status: Literal[0,1,2,3] # downloaded / unavailable / private / unknown
     reason: str # If the file is downloaded and fails this key is added with why it has failed
 
-    date_added: int
-    date_modified: int
+    date_added: float
+    date_modified: float
+
+
+VideoInfoKey = Literal[
+
+    "video_id",
+    "title",
+    "thumbnail_url",
+    "description",
+    "channel_id",
+    "channel_url",
+    "view_count",
+    "comment_count",
+    "like_count",
+    "uploader",
+    "channel_follower_count",
+    "uploader_id",
+    "uploader_url",
+    "upload_date",
+    "duration",
+    "duration_string",
+    "removed_segments_int",
+    "removed_segments_duration",
+    "skips",
+    "lyrics",
+    "subtitles",
+    "syncedlyrics",
+    "syncedlyrics_query",
+    "auto_subs",
+    "try_lyrics_if_not",
+    "lyrics_retries",
+    "update_thumbnail",
+    "remove_thumbnail",
+    "remove_lyrics",
+    "tags",
+    "recompute_tags",
+    "recompute_album",
+    "recompute_yt_info",
+    "remix_of",
+    "filename",
+    "status",
+    "reason",
+    "date_added",
+    "date_modified"
+]
+
 
 
 VideoInfoMap: TypeAlias = dict[str, VideoInfo]
@@ -153,6 +200,7 @@ class Ydl_opt(TypedDict, total=False):
     subtitlesformat: str
     subtitleslangs: list[str]
 
+    proxy: str
 
 
 
@@ -187,7 +235,7 @@ def sanitize_text(text: str) -> str:
     # Trim trailing dots/spaces again
     text = text.rstrip(". ").strip()
 
-    logger.debug(f"[Sanitize Filename] Sanitized '{old_filename}' to '{text}'")
+    logger.verbose(f"[Sanitize Filename] Sanitized '{old_filename}' to '{text}'")
     return text.title()
 
 
@@ -196,19 +244,21 @@ def sanitize_text(text: str) -> str:
 
 
 
-def fprint(prefix: str, title: str, overwrite: bool = True,flush: bool = True) -> None:
+def fprint(prefix: str, title: str, stitle: str = "", overwrite: bool = True,flush: bool = True) -> None:
     term_width: int = shutil.get_terminal_size(fallback=(80, 20)).columns
     max_len: int = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
-    sanitized_title: str = sanitize_text(text=title)
+    sanitized_title = title
+    s_text: str = sanitize_text(text=stitle)
+    if stitle: sanitized_title += f" '{s_text if s_text else 'sanitized_name'}'"
     if len(sanitized_title) > max_len:
         sanitized_title = sanitized_title[:max_len-1] + "…"
         space_nb = 0
     else:
         space_nb = max_len - len(sanitized_title)
 
-    print(f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",end="" if not NOT_OVERLAP_FPRINT else "\n",flush=flush)
+    print(f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",end="" if OVERLAP_FPRINT else "\n",flush=flush)
 
 
 
@@ -258,3 +308,20 @@ def remove_data_from_video_info(data: VideoInfo, to_remove: list[str]) -> VideoI
         if r in data:
             del data[r]
     return data
+
+
+
+def timestamp_to_id3_unique(ts: float | int) -> str:
+    """
+    Convert a Unix timestamp to a unique sortable string
+    compatible with TDRC ID3 tag.
+    Format: YYYYMMDDHHMMSS
+    """
+    return datetime.fromtimestamp(timestamp=ts).strftime(format="%Y%m%d%H%M%S")
+
+
+
+def normalize_skips(info: VideoInfo) -> VideoInfo:
+    if "skips" in info:
+        info["skips"] = [(x,y) for x,y in info["skips"]]
+    return info

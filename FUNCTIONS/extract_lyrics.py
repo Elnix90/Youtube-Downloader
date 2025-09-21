@@ -3,7 +3,7 @@ import unicodedata
 import logging
 import syncedlyrics
 
-from CONSTANTS import UNWANTED_PATTERNS_FILE, REMIX_PATTERNS_FILE, TRUSTED_ARTISTS
+from CONSTANTS import UNWANTED_PATTERNS_FILE, REMIX_PATTERNS_FILE, TRUSTED_ARTISTS_FILE
 from FUNCTIONS.fileops import load_patterns
 
 
@@ -43,7 +43,7 @@ def _clean_song_query(query: str) -> str:
     query = re.sub(r'\s+', ' ', query).strip()
 
     # Capitalize words
-    logger.info(f"[Clean Song Query] Cleaned '{old_query}' to '{query}'")
+    logger.verbose(f"[Clean Song Query] Cleaned '{old_query}' to '{query}'")
     return query.title()
 
 
@@ -66,21 +66,21 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> tuple[str
     anti_lyrics: set[str] = load_patterns(REMIX_PATTERNS_FILE)
     if any(anti.lower() in song_query for anti in anti_lyrics):
         song_query = title
-        logger.debug("[Get Lyrics] Removed artist from query due to unwanted pattern found")
+        logger.verbose("[Get Lyrics] Removed artist from query due to unwanted pattern found")
 
 
     # Sometimes the artist is already in the title, so ignore it to avoid duplicates
     if artist in title:
         song_query = title
-        logger.debug("[Get Lyrics] Removed artist from query cause it is in the title (using only title)")
+        logger.verbose("[Get Lyrics] Removed artist from query cause it is in the title (using only title)")
 
 
     # Add the trusted artist to the query if found in the title
-    trusted_artists: set[str] = load_patterns(file=TRUSTED_ARTISTS)
+    trusted_artists: set[str] = load_patterns(file=TRUSTED_ARTISTS_FILE)
     for trusted_artist in trusted_artists:
         if contains_whole_word(text=sanitize_text(text=title), word=trusted_artist) and not contains_whole_word(text=sanitize_text(text=title), word=artist):
             song_query = title +trusted_artist
-            logger.debug("[Get Lyrics] Used title + trusted artist as song query")
+            logger.verbose("[Get Lyrics] Used title + trusted artist as song query")
 
 
     query: str = _clean_song_query(query=song_query)

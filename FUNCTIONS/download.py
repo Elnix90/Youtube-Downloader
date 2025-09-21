@@ -14,8 +14,8 @@ from yt_dlp.networking.exceptions import HTTPError
 from FUNCTIONS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, fprint, VideoInfo, youtube_required_info, sanitize_text
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
 from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
-from logger import setup_logger
 
+from logger import setup_logger
 logger = setup_logger(__name__)
 
 
@@ -46,7 +46,7 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
         filepath = loc / f"{filename}{ext}"
         counter += 1
 
-    logger.debug(f"[Get unique filename] computed '{filename}' ({counter - 1} duplicates)")
+    logger.verbose(f"[Get unique filename] computed '{filename}' ({counter - 1} duplicates)")
     return filename
 
 
@@ -202,32 +202,37 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
       - auto: If True, fetch the auto-generated subtitles; otherwise, fetch manual subtitles.
     Returns:
       - list of (start, end, text) for synced lyrics
-      - raw subtitle text (if available, e.g. SRT or VTT)
     """
     subtitles: dict[str, list[dict[str, str]]] = info.get("subtitles", {}) or {}
     automatic_subtitles: dict[str, list[dict[str, str]]] = info.get("automatic_captions", {}) or {}
 
-    original_lang: str | None = None
-    if isinstance(info.get("language_code"), str):
-        original_lang = info.get("language_code")
-    elif isinstance(info.get("language"), str):
-        original_lang = info.get("language")
+    # Try to detect original language
+    original_lang: str | None = info.get("language_code",info.get("language"))
 
-    if not original_lang:
-        logger.debug(f"[Sub Fetch] No original language detected for {'automatic subtitles' if auto else 'manual subtitles'}")
-        return []
+    # Select entries (prefer original_lang, else first available track)
+    entries: list[dict[str, str]] = []
+    if auto:
+        if original_lang and original_lang in automatic_subtitles:
+            entries = automatic_subtitles[original_lang]
+        elif automatic_subtitles:
+            entries = next(iter(automatic_subtitles.values()), [])  # pyright: ignore[reportUnknownArgumentType]
+    else:
+        if original_lang and original_lang in subtitles:
+            entries = subtitles[original_lang]
+        elif subtitles:
+            entries = next(iter(subtitles.values()), [])  # pyright: ignore[reportUnknownArgumentType]
 
-    entries = automatic_subtitles.get(original_lang, []) if auto else subtitles.get(original_lang, [])
     if not entries:
-        logger.debug(f"[Sub Fetch] No {'automatic' if auto else 'manual'} subtitles found for '{original_lang}'")
+        logger.debug(f"[Sub Fetch] No {'automatic' if auto else 'manual'} subtitles found (lang={original_lang})")
         return []
 
+    # Parse VTT or SRT files
     for entry in entries:
         sub_url = entry.get("url")
         ext = entry.get("ext")
         name = entry.get("name")
 
-        # skip translations for manual subtitles
+        # skip translations for manual subtitles if undesired
         if not auto and isinstance(name, str) and "from" in name.lower():
             continue
         if not auto and isinstance(sub_url, str) and "tlang=" in sub_url:
@@ -239,56 +244,72 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
                 if r.status_code == 200:
                     text = r.text
                     if ext == "vtt":
+                        if not auto: print("\nFound subtitles!")
+                        # print(f"\nFound {'auto' if auto else 'manual'} subtitles!")
                         return _vtt_to_synced(text)
                     elif ext == "srt":
+                        if not auto: print("\nFound subtitles!")
+                        # print(f"\nFound {'auto' if auto else 'manual'} subtitles!")
                         return _srt_to_synced(text)
             except Exception as e:
-                logger.error(f"[Sub Fetch] Failed to fetch {'automatic' if auto else 'manual'} subtitles: {e}")
+                logger.error(
+                    f"[Sub Fetch] Failed to fetch {'automatic' if auto else 'manual'} subtitles: {e}"
+                )
                 return []
     return []
 
 
 
 
-def _safe_extract_info(id_or_url: str) -> tuple[Literal[0,1,2,3], VideoInfo]:
+def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal[0,1,2,3], VideoInfo]:
     """
-    Fetches and returns the videos infos for a YouTube id or URL.
-    Returns a tuple of a status code and the formatted data in a dict if data is found:
-      0 -> data found and correctly extracted and formatted
-      1 -> no data returned by youtube but no exception raised
-      2 -> video private
-      3 -> unknown error, debug output is printed
+    Fetches and returns the video info for a YouTube id or URL.
+    Returns a tuple of (state, data):
+      0 -> success
+      1 -> no data returned (null)
+      2 -> private video
+      3 -> unavailable video (blocked / bot-check (requires cookies or VPN/proxy))
+
     """
-    if "https://youtube.com/watch?v=" in id_or_url:
+
+    if "youtube.com/watch?v=" in id_or_url:
         url = id_or_url
         video_id = id_or_url.replace("https://youtube.com/watch?v=", "")
     else:
         url = f"https://youtube.com/watch?v={id_or_url}"
         video_id = id_or_url
 
+    ydl_fetch_opt: Ydl_opt = {
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+        "ignoreerrors": True,
+        "logger": QuietLogger(),
+        "verbose": False,
+
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitlesformat": "vtt",
+        "subtitleslangs": ["all"],
+    }
+
+    if proxy:
+        ydl_fetch_opt["proxy"] = proxy
+
     try:
-        ydl_fetch_opt: Ydl_opt = {
-            "quiet": True,
-            "no_warnings": True,
-            "noprogress": True,
-            "ignoreerrors": True,
-            "logger": QuietLogger(),
-            "verbose": False,
-
-            "writesubtitles": True,
-            "writeautomaticsub": True,
-            "subtitlesformat": "vtt",
-            "subtitleslangs": ["all"],  # request all available languages
-        }
-
         with yt_dlp.YoutubeDL(params=ydl_fetch_opt) as ydl:  # pyright: ignore[reportArgumentType]
             info: ExtractedInfo = cast(ExtractedInfo, cast(object, ydl.extract_info(url=url, download=False)))
 
             if not info:
-                logger.warning(f"[Safe Extract] Data is null for {video_id}")
+                # try to get last error
+                last_err = getattr(ydl, "last_error", None)
+                if last_err:
+                    logger.error(f"[Safe Extract] YT-DLP reported: {last_err}")
+                else:
+                    logger.error(f"[Safe Extract] Data is None for {video_id}, unknown reason")
                 return 1, {}
 
-
+            # subtitles
             manual_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=False)
             auto_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=True)
 
@@ -311,22 +332,27 @@ def _safe_extract_info(id_or_url: str) -> tuple[Literal[0,1,2,3], VideoInfo]:
                 "duration_string": safe_str(info.get("duration_string")),
             }
             if manual_subs:
-                logger.debug("[Safe extract] Got manual subs")
-                data["subtitles"] =json.dumps(manual_subs, ensure_ascii=False)
+                logger.debug("[Safe Extract] Got manual subs")
+                data["subtitles"] = json.dumps(manual_subs, ensure_ascii=False)
             if auto_subs:
-                logger.debug("[Safe extract] Got auto subs")
+                logger.debug("[Safe Extract] Got auto subs")
                 data["auto_subs"] = json.dumps(auto_subs, ensure_ascii=False)
 
-            logger.info(f"[Safe Extract] Data correctly returned for {video_id} -> '{data['title']}'")
-            # print(data)
+            logger.debug(f"[Safe Extract] Data correctly returned for {video_id} -> '{data['title']}'")
             return 0, data
 
     except Exception as e:
         err_msg = str(e).lower()
-        if "private video" in err_msg or "private" in err_msg:
+        if "private" in err_msg:
             logger.error(f"[Safe Extract] Private video: {video_id}")
             return 2, {}
-        logger.error(f"[Safe Extract] Error fetching info for {video_id}: {e}")
+        if "sign in" in err_msg or "confirm you're not a bot" in err_msg or "captcha" in err_msg:
+            logger.error(f"[Safe Extract] Blocked / Bot-check for {video_id}: {e}")
+            return 3, {}
+        if "forbidden" in err_msg or "403" in err_msg or "unavailable" in err_msg:
+            logger.error(f"[Safe Extract] Region blocked or forbidden for {video_id}: {e}")
+            return 3, {}
+        logger.error(f"[Safe Extract] Unknown error for {video_id}: {e}")
         return 3, {}
 
 
@@ -356,6 +382,9 @@ def download_yt_dlp(
     loc.mkdir(parents=True, exist_ok=True)
 
     base: str = sanitize_text(text=title)
+    # To ensure the files will have a name, due to the strict sanitize
+    if not base: base = "sanitized_name"
+
     final_filename: str = _get_unique_filename(loc=loc, base=base, ext=".mp3", video_id=video_id)
     final_filename_with_ext: str = final_filename + ".mp3"
     ydl_opts: Ydl_opt = _build_ydl_opts(loc=loc, filename=final_filename, format_str="bestaudio/best")
@@ -376,7 +405,7 @@ def download_yt_dlp(
         except (HTTPError, DownloadError, ExtractorError, UnavailableVideoError) as e:
             logger.warning(f"[Download] Download error on attempt {attempt}: {e}")
             if attempt < max_retries:
-                logger.info(f"[Download] Retrying in {retry_delay} seconds")
+                logger.debug(f"[Download] Retrying in {retry_delay} seconds")
                 time.sleep(retry_delay)
             else:
                 return False, f"Download failed after {max_retries} attempts: {e}", None
@@ -389,7 +418,7 @@ def download_yt_dlp(
             logger.error(f"[Download] Unexpected error on attempt {attempt}: {e}")
             logger.debug("Exception details:", exc_info=True)
             if attempt < max_retries:
-                logger.info(f"[Download] Retrying in {retry_delay} seconds")
+                logger.debug(f"[Download] Retrying in {retry_delay} seconds")
                 time.sleep(retry_delay)
             else:
                 return False, f"Unexpected error after {max_retries} attempts: {e}", None
@@ -405,6 +434,8 @@ def download_yt_dlp(
 def download_video(
     download_path: Path,
     video_id: str,
+    retry_unavailable: bool,
+    retry_private: bool,
     progress_prefix: str,
     info: bool,
     cur: Cursor,
@@ -421,27 +452,39 @@ def download_video(
     logger.info(f"[Download] Fetching infos for '{video_id}'")
 
     # Extracts youtube video's infos if the already present isn't enough
-    state: Literal[0,1,2,3] = 0
-    data = get_video_info_from_db(video_id=video_id,cur=cur)
+
+    data: VideoInfo = get_video_info_from_db(video_id=video_id,cur=cur)
+    state: Literal[0,1,2,3] = data.get("status",0)
+
+    if state == 1 and not retry_unavailable:
+        fprint(prefix=progress_prefix, title=f"Video '{video_id}' already marked as unavailable, skipping")
+        logger.info(f"Video '{video_id}' already marked as unavailable, skipping")
+        return time.time() - Download_start_time
+    
+    elif state == 2 and not retry_private:
+        fprint(prefix=progress_prefix, title=f"Video '{video_id}' already marked as private, skipping")
+        logger.info(f"Video '{video_id}' already marked as private, skipping")
+        return time.time() - Download_start_time
+    
+
     if not all(key in youtube_required_info and value for key, value in data.items()):
-        state, data = _safe_extract_info(id_or_url=video_id)
+        state, data = safe_extract_info(id_or_url=video_id)
     else:
         logger.debug("[Extract] Enough data in db, no need to fetch yt_dlp")
 
     if state == 0: # Data ok, can proceed to download
-
 
         title: str | None = data.get("title", None)
         uploader: str | None = data.get("uploader", None)
 
         if not isinstance(title, str) or not isinstance(uploader, str):
 
-            update_video_db(video_id,{"status": 3}, cur, conn)
-            if info: fprint(progress_prefix, f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
+            update_video_db(video_id=video_id,update_fields={"status": 1}, cur=cur, conn=conn)
+            if info: fprint(prefix=progress_prefix, title=f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             logger.error(f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             return time.time() - Download_start_time
 
-        if info: fprint(progress_prefix,f"Downloading '{title}'")
+        if info: fprint(prefix=progress_prefix,title=f"Downloading", stitle=title)
 
 
         download_success, message, final_filename = download_yt_dlp(
@@ -455,14 +498,14 @@ def download_video(
             filename: str = final_filename
             filepath: Path = Path(download_path / filename)
 
-            logger.debug(f"[Download] Downloaded finished, checking file intergity: '{filename}'")
+            logger.debug(f"[Download] Download finished, checking file intergity: '{filename}'")
             if repair_mp3_file(filepath=filepath, test_run=test_run): # Newly downloaded file is readable and clean
 
                 # Update metadata
                 data["filename"] = final_filename
                 data["status"] = 0
+                if info: fprint(prefix=progress_prefix, title=f"Downloaded", stitle=title)
                 logger.debug(f"[Download] Sucessfully downloaded '{title}")
-                if info: fprint(prefix=progress_prefix, title=f"Downloaded '{title}'")
                 update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
 
             else:
@@ -477,7 +520,7 @@ def download_video(
                 if info: fprint(prefix=progress_prefix, title=f"Video {video_id} is private, skipping")
                 logger.warning(f"[Download] Video {video_id} is private, skipping")
             else:
-                data["status"] = 3
+                data["status"] = 1
                 if info: fprint(prefix=progress_prefix, title=f"Video {video_id} failed to download, reason : {message}")
                 logger.error(f"[Download] Video {video_id} failed to download, reason : {message}")
             
@@ -485,8 +528,8 @@ def download_video(
             return time.time() - Download_start_time
 
     else: # Data is null or unavavailable, probalby unavailable video, skipping
-        data["status"] = 3
+        data["status"] = 1
         if info: fprint(progress_prefix, f"Failed to fetch infos for '{video_id}', skipping")
-        logger.error(f"[Download] Failed to fetch infos for '{video_id}', skipping")
+        logger.info(f"[Download] Failed to fetch infos for '{video_id}', skipping")
         update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
         return time.time() - Download_start_time

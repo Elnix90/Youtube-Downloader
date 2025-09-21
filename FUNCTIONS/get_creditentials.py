@@ -47,7 +47,8 @@ def get_authenticated_service(info: bool = True) -> Resource:
             with open(TOKEN_FILE, "w", encoding="utf-8") as token:
                 token.write(creds.to_json())  # pyright: ignore[reportUnusedCallResult, reportUnknownMemberType, reportUnknownArgumentType]
 
+    print("[Get Credentials] Sucessfully logged")
     logger.info("[Get Credentials] Successfully logged")
 
-    # Explicit cast to satisfy basedpyright typing
-    return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
+
+    return build(serviceName=API_SERVICE_NAME, version=API_VERSION, credentials=creds)
