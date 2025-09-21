@@ -44,10 +44,14 @@ TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 DOWNLOAD_PATH: Path = Path(config["paths"]["download_path"])
 DB_PATH: Path = Path(config["paths"]["db_path"])
 
-# Fichiers de credentials et données
+# Creds files
 CLIENT_SECRETS_FILE: Path = CRED_DIR / config["paths"]["client_secrets_file"]
 TOKEN_FILE: Path = CRED_DIR / config["paths"]["token_file"]
 PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / config["paths"]["playlist_videos_file"]
+
+# Stats files
+CORRECT_NOT_IN_DIR_FILE: Path = JSON_DIR / config["paths"]["correct_not_in_db.json"]
+UNAVAILABLE_VIDEOS_FILE: Path = JSON_DIR / config["paths"]["unavailable_videos.json"]
 
 # Fichiers de patterns
 UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["unwanted_patterns_file"]
@@ -60,8 +64,9 @@ MAX_LYRICS_RETRIES: int = config["processing"]["max_lyrics_retries"]
 
 # Configuration de logging
 LOGS_CONSOLE_GLOBALLY: bool = config["logging"]["console_globally"]
-NOT_OVERLAP_FPRINT: bool = config["logging"]["not_overlap_fprint"]
-
+OVERLAP_FPRINT: bool = config["logging"]["overlap_fprint"]
+OVERWRITE_UNCHANGED: bool = config["logging"]["overwrite_unchanged"]
+ 
 # Mapping des niveaux de logging
 LOGGING_LEVELS = {
     "DEBUG": logging.DEBUG,

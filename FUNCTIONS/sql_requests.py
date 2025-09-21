@@ -3,8 +3,10 @@ import time
 from typing import Literal
 import json
 
+
 from CONSTANTS import DB_PATH
-from FUNCTIONS.helpers import VideoInfo, remove_data_from_video_info
+from FUNCTIONS.helpers import VideoInfo, VideoInfoKey, remove_data_from_video_info
+
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -78,6 +80,7 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
 
         recompute_tags BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)) DEFAULT (1),
         recompute_album BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)) DEFAULT (1),
+        recompute_yt_info BOOLEAN NOT NULL CHECK (recompute_yt_info IN (0,1)) DEFAULT (0),
 
         remix_of TEXT,
         filename TEXT,
@@ -239,8 +242,11 @@ def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection) -
 
 
 
-def get_videos_in_list(cur: sqlite3.Cursor) -> list[str]:
-    _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
+def get_videos_in_list(include_not_status0: bool,cur: sqlite3.Cursor) -> list[str]:
+    if include_not_status0:
+        _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
+    else:
+        _ = cur.execute("SELECT video_id FROM videos WHERE status = 0 ORDER BY date_added ASC")
     rows = cur.fetchall()
     return [row["video_id"] for row in rows]  # pyright: ignore[reportAny]
 
@@ -252,39 +258,39 @@ def get_videos_in_list(cur: sqlite3.Cursor) -> list[str]:
 # -----------------------------
 # Safe helper functions
 # -----------------------------
-def safe_str(row: sqlite3.Row, key: str) -> str:
+def safe_str(row: sqlite3.Row, key: VideoInfoKey) -> str:
     value = row[key] if key in row.keys() else None
     return value if isinstance(value, str) else ""
 
 
-def safe_int(row: sqlite3.Row, key: str) -> int:
+def safe_int(row: sqlite3.Row, key: VideoInfoKey) -> int:
     value = row[key] if key in row.keys() else None
     return value if isinstance(value, int) else 0
 
-def safe_status(row: sqlite3.Row, key: str) -> Literal[0, 1, 2, 3]:
+def safe_status(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2, 3]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, int) and value in (0, 1, 2, 3):
         return value
-    return 3
+    return 3 # Unknown
 
-def safe_lyrics_to_use(row: sqlite3.Row, key: str) -> Literal[0, 1, 2]:
+def safe_lyrics_to_use(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, int) and value in (0, 1, 2):
         return value
     return 0
 
-def safe_float(row: sqlite3.Row, key: str) -> float:
+def safe_float(row: sqlite3.Row, key: VideoInfoKey) -> float:
     value = row[key] if key in row.keys() else None
     return float(value) if isinstance(value, (int, float)) else 0.0
 
 
-def safe_bool(row: sqlite3.Row, key: str) -> bool:
+def safe_bool(row: sqlite3.Row, key: VideoInfoKey) -> bool:
     value = row[key] if key in row.keys() else None
     return bool(value) if isinstance(value, int) else False
 
 
 
-def safe_str_list(row: sqlite3.Row, key: str) -> list[str]:
+def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, str):
         try:
@@ -326,7 +332,7 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
         "removed_segments_duration": safe_float(row,"removed_segments_duration"),
 
         "lyrics": safe_str(row, "lyrics"),
-        "subtitles": safe_str(row, "subtitle"),
+        "subtitles": safe_str(row, "subtitles"),
         "syncedlyrics": safe_str(row, "syncedlyrics"),
         "auto_subs": safe_str(row, "auto_subs"),
         "try_lyrics_if_not": safe_bool(row, "try_lyrics_if_not"),
@@ -341,6 +347,7 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
 
         "recompute_tags": safe_bool(row, "recompute_tags"),
         "recompute_album": safe_bool(row, "recompute_album"),
+        "recompute_yt_info": safe_bool(row, "recompute_yt_info"),
 
         "remix_of": safe_str(row, "remix_of"),
 
@@ -348,8 +355,8 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
         "status": safe_status(row, "status"),
         "reason": safe_str(row, "reason"),
 
-        "date_added": safe_int(row, "date_added"),
-        "date_modified": safe_int(row, "date_modified"),
+        "date_added": safe_float(row, "date_added"),
+        "date_modified": safe_float(row, "date_modified"),
     }
 
 
@@ -368,14 +375,8 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
     _ = cur.execute("SELECT * FROM videos WHERE video_id = ?", (video_id,))
     row: sqlite3.Row = cur.fetchone()  # pyright: ignore[reportAny]
     if not row:
-        logger.debug(f"[Get Video Info] No entry found for video_id '{video_id}'")
+        logger.verbose(f"[Get Video Info] No entry found for video_id '{video_id}'")
         return {}
-
-    # Debug print all keys and values in the row
-    # logger.debug(f"[Get Video Info] Row keys: {list(row.keys())}")
-    # for key in row.keys():
-    #     logger.debug(f"[Get Video Info] {key} = {repr(row[key])}")
-
 
     # Only add keys with non-null values
     video_info: VideoInfo = row_to_video_info(row=row)
@@ -399,11 +400,11 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
         WHERE video_id = ?
         ORDER BY segment_start
     """, (video_id,))
-    skips = [(seg_row["segment_start"], seg_row["segment_end"]) for seg_row in cur.fetchall()]  # pyright: ignore[reportAny]
+    skips: list[tuple[float, float]] = [(seg_row["segment_start"], seg_row["segment_end"]) for seg_row in cur.fetchall()]  # pyright: ignore[reportAny]
     if skips:
         video_info["skips"] = skips
 
-    logger.debug(f"[Get Video Info] Retrieved info for video_id '{video_id}'")
+    logger.verbose(f"[Get Video Info] Retrieved info for video_id '{video_id}'")
 
     video_info_copy = video_info.copy()
 

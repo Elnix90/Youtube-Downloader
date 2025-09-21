@@ -35,7 +35,7 @@ def write_metadata_to_json(filepath: Path, file: Path, tag: str = 'metadata') ->
                     if data:
                         with open(file, "w") as f:
                             _ = f.write(json.dumps(data,indent=4))
-                        logger.debug(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
+                        logger.info(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
                         return data, 0
                     else:
                         logger.warning(f"[Get Metadata Tag] Empty data in file '{filepath}'")

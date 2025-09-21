@@ -89,7 +89,7 @@ def fetch_playlist_videos(
                     vid_id: str = content_details.get('videoId', "")  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     if vid_id:
                         all_videos.append(vid_id)  # pyright: ignore[reportUnknownArgumentType]
-                        if info: fprint(prefix="", title=f"\r[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
+                        if info: fprint(prefix="", title=f"[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
                 next_page_token = response.get('nextPageToken')  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 if not next_page_token:
                     break
@@ -102,7 +102,7 @@ def fetch_playlist_videos(
                     raise
 
         dump(data=all_videos, file=file_path)
-        print()
+        if info: print()
         logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
     else:
         videos: list[str] = load(file_path)
