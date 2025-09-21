@@ -28,8 +28,9 @@ requests-oauthlib==2.0.0
 rsa==4.9.1
 soupsieve==2.8
 syncedlyrics==1.0.1
-types-httplib2==0.31.0.20250913
-typing_extensions==4.15.0
+tomli==2.2.1
+types-httplib2==0.30.0.20250831
+typing_extensions==4.14.1
 uritemplate==4.2.0
 urllib3==2.5.0
 yt-dlp==2025.9.5

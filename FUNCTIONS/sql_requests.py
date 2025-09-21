@@ -3,8 +3,10 @@ import time
 from typing import Literal
 import json
 
-from CONSTANTS import db_file
+
+from CONSTANTS import DB_PATH
 from FUNCTIONS.helpers import VideoInfo, VideoInfoKey, remove_data_from_video_info
+
 
 from logger import setup_logger
 logger = setup_logger(__name__)
@@ -19,19 +21,19 @@ def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
     Connect to the SQLite database. If the DB file does not exist, create it.
     """
     
-    if not db_file.exists():
+    if not DB_PATH.exists():
         if create_if_not:
-            logger.info(f"[Get DB conn] Database file not found, creating: {db_file}")
-            db_file.parent.mkdir(parents=True, exist_ok=True)  # ensure parent folder exists
+            logger.info(f"[Get DB conn] Database file not found, creating: {DB_PATH}")
+            DB_PATH.parent.mkdir(parents=True, exist_ok=True)  # ensure parent folder exists
             # This will create an empty SQLite database
-            conn = sqlite3.connect(db_file)
+            conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             logger.debug("[Get DB conn] New database created")
             return conn
         else:
-            raise FileNotFoundError (f"{db_file} does not exists, stopping execution here")
+            raise FileNotFoundError (f"{DB_PATH} does not exists, stopping execution here")
 
-    conn = sqlite3.connect(db_file)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     logger.debug("[Get DB conn] Successfully connected")
     return conn
