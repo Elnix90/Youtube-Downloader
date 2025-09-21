@@ -108,8 +108,8 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
 
 
     # Normalize inputs
-    title_norm = sanitize_text(title)
-    uploader_norm = sanitize_text(uploader)
+    title_norm = sanitize_text(title).lower()
+    uploader_norm = sanitize_text(uploader).lower()
 
 
 
@@ -122,6 +122,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
             patterns = load_patterns(file=tag_file)
 
             for line in patterns:
+                line = line.lower()
 
                 if line.startswith("re:"):
                     # regex rule
@@ -132,7 +133,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
                         break
                 else:
                     # word/phrase rule
-                    word = sanitize_text(line.strip())
+                    word = line.strip()
                     if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                         tags.add(tag_name)
                         logger.debug(f"[Compute Tags] Added '{tag_name}' (keyword '{word}')")
@@ -144,6 +145,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
 
             present = False
             for line in patterns:
+                line = line.lower()
 
                 if line.startswith("re:"):
                     pattern = line[3:].strip()
@@ -152,7 +154,7 @@ def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
                         logger.debug(f"[Compute Tags] Prevented '{tag_name}' (regex '{pattern}')")
                         break
                 else:
-                    word = sanitize_text(line.strip())
+                    word = line.strip()
                     if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
                         present = True
                         logger.debug(f"[Compute Tags] Prevented '{tag_name}' (keyword '{word}')")

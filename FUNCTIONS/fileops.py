@@ -19,7 +19,7 @@ def load(file: Path) -> list[str]:
             raw = json.load(f)  # pyright: ignore[reportAny]
 
         if isinstance(raw, list) and all(isinstance(val, str) for val in raw):  # pyright: ignore[reportUnknownVariableType]
-            logger.debug(f"[Load] Successfully loaded '{file}'")
+            logger.verbose(f"[Load] Successfully loaded '{file}'")
             return cast(list[str], raw)
 
         logger.warning(f"[Load] Invalid format in '{file}', expected list[str]")
@@ -43,7 +43,7 @@ def dump(data: list[str], file: Path) -> None:
         _ = temp_file.write_bytes(file.read_bytes())
     try:
         with file.open("w", encoding="utf-8") as f:
-            logger.info(f"[Dump] Sucessfully dumped new data '{file}'")
+            logger.verbose(f"[Dump] Sucessfully dumped new data '{file}'")
             json.dump(data, f, indent=2)
         if temp_file.exists():
             temp_file.unlink() # Remove backup after successful dump
@@ -70,7 +70,7 @@ def load_patterns(file: Path) -> set[str]:
     try:
         lines = file.read_text(encoding="utf-8").splitlines()
         patterns ={sanitize_text(line.strip()) for line in lines if line.strip() and not line.startswith("#")}
-        logger.debug(f"[Load patterns] Sucessfully loaded {len(patterns)} patterns from '{file}'")
+        logger.verbose(f"[Load patterns] Sucessfully loaded {len(patterns)} patterns from '{file}'")
         return patterns
     except Exception as e:
         logger.error(f"[Compute Tags] Failed to load trusted artists: {e}")

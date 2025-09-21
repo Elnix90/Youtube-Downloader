@@ -13,6 +13,7 @@ logger = setup_logger(__name__)
 def remove_ids_not_in_list(
     video_id_file: Path,
     download_path: Path,
+    include_not_status0: bool,
     cur: Cursor,
     info: bool,
     error: bool,
@@ -21,7 +22,7 @@ def remove_ids_not_in_list(
     """
     Remove id from list if not in playlist
     """
-    existing_video_ids: set[str] = set[str](get_videos_in_list(cur))
+    existing_video_ids: set[str] = set[str](get_videos_in_list(include_not_status0=include_not_status0,cur=cur))
 
     video_ids: set[str] = set[str](load(video_id_file))
     not_in_video_ids: set[str] = existing_video_ids - video_ids
