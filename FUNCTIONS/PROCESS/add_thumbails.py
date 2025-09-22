@@ -45,7 +45,7 @@ def process_thumbnail_for_video(
         success_remove = remove_image_from_mp3(mp3_path=filepath, image_path=this_thumbnail_path, test_run=test_run)
         if success_remove:
             update_video_db(video_id=video_id, update_fields={"update_thumbnail": False},cur=cur, conn=conn)
-            fprint(prefix=progress_prefix, title=f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
+            fprint(progress_prefix, f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
             logger.info(f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
         else:
             if error: print(f"\n[Remove thumbnail] Error removing thumbnail and file for '{filepath}'")
@@ -54,7 +54,7 @@ def process_thumbnail_for_video(
 
     # File exists
     elif filepath.exists():
-        if info: fprint(progress_prefix, f"Checking thumbnail for", stitle=title)
+        if info: fprint(progress_prefix, f"Checking thumbnail for ?", title)
         logger.verbose(f"[Thumbnail] Checking thumbnail for '{title}'")
 
         embedded_bytes = has_embedded_cover(filepath)
@@ -82,7 +82,7 @@ def process_thumbnail_for_video(
 
         # Case 3: Embedded image already exists and no update is needed
         elif embedded_bytes is not None and not update_thumbnail:
-            if info: fprint(progress_prefix, f"Embedded cover already exists — skipping update for", stitle=title)
+            if info: fprint(progress_prefix, f"Embedded cover already exists — skipping update for ?", title)
             logger.debug(f"[Thumbnail] Embedded cover already exists — skipping update for '{title}'")
 
         # Case 4: Local file exists but no embedded cover, and update not explicitly requested
@@ -109,7 +109,7 @@ def process_thumbnail_for_video(
                     embed_success: bool = embed_image_in_mp3(mp3_path=filepath, image_path=this_thumbnail_path,test_run=test_run)
                     if embed_success is True:
                         update_video_db(video_id=video_id, update_fields={"update_thumbnail": False}, cur=cur, conn=conn)
-                        if info: fprint(prefix=progress_prefix, title=f"{'Downloaded & e' if download_thumbnail else 'E'}mbedded cover for", stitle=title)
+                        if info: fprint(progress_prefix, f"{'Downloaded & e' if download_thumbnail else 'E'}mbedded cover for ?", title)
                         logger.info(f"[Thumbnail] Embedded cover for '{title}'")
                     else:
                         if error: print(f"\nFailed to embed into '{title}'")

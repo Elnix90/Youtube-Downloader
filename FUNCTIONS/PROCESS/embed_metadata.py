@@ -38,7 +38,7 @@ def embed_metadata_for_video(
     title: str = video_info.get("title", "")
 
 
-    if info: fprint(prefix=progress_prefix, title=f"Embedding metadata for", stitle=title)
+    if info: fprint(progress_prefix, f"Embedding metadata for ?", title)
     logger.verbose(f"[Metadata] Embedding metadata for '{title}'")
 
 
@@ -71,10 +71,10 @@ def embed_metadata_for_video(
                 if error: print(f"\n[Metadata] Failed to embed date '{tm}' for '{title}'")
                 logger.warning(f"[Metadata] Failed to embed date '{tm}' for '{title}'")
             else:
-                if info: fprint(prefix=progress_prefix, title=f"Embedded date '{tm}' for", stitle=title)
+                if info: fprint(progress_prefix, f"Embedded date '{tm}' for ?", title)
                 logger.info(f"[Metadata] Embedded date '{tm}' for '{title}'")
     else:
-        fprint(prefix=progress_prefix, title="No need to change date, skipping")
+        fprint(progress_prefix, "No need to change date, skipping")
 
 
 
@@ -110,12 +110,12 @@ def embed_metadata_for_video(
             if error: print(f"\n[Metadata] Failed to embed metadata for '{title}'")
             logger.warning(f"[Metadata] Failed to embed metadata for '{title}'")
         else:
-            if info: fprint(prefix=progress_prefix, title=f"Embedded metadata for", stitle=title)
+            if info: fprint(progress_prefix, f"Embedded metadata for ?", title)
             logger.info(f"[Metadata] Embedded metadata for '{title}'")
         return time.time() - start_processing, False
     else:
 
-        fprint(progress_prefix, "No need to embed metadata for", stitle=title)
+        fprint(progress_prefix, "No need to embed metadata for ?", title)
         logger.info(f"No need to embed metadata for {title}")
         return time.time() - start_processing, True
 

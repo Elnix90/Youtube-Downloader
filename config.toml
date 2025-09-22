@@ -9,7 +9,7 @@ logs_dir = "LOGS"
 config_dir = "CONFIG"
 
 # Download paths and database
-download_path = "/home/$USER/YOUTUBE/MUSICS"
+download_path = "~/YOUTUBE/MUSICS"
 db_path = "music.db"
 
 # Configuration files
@@ -47,8 +47,6 @@ force_recompute_album = true
 force_recompute_yt_info = false
 
 
-
-
 thumbnail_format = "pad"  # "pad" or "crop"
 
 sponsorblock_categories = ["music_offtopic", "sponsor", "intro", "outro"]
@@ -78,4 +76,5 @@ add_folder_files_not_in_list = true
 console_globally = true
 level_console = "WARNING"  # VERBOSE, DEBUG, INFO, WARNING, ERROR, CRITICAL
 level_logfiles = "DEBUG"
-not_overlap_fprint = false
+overlap_fprint = true
+overwrite_unchanged = true

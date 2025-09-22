@@ -56,7 +56,7 @@ def remove_ids_not_in_list(
 
         if not test_run: _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
         removed_ids += 1
-        if info: fprint(prefix="",title=f"[Removing Ids] Removed {removed_ids} from list")
+        if info: fprint("",f"[Removing Ids] Removed {removed_ids} from list")
 
 
     if info: print()

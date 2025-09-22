@@ -43,7 +43,7 @@ def remove_sponsorblock_segments_for_video(
     # --- If values are defined (not None) ---
 
     if (removed_segments_int == -1 and removed_segments_duration == -1.0) or (removed_segments_int > 0 and removed_segments_duration > 0.0):
-        if info: fprint(progress_prefix, f"Skipping -> already processed", stitle=title)
+        if info: fprint(progress_prefix, f"Skipping -> already processed ?", title)
         logger.debug(f"[Sponsorblock] Skipping -> already processed '{title}'")
         return time.time() - start_cut
 
@@ -55,7 +55,7 @@ def remove_sponsorblock_segments_for_video(
 
     # --- If no skips even after SponsorBlock query, means that the video has not, so update the fields to not retry later---
     if not skips:
-        if info: fprint(progress_prefix, f"No segments to cut for", stitle=title)
+        if info: fprint(progress_prefix, f"No segments to cut for ?", title)
         logger.debug(f"[Sponsorblock] No segments to cut for '{title}'")
         update_video_db(
             video_id,
@@ -71,7 +71,7 @@ def remove_sponsorblock_segments_for_video(
 
     # --- Perform cutting ---
     if info:
-        fprint(progress_prefix, f"Cutting {len(skips)} segments from", stitle=title)
+        fprint(progress_prefix, f"Cutting {len(skips)} segments from ?", title)
     logger.info(f"[Sponsorblock] Cutting {len(skips)} segments from '{title}'")
 
     temp_output = filepath.with_suffix(".tmp.mp3")
@@ -94,7 +94,7 @@ def remove_sponsorblock_segments_for_video(
         _ = temp_output.replace(filepath)
 
         if info:
-            fprint(progress_prefix, f"Sucessfully cutted {len(skips)} segments from", stitle=title)
+            fprint(progress_prefix, f"Sucessfully cutted {len(skips)} segments from ?", title)
         logger.info(f"[Sponsorblock] Sucessfully cutted {len(skips)} segments from '{title}'")
 
     except subprocess.CalledProcessError:

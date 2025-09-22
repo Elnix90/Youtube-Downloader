@@ -1,5 +1,4 @@
 from datetime import datetime
-import time
 import shutil
 from typing import TypeAlias, TypedDict, Literal
 import unicodedata
@@ -244,34 +243,47 @@ def sanitize_text(text: str) -> str:
 
 
 
-def fprint(prefix: str, title: str, stitle: str = "", overwrite: bool = True,flush: bool = True) -> None:
+def fprint(
+    prefix: str,
+    title: str,
+    *to_sanitize: str,
+    overwrite: bool = True,
+    flush: bool = True
+) -> None:
+    """
+    Print a formatted message with optional substitution of '?' placeholders
+    by sanitized strings passed in *to_sanitize.
+    """
     term_width: int = shutil.get_terminal_size(fallback=(80, 20)).columns
     max_len: int = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
+
+
+    # replace each "?" in title with a sanitized arg
     sanitized_title = title
-    s_text: str = sanitize_text(text=stitle)
-    if stitle: sanitized_title += f" '{s_text if s_text else 'sanitized_name'}'"
+    for value in to_sanitize:
+        if "?" in sanitized_title:
+
+            s_text: str = sanitize_text(value)
+            if not s_text: s_text = "sanitized_name"
+
+            sanitized_title = sanitized_title.replace("?", s_text, 1)
+        else:
+            logger.warning(f"[fprint] '?' wasn't found in sanitised title '{sanitized_title}' for value '{value}'")
+
+
     if len(sanitized_title) > max_len:
-        sanitized_title = sanitized_title[:max_len-1] + "…"
+        sanitized_title = sanitized_title[: max_len - 1] + "…"
         space_nb = 0
     else:
         space_nb = max_len - len(sanitized_title)
 
-    print(f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",end="" if OVERLAP_FPRINT else "\n",flush=flush)
-
-
-
-
-
-
-
-def wait(progress_prefix: str, eta_str: str, d: int = 0):
-    if d:
-        logger.info(f"[PAUSE] Pausing {d} seconds...")
-        for i in range(d,-1,-1):
-            fprint(progress_prefix + " | " + eta_str, f" | [WAIT] Waiting {i} seconds...")
-            time.sleep(1)
+    print(
+        f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",
+        end="" if overwrite or OVERLAP_FPRINT else "\n",
+        flush=flush,
+    )
 
 
 

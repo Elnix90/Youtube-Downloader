@@ -1,6 +1,6 @@
 """
 Constants loader for YouTube Music Downloader
-Loads config.toml (validated) and exposes strongly-typed constants.
+Loads config.toml (validated) and exposes constants.
 """
 
 from pathlib import Path
@@ -9,6 +9,8 @@ import logging
 import sys
 
 from config_loader import Config
+
+
 
 # ---------- Load config ----------
 
@@ -24,6 +26,8 @@ try:
         config: Config = tomli.load(f)  # pyright: ignore[reportAssignmentType]
 except tomli.TOMLDecodeError as e:
     raise ValueError(f"Syntax error in config.toml: {e}")
+
+
 
 
 # ---------- Validation ----------
@@ -46,6 +50,8 @@ def validate_config() -> None:
 validate_config()
 
 
+
+
 # ---------- Constants ----------
 
 # Base directories
@@ -58,7 +64,7 @@ PATTERN_DIR: Path = CONFIG_DIR / "PATTERNS"
 TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 
 # Critical paths
-DOWNLOAD_PATH: Path = Path(config["paths"]["download_path"])
+DOWNLOAD_PATH: Path = Path(config["paths"]["download_path"]).expanduser().resolve()
 DB_PATH: Path = Path(config["paths"]["db_path"])
 
 # Creds files
@@ -74,14 +80,14 @@ UNAVAILABLE_VIDEOS_FILE: Path = JSON_DIR / "unavailable_videos.json"
 UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["unwanted_patterns_file"]
 REMIX_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["remix_patterns_file"]
 PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["private_patterns_file"]
-TRUSTED_ARTISTS: Path = PATTERN_DIR / config["patterns"]["trusted_artists_file"]
+TRUSTED_ARTISTS_FILE: Path = PATTERN_DIR / config["patterns"]["trusted_artists_file"]
 
 # Processing
 MAX_LYRICS_RETRIES: int = config["processing"]["max_lyrics_retries"]
 
 # Logging
 LOGS_CONSOLE_GLOBALLY: bool = config["logging"]["console_globally"]
-OVERLAP_FPRINT: bool = config["logging"]["not_overlap_fprint"]
+OVERLAP_FPRINT: bool = config["logging"]["overlap_fprint"]
 OVERWRITE_UNCHANGED: bool = config["logging"]["overwrite_unchanged"]
 
 LOGGING_LEVELS: dict[str, int] = {

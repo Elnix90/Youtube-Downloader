@@ -73,7 +73,7 @@ class LoggingConfig(TypedDict):
     console_globally: bool
     level_console: str
     level_logfiles: str
-    not_overlap_fprint: bool
+    overlap_fprint: bool
     overwrite_unchanged: bool
 
 class Config(TypedDict):

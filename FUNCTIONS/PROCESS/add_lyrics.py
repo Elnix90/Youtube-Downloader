@@ -91,7 +91,7 @@ def process_lyrics_for_video(
 
     # --- CASE A: Fetch or update lyrics ---
     if not remove_lyrics:
-        if info: fprint(prefix=progress_prefix, title=f"Processing lyrics for", stitle=title)
+        if info: fprint(progress_prefix, f"Processing lyrics for ?", title)
         logger.info(f"[Lyrics] Processing lyrics for '{title}'")
 
         embed_lyrics_into_file: bool = recompute_lyrics
@@ -111,7 +111,7 @@ def process_lyrics_for_video(
                 )
                 if success:
                     update_fields["lyrics"] = lrcs
-                    if info: fprint(prefix=progress_prefix, title=f"Lyrics created from remix '{remix_of}' for", stitle=title)
+                    if info: fprint(progress_prefix, f"Lyrics created from remix '{remix_of}' for ?", title)
                     logger.info(f"[Lyrics] Lyrics created from remix '{remix_of}' for '{title}'")
                 else:
                     if error: print(f"\nFailed to write remix_lyrics .lrc for '{title}'")
@@ -127,7 +127,7 @@ def process_lyrics_for_video(
         elif file_lyrics is not None and not recompute_lyrics:
             lyrics = file_lyrics
 
-            if info: fprint(prefix=progress_prefix, title=f"OK, no update needed for", stitle=title)
+            if info: fprint(progress_prefix, f"OK, no update needed for ?", title)
             logger.info(f"[Lyrics] OK, no update needed for '{lyrics_file_path.name}'")
 
         
@@ -161,7 +161,7 @@ def process_lyrics_for_video(
                 if lyrics is not None:
                     embed_lyrics_into_file = True
                 else:
-                    if info: fprint(prefix=progress_prefix,title=f"No lyrics found for", stitle=title+" by "+uploader)
+                    if info: fprint(progress_prefix,f"No lyrics found for ? by ?", title, uploader)
                     logger.info(f"[Lyrics] No lyrics found for '{title}' by '{uploader}'")
                     embed_lyrics_into_file = False
                 update_fields["lyrics_retries"] = lyrics_retries + 1
@@ -183,7 +183,7 @@ def process_lyrics_for_video(
                     )
                     if success:
                         update_fields["lyrics"] = lrcs
-                        if info: fprint(prefix=progress_prefix, title=f"Lyrics updated for", stitle=title)
+                        if info: fprint(progress_prefix, f"Lyrics updated for ?", title)
                         logger.info(f"[Lyrics] Lyrics updated for '{title}'")
                     else:
                         if error: print(f"\nFailed to write lyrics .lrc for '{title}'")
@@ -205,7 +205,7 @@ def process_lyrics_for_video(
             success = remove_lyrics_from_mp3(filepath, error, test_run)
             if success:
                 update_fields["remove_lyrics"] = False
-                if info: fprint(progress_prefix, f"Lyrics removed from", stitle=title)
+                if info: fprint(progress_prefix, f"Lyrics removed from ?", title)
                 logger.info(f"[Lyrics] Lyrics removed from '{title}'")
             else:
                 if error: print(f"\nFailed to remove lyrics for '{title}'")

@@ -448,7 +448,7 @@ def download_video(
     download_path.mkdir(parents=True, exist_ok=True)
 
 
-    if info: fprint(prefix=progress_prefix, title=f"Fetching infos for '{video_id}'")
+    if info: fprint(progress_prefix, f"Fetching infos for '{video_id}'")
     logger.info(f"[Download] Fetching infos for '{video_id}'")
 
     # Extracts youtube video's infos if the already present isn't enough
@@ -457,12 +457,12 @@ def download_video(
     state: Literal[0,1,2,3] = data.get("status",0)
 
     if state == 1 and not retry_unavailable:
-        fprint(prefix=progress_prefix, title=f"Video '{video_id}' already marked as unavailable, skipping")
+        fprint(progress_prefix, f"Video '{video_id}' already marked as unavailable, skipping")
         logger.info(f"Video '{video_id}' already marked as unavailable, skipping")
         return time.time() - Download_start_time
     
     elif state == 2 and not retry_private:
-        fprint(prefix=progress_prefix, title=f"Video '{video_id}' already marked as private, skipping")
+        fprint(progress_prefix, f"Video '{video_id}' already marked as private, skipping")
         logger.info(f"Video '{video_id}' already marked as private, skipping")
         return time.time() - Download_start_time
     
@@ -480,11 +480,11 @@ def download_video(
         if not isinstance(title, str) or not isinstance(uploader, str):
 
             update_video_db(video_id=video_id,update_fields={"status": 1}, cur=cur, conn=conn)
-            if info: fprint(prefix=progress_prefix, title=f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
+            if info: fprint(progress_prefix, f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             logger.error(f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             return time.time() - Download_start_time
 
-        if info: fprint(prefix=progress_prefix,title=f"Downloading", stitle=title)
+        if info: fprint(progress_prefix,f"Downloading ?", title)
 
 
         download_success, message, final_filename = download_yt_dlp(
@@ -504,12 +504,12 @@ def download_video(
                 # Update metadata
                 data["filename"] = final_filename
                 data["status"] = 0
-                if info: fprint(prefix=progress_prefix, title=f"Downloaded", stitle=title)
+                if info: fprint(progress_prefix, f"Downloaded ?", title)
                 logger.debug(f"[Download] Sucessfully downloaded '{title}")
                 update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
 
             else:
-                if info: fprint(prefix=progress_prefix,title=" Downloaded file is corrupted, skipping rest of processing")
+                if info: fprint(progress_prefix," Downloaded file is corrupted, skipping rest of processing")
                 logger.error(f"[Download] Downloaded file is corrupted, skipping rest of processing")
 
             return time.time() - Download_start_time
@@ -517,11 +517,11 @@ def download_video(
         else:
             if message == "Private video":
                 data["status"] = 2
-                if info: fprint(prefix=progress_prefix, title=f"Video {video_id} is private, skipping")
+                if info: fprint(progress_prefix, f"Video {video_id} is private, skipping")
                 logger.warning(f"[Download] Video {video_id} is private, skipping")
             else:
                 data["status"] = 1
-                if info: fprint(prefix=progress_prefix, title=f"Video {video_id} failed to download, reason : {message}")
+                if info: fprint(progress_prefix, f"Video {video_id} failed to download, reason : {message}")
                 logger.error(f"[Download] Video {video_id} failed to download, reason : {message}")
             
             update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
