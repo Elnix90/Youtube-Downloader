@@ -24,7 +24,7 @@ def show_final_stats(
     lyrics_duration: str | None,
     thumbnail_duration: str | None,
     tag_duration: str | None,
-    album_suration: str | None,
+    album_duration: str | None,
     metadata_duration: str | None,
     cur: Cursor,
     test_run: bool,
@@ -104,7 +104,7 @@ def show_final_stats(
         print(f" - Total thumbnails processing time: {thumbnail_duration}")
     if tag_duration is not None:
         print(f" - Total tags processing time: {tag_duration}")
-    if album_suration is not None:
-        print(f" - Total album processing time: {album_suration}")
+    if album_duration is not None:
+        print(f" - Total album processing time: {album_duration}")
     if metadata_duration is not None:
         print(f" - Total metadata processing time: {metadata_duration}")
