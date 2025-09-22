@@ -172,6 +172,7 @@ def process_all(
         recompute_yt_info: bool | None = data.get("recompute_yt_info")
 
         if recompute_yt_info or force_recompute_yt_info:
+            fprint(progress_prefix, f"[Re-Fetching] Re-fetch video_data from youtube for '{video_id}' (?)", data.get("title") or 'no title provided')
             logger.debug("[Process] Re-fetch yt data")
             state, new_info = safe_extract_info(id_or_url=video_id)
 

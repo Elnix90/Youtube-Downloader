@@ -30,7 +30,7 @@ def process_album_for_video(
 
     start_processing: float = time.time()
 
-    if info:fprint(prefix=progress_prefix, title=f"Getting album for", stitle=title)
+    if info:fprint(progress_prefix, f"Getting album for ?", title)
     logger.debug(f"[Album] Getting album for '{title}'")
     actual_album, state = read_id3_tag(filepath=filepath,frame_id="TALB")
     
@@ -57,7 +57,7 @@ def process_album_for_video(
         )
 
         if success:
-            if info: fprint(prefix=progress_prefix, title=f"Embedded album '{computed_album}' into", stitle=title)
+            if info: fprint(progress_prefix,f"Embedded album '{computed_album}' into ?",title)
             logger.info(f"[Album] Embedded album '{computed_album}' into '{title}'")
         else:
             if error: print(f"\n[Album] Error embedding album into '{title}'")

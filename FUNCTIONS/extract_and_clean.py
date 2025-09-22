@@ -90,7 +90,7 @@ def extract_and_clean_video_ids(
             logger.info(f"[Clean & Extract] Removed '{filename}': {reason}")
 
         if info:
-            fprint(prefix="[Clean & Extract] ",title=f"Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
+            fprint("[Clean & Extract] ",f"Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
 
     logger.info(f"[Clean & Extract] Checked {checked_files} files, removed {len(removed_files)}, kept {len(valid_files)} valid MP3s, {lrc_or_png} valid lyrics or thumbnail")
 

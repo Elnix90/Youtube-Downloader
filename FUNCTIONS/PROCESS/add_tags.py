@@ -37,7 +37,7 @@ def process_tags_for_video(
 
     start_processing: float = time.time()
 
-    if info: fprint(prefix=progress_prefix, title=f"Getting tags for", stitle=title)
+    if info: fprint(progress_prefix, f"Getting tags for ?", title)
     logger.info(f"[Tags] Getting tags for '{title}'")
 
     computed_tags: set[str] = set[str]()
@@ -63,7 +63,7 @@ def process_tags_for_video(
     update_video_db(video_id, {"tags": list(all_tags)}, cur, conn)
 
     if success and all_tags:
-        if info: fprint(progress_prefix, f"Embedded {len(all_tags)} tags into", stitle=title)
+        if info: fprint(progress_prefix, f"Embedded {len(all_tags)} tags into ?", title)
         logger.info(f"[Tags] Embedded {len(all_tags)} tags into '{filepath.name}'")
     if not success:
         if error: print(f"\n[Tags] Error embedding tags into {filepath.name}")

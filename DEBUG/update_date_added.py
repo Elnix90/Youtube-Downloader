@@ -28,4 +28,4 @@ def update_date_added(playlist_file: Path, cur: sqlite3.Cursor) -> None:
             updated_ids += 1
         except sqlite3.OperationalError:
             errored_ids += 1
-        fprint(prefix=f"{updated_ids + errored_ids}/{total_videos} | ",title=f"Updated {updated_ids}, failed to update {errored_ids} (likely not present db)")
+        fprint(f"{updated_ids + errored_ids}/{total_videos} | ",f"Updated {updated_ids}, failed to update {errored_ids} (likely not present db)")

@@ -32,7 +32,6 @@ nightstep
 amv
 cover
 french
-topic
 hd
 mix
 club edit
@@ -40,6 +39,7 @@ female
 male
 version
 techno
+hypertechno
 by
 electronic
 pop
