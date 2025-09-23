@@ -246,7 +246,7 @@ def get_videos_in_list(include_not_status0: bool,cur: sqlite3.Cursor) -> list[st
     if include_not_status0:
         _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
     else:
-        _ = cur.execute("SELECT video_id FROM videos WHERE status = 0 ORDER BY date_added ASC")
+        _ = cur.execute("SELECT video_id FROM videos WHERE status IN (0,3) ORDER BY date_added ASC")
     rows = cur.fetchall()
     return [row["video_id"] for row in rows]  # pyright: ignore[reportAny]
 
