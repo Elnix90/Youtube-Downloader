@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 import json
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 SPONSORBLOCK_API: str = "https://sponsor.ajay.app/api/skipSegments"

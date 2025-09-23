@@ -3,9 +3,10 @@ from pathlib import Path
 
 
 from FUNCTIONS.metadata import get_metadata_tag
-from FUNCTIONS.helpers import VideoInfoMap, fprint
+from FUNCTIONS.HELPERS.helpers import VideoInfoMap
+from FUNCTIONS.HELPERS.fprint import fprint
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

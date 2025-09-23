@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

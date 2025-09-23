@@ -5,11 +5,12 @@ from typing import Literal
 import time
 
 
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.thumbnail import has_embedded_cover, embed_image_in_mp3, download_and_pad_image, remove_image_from_mp3
 from FUNCTIONS.sql_requests import update_video_db
-from FUNCTIONS.helpers import fprint, thumbnail_png_path_for_mp3
+from FUNCTIONS.HELPERS.helpers import thumbnail_png_path_for_mp3
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

@@ -3,11 +3,12 @@ from sqlite3 import Connection, Cursor
 import time
 
 
+from FUNCTIONS.HELPERS.compute_tags_and_album import compute_tags
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.sql_requests import update_video_db
-from FUNCTIONS.helpers import fprint
-from FUNCTIONS.tags_system import compute_tags, set_tags
+from FUNCTIONS.set_tags_and_album import set_tags
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

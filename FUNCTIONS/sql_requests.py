@@ -5,10 +5,10 @@ import json
 
 
 from CONSTANTS import DB_PATH
-from FUNCTIONS.helpers import VideoInfo, VideoInfoKey, remove_data_from_video_info
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, remove_data_from_video_info
 
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

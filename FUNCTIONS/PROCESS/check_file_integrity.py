@@ -5,10 +5,10 @@ from typing import Literal
 
 from FUNCTIONS.metadata import repair_mp3_file
 from FUNCTIONS.sql_requests import update_video_db, get_video_info_from_db
-from FUNCTIONS.helpers import VideoInfo, VideoInfoMap, youtube_required_info
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap, youtube_required_info
 
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

@@ -7,9 +7,9 @@ from mutagen.id3 import ID3, Frames  # pyright: ignore[reportUnknownVariableType
 from mutagen.id3._frames import TXXX
 from mutagen._util import MutagenError
 
-from FUNCTIONS.helpers import VideoInfo
+from FUNCTIONS.HELPERS.helpers import VideoInfo
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

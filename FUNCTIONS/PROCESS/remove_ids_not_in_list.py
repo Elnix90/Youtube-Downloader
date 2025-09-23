@@ -2,11 +2,11 @@ from pathlib import Path
 from sqlite3 import Cursor
 
 
-from FUNCTIONS.fileops import load
+from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db
-from FUNCTIONS.helpers import fprint
+from FUNCTIONS.HELPERS.fprint import fprint
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

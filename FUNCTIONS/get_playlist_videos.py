@@ -1,12 +1,12 @@
 from googleapiclient.errors import HttpError
 from pathlib import Path
-from FUNCTIONS.fileops import load, dump
+from FUNCTIONS.HELPERS.fileops import load, dump
 
 
 from FUNCTIONS.get_creditentials import get_authenticated_service
-from FUNCTIONS.helpers import fprint
+from FUNCTIONS.HELPERS.fprint import fprint
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 import yt_dlp
