@@ -10,3 +10,4 @@ nightcore
 speedcore
 nightstep
 amv
+version

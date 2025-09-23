@@ -5,11 +5,12 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 
-from FUNCTIONS.fileops import load
+from FUNCTIONS.HELPERS.fileops import load
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_list, insert_video_db, update_video_db
-from FUNCTIONS.helpers import VideoInfoMap, VideoInfo, fprint, youtube_required_info
+from FUNCTIONS.HELPERS.helpers import VideoInfoMap, VideoInfo, youtube_required_info
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

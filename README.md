@@ -210,21 +210,6 @@ if __name__ == "__main__":
 5. **Enrichment**: Adds lyrics, tags, thumbnails, and metadata to each file
 6. **SponsorBlock**: Removes sponsored segments if enabled
 
-### File Organization
-
-The application creates this folder structure:
-
-```text
-├── config.toml                    # Your configuration
-├── music.db                       # SQLite database
-├── /your/music/folder/            # Downloaded MP3 files
-├── JSON/                          # Temporary playlist data
-├── LOGS/                          # Detailed operation logs
-├── CREDS/                         # YouTube API credentials (if used)
-└── CONFIG/                        # Pattern files for tagging
-    ├── PATTERNS/                  # Text patterns for cleaning
-    └── TAGS/                      # Tag assignment rules
-```
 
 ### Customization
 
@@ -241,33 +226,66 @@ The application creates this folder structure:
 ## 📂 Project Structure
 
 ```text
-├── main.py                           # Main function
-├── config.toml                       # Configuration file (TOML format)
-├── config.toml.example               # Configuration template
-├── config_loader.py                  # Configuration loading utilities
-├── logger.py                         # Logger initializer
-├── CONSTANTS.py                      # Project constants and paths
-├── requirements.txt                  # Python dependencies
-├── CONFIG/                           # Configuration files
-│   ├── PATTERNS/                     # Text patterns for processing
-│   │   ├── unwanted_patterns.txt     # Words to remove from titles
-│   │   ├── remix_patterns.txt        # Remix detection patterns
-│   │   ├── private_patterns.txt      # Private album patterns
-│   │   └── trusted_artists.txt       # Trusted artist names
-│   └── TAGS/                         # Tag assignment rules
-│       ├── tag_*.txt                 # Files that add specific tags
-│       └── notag_*.txt               # Files that prevent tagging
-├── FUNCTIONS/                        # Core functionality modules
-│   ├── get_playlist_videos.py       # YouTube playlist fetching
-│   ├── download.py                   # Video downloading logic
-│   ├── metadata.py                   # Metadata extraction and embedding
-│   ├── lyrics.py                     # Lyrics fetching and processing
-│   ├── tags_system.py                # Automatic tagging system
-│   ├── sql_requests.py               # Database operations
-│   └── PROCESS/                      # Processing pipeline modules
-├── CREDS/                            # API credentials (not tracked)
-├── JSON/                             # Temporary data files
-└── LOGS/                             # Application logs
+├── .gitignore                               # Git ignore file for excluding files/folders from version control
+├── CONFIG                                   # Configuration directory
+│   ├── PATTERNS                             # Pattern files for processing music metadata
+│   │   ├── private_patterns.txt             # Patterns marking content as private
+│   │   ├── remix_patterns.txt               # Patterns marking remixes
+│   │   ├── trusted_artists.txt              # Patterns identifying trusted/public artists
+│   │   └── unwanted_patterns.txt            # Patterns to remove from song titles
+│   ├── TAGS                                 # Tagging rules directory
+│   │   ├── notag_normalmusic.txt            # Keywords preventing normal music tagging
+│   │   ├── tag_femalemusic.txt              # Keywords to tag female music
+│   │   ├── tag_frenchmusic.txt              # Keywords to tag French music
+│   │   ├── tag_normalmusic.txt              # Keywords for normal music tagging
+│   │   ├── tag_publicmusic.txt              # Keywords for public music tagging
+│   │   └── tag_remixmusic.txt               # Keywords for remix music tagging
+│   └── config_loader.py                     # Loads and validates the configuration from config.toml
+├── CONSTANTS.py                             # Defines constants and paths used across the project
+├── DEBUG                                    # Scripts for testing, debugging, and experimenting
+│   ├── compare_dicts.py                     # Compare dictionaries for debugging
+│   ├── mp3_metadata.py                      # Inspect and debug MP3 metadata
+│   ├── sanitize_filenames.py                # Test filename sanitization functions
+│   ├── tree_view.py                         # Visualize project folder structure
+│   └── update_date_added.py                 # Debug date-added updates for music files
+├── FUNCTIONS                                # Core functionality of the project
+│   ├── HELPERS                              # Utility/helper functions used across modules
+│   │   ├── compute_tags_and_album.py        # Compute tags and album assignments
+│   │   ├── fileops.py                       # File input/output helper functions
+│   │   ├── fprint.py                        # Enhanced print function for console output
+│   │   ├── helpers.py                       # General-purpose helper functions
+│   │   ├── logger.py                        # Logger setup and management
+│   │   ├── tag_helpers.py                   # Helpers for tag processing
+│   │   └── text_helpers.py                  # Helpers for text normalization and cleaning
+│   ├── PROCESS                              # Processing modules for different music operations
+│   │   ├── add_album.py                     # Add album information to music files
+│   │   ├── add_lyrics.py                    # Add lyrics to music files
+│   │   ├── add_new_ids.py                   # Add new video IDs to database
+│   │   ├── add_tags.py                      # Add tags to music files
+│   │   ├── add_thumbails.py                 # Add thumbnails to music files
+│   │   ├── check_file_integrity.py          # Check file integrity and consistency
+│   │   ├── embed_metadata.py                # Embed metadata into music files
+│   │   ├── remove_ids_not_in_list.py        # Remove IDs not present in playlist
+│   │   ├── remove_sponsorblock_segments.py  # Remove unwanted sponsor segments
+│   │   └── show_final_stats.py              # Display final processing statistics
+│   ├── clean_song_query.py                  # Clean and normalize song query strings
+│   ├── download.py                          # Download songs/videos from YouTube
+│   ├── extract_and_clean.py                 # Extract data and clean it
+│   ├── extract_lyrics.py                    # Extract lyrics from sources
+│   ├── get_creditentials.py                 # Fetch credentials for APIs
+│   ├── get_playlist_videos.py               # Get videos from playlists
+│   ├── lyrics.py                            # Lyrics processing
+│   ├── metadata.py                          # Metadata processing
+│   ├── process_all.py                       # Run all processing steps for files
+│   ├── set_tags_and_album.py                # Assign tags and album info
+│   ├── sponsorblock.py                      # SponsorBlock integration for segment removal
+│   ├── sql_requests.py                      # SQL database operations
+│   └── thumbnail.py                         # Thumbnail processing
+├── MIGRATION.MD                             # Migration guide for upgrading to new version
+├── README.md                                # Project overview and instructions
+├── main.py                                  # Main entry point for the program
+├── requirements.txt                         # Python dependencies
+
 ```
 
 ---

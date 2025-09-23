@@ -3,13 +3,15 @@ from sqlite3 import Connection, Cursor
 import time
 
 
+from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import VideoInfo
 from FUNCTIONS.sql_requests import update_video_db, get_video_info_from_db
 from FUNCTIONS.lyrics import embed_lyrics_into_mp3, remove_lyrics_from_mp3, has_lyrics
 from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
-from FUNCTIONS.helpers import VideoInfo, fprint
+
 from CONSTANTS import MAX_LYRICS_RETRIES
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

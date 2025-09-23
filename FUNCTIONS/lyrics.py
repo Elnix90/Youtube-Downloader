@@ -3,10 +3,10 @@ import re
 import json
 import os
 
-from FUNCTIONS.helpers import lyrics_lrc_path_for_mp3
+from FUNCTIONS.HELPERS.helpers import lyrics_lrc_path_for_mp3
 
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

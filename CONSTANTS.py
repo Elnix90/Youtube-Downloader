@@ -4,28 +4,23 @@ Loads config.toml (validated) and exposes constants.
 """
 
 from pathlib import Path
-import tomli
 import logging
 import sys
 
-from config_loader import Config
+from CONFIG.config_loader import Config, load_config
 
 
 
 # ---------- Load config ----------
 
-CONFIG_FILE = Path("config.toml")
+CONFIG_FILE = Path("CONFIG/config.toml")
 
 if not CONFIG_FILE.exists():
     print(f"Error: Configuration file '{CONFIG_FILE}' does not exist.")
     print("Please create this file or use config.toml.example as a template.")
     sys.exit(1)
 
-try:
-    with open(CONFIG_FILE, "rb") as f:
-        config: Config = tomli.load(f)  # pyright: ignore[reportAssignmentType]
-except tomli.TOMLDecodeError as e:
-    raise ValueError(f"Syntax error in config.toml: {e}")
+config = load_config(CONFIG_FILE)
 
 
 
