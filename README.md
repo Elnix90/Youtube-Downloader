@@ -26,7 +26,7 @@ You can also automatically add lyrics or tags by fetching the title and uploader
 
 - **Configuration System**
   - Uses structured TOML configuration file for easy customization
-  - All settings centralized in `config.toml`
+  - All settings centralized in `CONFIG/config.toml`
   - Flexible parameter override system
 
 ---
@@ -55,22 +55,11 @@ You can also automatically add lyrics or tags by fetching the title and uploader
    pip install -r requirements.txt
    ```
 
-4. **Configure the application**
 
-   ```bash
-   # Copy the example configuration
-   cp config.toml.example config.toml
-   
-   # Edit config.toml and modify at least:
-   # - paths.download_path = "/your/music/folder"
-   # - paths.db_path = "music.db" (or your preferred location)
-   ```
-
----
 
 ## 🔑 Configuration
 
-### Configuration File (config.toml)
+### Configuration File (CONFIG/config.toml)
 
 The application uses a structured TOML configuration file. Here's what you need to configure:
 
@@ -78,13 +67,13 @@ The application uses a structured TOML configuration file. Here's what you need 
 
 ```toml
 [paths]
-download_path = "/your/music/folder"  # REQUIRED: Where to save downloaded music
+download_path = "/your/music/folder"  # Where to save downloaded music
 db_path = "music.db"                  # SQLite database file
 
 [processing]
 playlist_id = "LL"                    # "LL" = liked videos, or specific playlist ID
 get_lyrics = true                     # Download lyrics automatically
-add_tags = true                       # Apply automatic tagging
+add_tags = true                       # Apply automatic tagging (based on your settings)
 test_run = false                      # Set to true for testing without downloading
 ```
 
@@ -110,25 +99,21 @@ For accessing private playlists or liked videos:
 
 ## ▶️ Usage
 
-### 🚀 Quick Start Guide
-
-**New to this project?** Check out our comprehensive **[Quick Start Guide](QUICK_START.md)** with step-by-step examples and common configurations!
 
 ### Basic Usage
 
 1. **Configure the application**:
 
    ```bash
-   # Copy example config and edit it
-   cp config.toml.example config.toml
-   nano config.toml  # or your preferred editor
+   # Edit CONFIG/config.toml
+   vim CONFIG/config.toml
    ```
 
-2. **Set your music folder** in `config.toml`:
+2. **Set your music folder** in `CONFIG/config.toml`:
 
    ```toml
    [paths]
-   download_path = "/home/user/Music/YouTube"  # Change this path
+   download_path = "~/YOUTUBE/MUSICS"  # Change this path
    ```
 
 3. **Run the application**:
@@ -145,13 +130,15 @@ For accessing private playlists or liked videos:
 python main.py
 ```
 
-**Test mode (no actual downloads):**
+**Test mode (no actual downloads or any file editing):**
 
 ```bash
 # Edit config.toml:
 [processing]
 test_run = true
+```
 
+```bash
 # Then run:
 python main.py
 ```
@@ -161,8 +148,10 @@ python main.py
 ```bash
 # Edit config.toml:
 [processing]
-playlist_id = "PLrAl6cYLGFcOlKGLDLpSlink_2Dwarf1V"  # Replace with your playlist ID
+playlist_id = "PLnVyge3em-a2ElGZrft3LHoh64YnGhPsh"  # Replace with your playlist ID
+```
 
+```bash
 # Then run:
 python main.py
 ```
@@ -175,26 +164,11 @@ python main.py
 get_lyrics = false
 add_tags = false
 use_sponsorblock = false
-
-# Then run:
-python main.py
 ```
 
-### Advanced Usage
-
-You can also override configuration programmatically by modifying `main.py`:
-
-```python
-if __name__ == "__main__":
-    # Use all default settings from config.toml
-    main_list_process()
-    
-    # Or override specific parameters:
-    # main_list_process(
-    #     playlist_id="PLrAl6cYLGFcOlKGLDLpSlink_2Dwarf1V",
-    #     test_run=True,
-    #     get_lyrics=False
-    # )
+```bash
+# Then run:
+python main.py
 ```
 
 ---
