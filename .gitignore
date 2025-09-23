@@ -11,3 +11,4 @@ LOGS
 music.db
 music.db-journal
 typings
+config.toml
