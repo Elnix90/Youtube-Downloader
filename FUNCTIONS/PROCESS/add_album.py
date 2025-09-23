@@ -2,12 +2,13 @@ from pathlib import Path
 import time
 
 
-from FUNCTIONS.helpers import fprint
-from FUNCTIONS.album_system import compute_album, set_album
+from FUNCTIONS.HELPERS.compute_tags_and_album import compute_album
+from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.set_tags_and_album import set_album
 from FUNCTIONS.metadata import read_id3_tag
 
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

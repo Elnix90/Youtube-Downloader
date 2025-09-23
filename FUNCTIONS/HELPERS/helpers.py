@@ -1,17 +1,6 @@
 from datetime import datetime
-import shutil
 from typing import TypeAlias, TypedDict, Literal
-import unicodedata
-import re
 from pathlib import Path
-
-from CONSTANTS import OVERLAP_FPRINT
-
-from logger import setup_logger
-logger = setup_logger(__name__)
-
-
-
 
 
 
@@ -203,102 +192,6 @@ class Ydl_opt(TypedDict, total=False):
 
 
 
-
-
-def sanitize_text(text: str) -> str:
-    old_filename = text
-    text = text or ""
-    text = text.strip()
-
-    # Normalize Unicode (NFKD decomposes accents/emoji)
-    text = unicodedata.normalize("NFKD", text)
-
-    # Remove accents/diacritics (keep base ASCII letters)
-    text = "".join(
-        c for c in text
-        if not unicodedata.combining(c)
-    )
-
-    # Remove non-ASCII characters
-    text = text.encode("ascii", "ignore").decode("ascii")
-
-    # Remove filesystem-forbidden chars
-    text = re.sub(r'[\\/:*?"<>|~.\x00-\x1F]', "", text)
-
-    # Collapse spaces
-    text = re.sub(r"\s+", " ", text)
-
-    # Only allow safe characters: letters, digits, space, dash, underscore, parentheses, dot
-    text = re.sub(r"[^A-Za-z0-9 _\-\(\).]", "", text)
-
-    # Trim trailing dots/spaces again
-    text = text.rstrip(". ").strip()
-
-    logger.verbose(f"[Sanitize Filename] Sanitized '{old_filename}' to '{text}'")
-    return text.title()
-
-
-
-
-
-
-
-def fprint(
-    prefix: str,
-    title: str,
-    *to_sanitize: str,
-    overwrite: bool = True,
-    flush: bool = True
-) -> None:
-    """
-    Print a formatted message with optional substitution of '?' placeholders
-    by sanitized strings passed in *to_sanitize.
-    """
-    term_width: int = shutil.get_terminal_size(fallback=(80, 20)).columns
-    max_len: int = term_width - len(prefix)
-    if max_len < 1:
-        max_len = 1
-
-
-    # replace each "?" in title with a sanitized arg
-    sanitized_title = title
-    for value in to_sanitize:
-        if "?" in sanitized_title:
-
-            s_text: str = sanitize_text(value)
-            if not s_text: s_text = "sanitized_name"
-
-            sanitized_title = sanitized_title.replace("?", s_text, 1)
-        else:
-            logger.warning(f"[fprint] '?' wasn't found in sanitised title '{sanitized_title}' for value '{value}'")
-
-
-    if len(sanitized_title) > max_len:
-        sanitized_title = sanitized_title[: max_len - 1] + "…"
-        space_nb = 0
-    else:
-        space_nb = max_len - len(sanitized_title)
-
-    print(
-        f"{'\r\033[K' if overwrite else ''}{prefix}{sanitized_title}{' ' * space_nb}",
-        end="" if overwrite or OVERLAP_FPRINT else "\n",
-        flush=flush,
-    )
-
-
-
-
-
-
-def contains_whole_word(text: str, word: str) -> bool:
-    """
-    Return True if `word` exists as a whole word inside `text`.
-    Case-insensitive.
-    """
-    if not text or not word:
-        return False
-    pattern = r"\b" + re.escape(word) + r"\b"
-    return re.search(pattern, text, flags=re.IGNORECASE) is not None
 
 
 

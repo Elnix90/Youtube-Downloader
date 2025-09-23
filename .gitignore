@@ -1,4 +1,6 @@
 __pycache__/
+.git
+.pytest_cache
 .vscode
 .VSCodeCounter
 venv

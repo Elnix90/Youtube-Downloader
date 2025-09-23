@@ -4,11 +4,11 @@ import time
 from sqlite3 import Connection, Cursor
 
 
-from FUNCTIONS.helpers import fprint
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.sponsorblock import get_skip_segments, cut_segments_ffmpeg
 from FUNCTIONS.sql_requests import update_video_db
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

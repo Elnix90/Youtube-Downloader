@@ -20,9 +20,10 @@ from FUNCTIONS.PROCESS.embed_metadata import embed_metadata_for_video
 from FUNCTIONS.PROCESS.add_album import process_album_for_video
 from FUNCTIONS.download import download_video, safe_extract_info
 from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db, init_db, update_video_db
-from FUNCTIONS.helpers import fprint, VideoInfo, VideoInfoMap
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
+from FUNCTIONS.HELPERS.fprint import fprint
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

@@ -2,9 +2,9 @@ import json
 from pathlib import Path
 from typing import cast
 
-from FUNCTIONS.helpers import sanitize_text
 
-from logger import setup_logger
+
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 
@@ -61,17 +61,3 @@ def dump(data: list[str], file: Path) -> None:
 
 
 
-def load_patterns(file: Path) -> set[str]:
-    """
-    Load non-comment patterns from a file into a set
-    """
-    if not file.exists():
-        return set()
-    try:
-        lines = file.read_text(encoding="utf-8").splitlines()
-        patterns ={sanitize_text(line.strip()) for line in lines if line.strip() and not line.startswith("#")}
-        logger.verbose(f"[Load patterns] Sucessfully loaded {len(patterns)} patterns from '{file}'")
-        return patterns
-    except Exception as e:
-        logger.error(f"[Compute Tags] Failed to load trusted artists: {e}")
-        return set()
