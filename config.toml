@@ -57,9 +57,8 @@ tag_end_delimiter = "]"
 tag_inner_separator = ","
 
 
-retry_unavailable = true
-retry_private = true
-
+retry_unavailable = false
+retry_private = false
 info = true
 error = true
 test_run = false
