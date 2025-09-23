@@ -107,7 +107,7 @@ def process_all(
         )
 
 
-    video_ids: list[str] = get_videos_in_list(include_not_status0=include_not_status0, cur=cur)
+    video_ids: list[str] = get_videos_in_list(include_not_status0, cur)
 
     avg_times: list[float] = []
     eta_str: str = 'N/A'
