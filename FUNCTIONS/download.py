@@ -11,11 +11,14 @@ import yt_dlp
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 from yt_dlp.networking.exceptions import HTTPError 
 
-from FUNCTIONS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, fprint, VideoInfo, youtube_required_info, sanitize_text
+from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.text_helpers import sanitize_text
+from FUNCTIONS.HELPERS.helpers import ExtractedInfo, QuietLogger, Ydl_opt, VideoInfo, youtube_required_info
+
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
 from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

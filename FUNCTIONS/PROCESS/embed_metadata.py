@@ -5,12 +5,13 @@ import time
 
 
 # from DEBUG.compare_dicts import compare_dicts
-from FUNCTIONS.helpers import VideoInfo, fprint, normalize_skips, remove_data_from_video_info, timestamp_to_id3_unique
+from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import VideoInfo, normalize_skips, remove_data_from_video_info, timestamp_to_id3_unique
 from FUNCTIONS.metadata import get_metadata_tag, read_id3_tag, write_id3_tag
 
 
 from FUNCTIONS.sql_requests import get_video_info_from_db
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 

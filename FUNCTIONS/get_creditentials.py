@@ -5,8 +5,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build, Resource  # pyright: ignore[reportUnknownVariableType]
 
 from CONSTANTS import TOKEN_FILE, CLIENT_SECRETS_FILE
-from logger import setup_logger
 
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 SCOPES: list[str] = ["https://www.googleapis.com/auth/youtube.force-ssl"]
@@ -51,4 +51,4 @@ def get_authenticated_service(info: bool = True) -> Resource:
     logger.info("[Get Credentials] Successfully logged")
 
 
-    return build(serviceName=API_SERVICE_NAME, version=API_VERSION, credentials=creds)
+    return build(serviceName=API_SERVICE_NAME, version=API_VERSION, credentials=creds)  # pyright: ignore[reportUnknownVariableType]

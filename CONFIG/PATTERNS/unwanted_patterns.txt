@@ -8,8 +8,6 @@ official
 official video
 remix
 video clip
-feat
-ft
 edit
 radio
 remastered
@@ -40,14 +38,11 @@ male
 version
 techno
 hypertechno
-by
 electronic
 pop
 ncs
 copyright free
 copyright
-and
-x
-\(.*?\)
-\[.*?\]
-\{.*?\}
+re:\(.*?\)
+re:\[.*?\]
+re:\{.*?\}

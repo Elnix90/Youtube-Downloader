@@ -1,4 +1,6 @@
 __pycache__/
+.git
+.pytest_cache
 .vscode
 .VSCodeCounter
 venv
@@ -11,3 +13,4 @@ LOGS
 music.db
 music.db-journal
 typings
+config.toml

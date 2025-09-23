@@ -1,16 +1,11 @@
 from pathlib import Path
-import re
 
 
-from CONSTANTS import TAGS_DIR
+
 from FUNCTIONS.metadata import read_id3_tag, write_id3_tag
-from FUNCTIONS.helpers import sanitize_text, contains_whole_word
-from FUNCTIONS.fileops import load_patterns
 
-from logger import setup_logger
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
-
-
 
 
 
@@ -94,83 +89,6 @@ def put_tags_in_str(
 
 
 
-
-
-def compute_tags(title: str, uploader: str, error: bool = True) -> set[str]:
-    tags: set[str] = set()
-
-    if not TAGS_DIR.exists() or not TAGS_DIR.is_dir():
-        if error:
-            print(f"\n[Compute Tags] Tags directory '{TAGS_DIR}' doesn't exists or is a file")
-        logger.warning(f"[Compute Tags] Tags directory '{TAGS_DIR}' doesn't exists or is a file")
-        return tags
-
-
-
-    # Normalize inputs
-    title_norm = sanitize_text(title).lower()
-    uploader_norm = sanitize_text(uploader).lower()
-
-
-
-    # Rule-based tags from files
-    for tag_file in TAGS_DIR.glob("*.txt"):
-        filename: str = tag_file.stem
-
-        if filename.startswith("tag_"):
-            tag_name = filename[len("tag_"):]
-            patterns = load_patterns(file=tag_file)
-
-            for line in patterns:
-                line = line.lower()
-
-                if line.startswith("re:"):
-                    # regex rule
-                    pattern = line[3:].strip()
-                    if re.search(pattern, title_norm) or re.search(pattern, uploader_norm):
-                        tags.add(tag_name)
-                        logger.debug(f"[Compute Tags] Added '{tag_name}' (regex '{pattern}')")
-                        break
-                else:
-                    # word/phrase rule
-                    word = line.strip()
-                    if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
-                        tags.add(tag_name)
-                        logger.debug(f"[Compute Tags] Added '{tag_name}' (keyword '{word}')")
-                        break
-
-        elif filename.startswith("notag_"):
-            tag_name = filename[len("notag_"):]
-            patterns = load_patterns(file=tag_file)
-
-            present = False
-            for line in patterns:
-                line = line.lower()
-
-                if line.startswith("re:"):
-                    pattern = line[3:].strip()
-                    if re.search(pattern, title_norm) or re.search(pattern, uploader_norm):
-                        present = True
-                        logger.debug(f"[Compute Tags] Prevented '{tag_name}' (regex '{pattern}')")
-                        break
-                else:
-                    word = line.strip()
-                    if word and (contains_whole_word(text=title_norm, word=word) or contains_whole_word(text=uploader_norm, word=word)):
-                        present = True
-                        logger.debug(f"[Compute Tags] Prevented '{tag_name}' (keyword '{word}')")
-                        break
-            if not present:
-                tags.add(tag_name)
-                logger.debug(f"[Compute Tags] Added '{tag_name}' by absence rule")
-
-    logger.info(f"[Compute Tags] Computed {len(tags)} tag{'s' if len(tags) != 1 else ''} from '{title} {uploader}' : {tags}")
-    return tags
-
-
-
-
-
-
 def set_tags(
     filepath: Path,
     tags: set[str],
@@ -216,3 +134,23 @@ def set_tags(
 
 
 
+def set_album(
+    filepath: Path,
+    album: str,
+    test_run: bool = False
+) -> bool:
+    """
+    Embed album info into MP3 file and update DB flag `update_album`.
+    """
+
+    if not filepath.exists():
+        logger.error(f"[set Album] Filepath doesn't exist: '{filepath}'")
+        return False
+
+    success = write_id3_tag(filepath=filepath, frame_id="TALB", data=album, test_run=test_run)
+    if success:
+        logger.verbose(f"[set Album] Album set to '{album}' for '{filepath}'")
+        return True
+    else:
+        logger.error(f"[set Album] Failed to set album '{album}' for '{filepath}'")
+        return False
