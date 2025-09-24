@@ -34,9 +34,9 @@ def validate_config() -> None:
             raise ValueError(f"Missing section in config.toml: [{section}]")
 
     # Check critical paths
-    download_path = Path(config["paths"]["download_path"])
+    download_path = Path(config["paths"]["download_path"]).expanduser().resolve()
     if not download_path.parent.exists():
-        print(f"Warning: Parent directory of download_path does not exist: {download_path.parent}")
+        print(f"Warning: Parent directory of download_path does not exist: {download_path.parent}; will be created")
 
     db_path = Path(config["paths"]["db_path"])
     if not db_path.exists() and not db_path.parent.exists():
