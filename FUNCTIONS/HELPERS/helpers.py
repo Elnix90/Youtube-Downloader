@@ -45,6 +45,8 @@ class VideoInfo(TypedDict, total=False):
     recompute_yt_info: bool
 
     remix_of: str
+    recompute_remix_of: bool
+    confidence: float
 
     filename: str
     status: Literal[0,1,2,3] # downloaded / unavailable / private / unknown
@@ -90,6 +92,8 @@ VideoInfoKey = Literal[
     "recompute_album",
     "recompute_yt_info",
     "remix_of",
+    "recompute_remix_of",
+    "confidence",
     "filename",
     "status",
     "reason",

@@ -91,6 +91,10 @@ def main_list_process() -> None:
             force_mp3_presence=CONFIG["processing"]["force_mp3_presence"],
             force_recompute_yt_info=CONFIG["processing"]["force_recompute_yt_info"],
 
+            # Remix
+            get_remix_of=CONFIG["processing"]["get_remix_of"],
+            force_recompute_remix_of=CONFIG["processing"]["force_recompute_remix_of"],
+
             # Behavior
             info=CONFIG["processing"]["info"],
             error=CONFIG["processing"]["error"],
