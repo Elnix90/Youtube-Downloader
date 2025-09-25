@@ -83,6 +83,9 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         recompute_yt_info BOOLEAN NOT NULL CHECK (recompute_yt_info IN (0,1)) DEFAULT (0),
 
         remix_of TEXT,
+        recompute_remix_of BOOLEAN NOT NULL CHECK (recompute_remix_of IN (0,1)) DEFAULT (1),
+        confidence REAL CHECK (confidence > 0 AND confidence < 1)
+
         filename TEXT,
         status INTEGER NOT NULL CHECK (status in (0,1,2,3)) DEFAULT (3),
         reason TEXT,
@@ -350,6 +353,8 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
         "recompute_yt_info": safe_bool(row, "recompute_yt_info"),
 
         "remix_of": safe_str(row, "remix_of"),
+        "recompute_remix_of": safe_bool(row, "recompute_remix_of"),
+        "confidence": safe_float(row, "confidence"),
 
         "filename": safe_str(row, "filename"),
         "status": safe_status(row, "status"),

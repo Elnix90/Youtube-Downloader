@@ -18,6 +18,7 @@ from FUNCTIONS.PROCESS.check_file_integrity import check_file_integrity_for_vide
 from FUNCTIONS.PROCESS.remove_sponsorblock_segments import remove_sponsorblock_segments_for_video
 from FUNCTIONS.PROCESS.embed_metadata import embed_metadata_for_video
 from FUNCTIONS.PROCESS.add_album import process_album_for_video
+from FUNCTIONS.PROCESS.remix_of import process_remix_of_for_video
 from FUNCTIONS.download import download_video, safe_extract_info
 from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db, init_db, update_video_db
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
@@ -45,6 +46,7 @@ def process_all(
     force_recompute_tags: bool,
     force_recompute_album: bool,
     force_recompute_yt_info: bool,
+    force_recompute_remix_of: bool,
 
     sponsorblock_categories: list[str],
     thumbnail_format: Literal["pad", "crop"],
@@ -56,6 +58,8 @@ def process_all(
 
     retry_unavailable: bool,
     retry_private: bool,
+
+    get_remix_of: bool,
 
     info: bool,
     error: bool,
@@ -223,6 +227,7 @@ def process_all(
         recompute_tags = data.get("recompute_tags") or force_recompute_tags
         recompute_album = data.get("recompute_tags") or force_recompute_album
 
+        recompute_remix_of: bool = data.get("recompute_remix_of") or force_recompute_remix_of
 
 
 
@@ -333,6 +338,17 @@ def process_all(
                 test_run=test_run
             )
             metadata_duration += metadata_time
+
+
+        if get_remix_of:
+            calculating_duration += process_remix_of_for_video(
+                video_id=video_id,
+                progress_prefix=progress_prefix,
+                remix_of=remix_of,
+                recompute_remix_of=recompute_remix_of,
+                cur=cur,
+                conn=conn
+            )
 
 
 

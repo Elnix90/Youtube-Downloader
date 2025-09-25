@@ -44,7 +44,6 @@ class ProcessingConfig(TypedDict):
     force_recompute_thumbnails: bool
     force_recompute_tags: bool
     force_recompute_album: bool
-    force_recompute_yt_info: bool
 
 
     thumbnail_format: Literal['pad', 'crop']
@@ -59,7 +58,12 @@ class ProcessingConfig(TypedDict):
     retry_unavailable: bool
     retry_private: bool
 
+    force_recompute_yt_info: bool
     force_mp3_presence: bool
+
+    get_remix_of: bool
+    remix_confidence_threshold: float
+    force_recompute_remix_of: bool
 
     info: bool
     error: bool
