@@ -172,7 +172,7 @@ def _apply_skips_and_tags(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -
 
 
 
-def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
+def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
@@ -188,8 +188,11 @@ def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Co
     _ = cur.execute(sql, tuple(video_row.values()))
 
     _apply_skips_and_tags(video_id=video_row["video_id"], data=video_data, cur=cur)  # pyright: ignore[reportArgumentType]
-    conn.commit()
-    logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
+    if not test_run:
+        conn.commit()
+        logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
+    else:
+        logger.info("[Insert Video] Test_run wan enabled, didn't inserted anything")
 
 
 
@@ -197,7 +200,9 @@ def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Co
 
 
 
-def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
+
+
+def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
@@ -217,16 +222,18 @@ def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor
         _ = cur.execute(sql, values)
 
     _apply_skips_and_tags(video_id=video_id, data=update_fields, cur=cur)
-    conn.commit()
-    logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
+    if not test_run:
+        conn.commit()
+        logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
+    else:
+        logger.info("[Update Video] Test_run wan enabled, didn't updated anything")
 
 
 
 
 
 
-
-def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
+def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
     """
     Remove a video and all its related data from the database.
     Cascades take care of related rows in removed_segments and video_tags.
@@ -236,7 +243,12 @@ def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection) -
         logger.info(f"[Remove Video] Successfully removed video_id '{video_id}' and related data")
     else:
         logger.warning(f"[Remove Video] No video found with video_id '{video_id}'")
-    conn.commit()
+    if not test_run:
+        conn.commit()
+        logger.debug(f"[Remove Video] Removed '{video_id}' form database")
+    else:
+        logger.info("[Remove DB] Test_run wan enabled, didn't removed anything")
+
 
 
 

@@ -19,6 +19,7 @@ def add_new_ids_to_database(
     ids_presents_in_down_dir: VideoInfoMap,
     add_folder_files_not_in_list: bool,
     include_not_status0: bool,
+    test_run: bool,
     info: bool,
     errors: bool,
     cur: Cursor,
@@ -63,14 +64,25 @@ def add_new_ids_to_database(
             if video_id not in existing_video_ids:
                 if (not include_not_status0 and status == 3) or include_not_status0:
                     video_data["video_id"] = video_id 
-                    insert_video_db(video_data=video_data, cur=cur, conn=conn)
+                    insert_video_db(
+                        video_data,
+                        cur,
+                        conn,
+                        test_run
+                        )
                     added_ids += 1
 
             else:
                 db_data = get_video_info_from_db(video_id=video_id, cur=cur)
                 if not all(key in db_data and db_data[key] is not None for key in youtube_required_info):
                     if all(key in video_data and video_data[key] is not None for key in youtube_required_info):
-                        update_video_db(video_id=video_id, update_fields=video_data, cur=cur, conn=conn)
+                        update_video_db(
+                            video_id,
+                            video_data,
+                            cur,
+                            conn,
+                            test_run
+                        )
                         updated_ids += 1
                 else:
                     correct_ids += 1
@@ -83,7 +95,7 @@ def add_new_ids_to_database(
             if errors: 
                 print(f"\n[Adding ids] Failed to insert / update video_id '{video_id}': {e}")
 
-    conn.commit()
+    if not test_run: conn.commit()
     logger.info("[Adding ids] " + ("All ids are in the database" if not to_add else f"Added {added_ids}, updated {update_video_db} ids to the database"))
     if info and not to_add: print("[Adding ids] All ids are in the database")
     elif info: print()

@@ -45,7 +45,13 @@ def process_thumbnail_for_video(
     if remove_thumbnail:
         success_remove = remove_image_from_mp3(mp3_path=filepath, image_path=this_thumbnail_path, test_run=test_run)
         if success_remove:
-            update_video_db(video_id=video_id, update_fields={"update_thumbnail": False},cur=cur, conn=conn)
+            update_video_db(
+                video_id,
+                {"update_thumbnail": False},
+                cur,
+                conn,
+                test_run
+            )
             fprint(progress_prefix, f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
             logger.info(f"[Remove thumbnail] Sucessfully removed thumbnail and file for '{filepath}'")
         else:
@@ -63,8 +69,9 @@ def process_thumbnail_for_video(
         # Save embedded cover to file if it's missing
         if embedded_bytes is not None and this_thumbnail_path and not this_thumbnail_path.exists():
             try:
-                with open(this_thumbnail_path, "wb") as f:
-                    _ = f.write(embedded_bytes)
+                if not test_run:
+                    with open(this_thumbnail_path, "wb") as f:
+                        _ = f.write(embedded_bytes)
                 logger.info(f"[Thumbnail] Extracted embedded cover to '{title}'")
             except Exception as e:
                 logger.warning(f"[Thumbnail] Failed to extract embedded cover: {e}")
@@ -109,7 +116,13 @@ def process_thumbnail_for_video(
                 if success is True:
                     embed_success: bool = embed_image_in_mp3(mp3_path=filepath, image_path=this_thumbnail_path,test_run=test_run)
                     if embed_success is True:
-                        update_video_db(video_id=video_id, update_fields={"update_thumbnail": False}, cur=cur, conn=conn)
+                        update_video_db(
+                            video_id,
+                            {"update_thumbnail": False},
+                            cur,
+                            conn,
+                            test_run
+                        )
                         if info: fprint(progress_prefix, f"{'Downloaded & e' if download_thumbnail else 'E'}mbedded cover for ?", title)
                         logger.info(f"[Thumbnail] Embedded cover for '{title}'")
                     else:

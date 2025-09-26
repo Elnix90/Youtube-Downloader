@@ -93,6 +93,7 @@ def process_all(
         ids_presents_in_down_dir=ids_present_in_down_dir,
         add_folder_files_not_in_list=add_folder_files_not_in_list,
         include_not_status0=include_not_status0,
+        test_run=test_run,
         info=info,
         errors=error,
         cur=cur,
@@ -108,6 +109,7 @@ def process_all(
             info=info,
             error=error,
             cur=cur,
+            conn=conn,
             test_run=test_run
         )
 
@@ -184,7 +186,7 @@ def process_all(
             if state == 0:
                 data.update(new_info)
                 data["recompute_yt_info"] = False
-                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn, test_run=test_run)
                 fprint(progress_prefix,f"Sucessfully fetched and updated new data from Youtube for '{video_id}'")
                 logger.info(f"[Process] Sucessfully fetched and updated  new data from Youtube for '{video_id}'")
             else:
@@ -346,6 +348,7 @@ def process_all(
                 progress_prefix=progress_prefix,
                 remix_of=remix_of,
                 recompute_remix_of=recompute_remix_of,
+                test_run=test_run,
                 cur=cur,
                 conn=conn
             )

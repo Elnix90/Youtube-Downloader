@@ -1,7 +1,6 @@
 from pathlib import Path
 import re
 import json
-import os
 
 from FUNCTIONS.HELPERS.helpers import lyrics_lrc_path_for_mp3
 
@@ -75,7 +74,7 @@ def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
             logger.debug(f"[Remove lyrics] No .lrc file to remove at '{lrc_path}'")
             return True
         if not test_run:
-            os.remove(lrc_path)
+            lrc_path.unlink()
         logger.info(f"[Remove lyrics] Removed lyrics file '{lrc_path}'")
         return True
     except Exception as e:

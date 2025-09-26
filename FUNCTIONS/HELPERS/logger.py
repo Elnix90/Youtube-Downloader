@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 from typing import Any, cast
 
 from CONSTANTS import LOGS_DIR, LOGS_CONSOLE_GLOBALLY, LOGGING_LEVEL_CONSOLE, LOGGING_LEVEL_LOGFILES
@@ -64,7 +64,7 @@ def setup_logger(name: str, to_console: bool = False) -> CustomLogger:
     logger.setLevel(level=VERBOSE)
 
     if not logger.handlers:
-        os.makedirs(LOGS_DIR, exist_ok=True)
+        LOGS_DIR.mkdir(exist_ok=True)
 
         # File formatter (plain text, no colors)
         file_formatter = logging.Formatter(
@@ -73,7 +73,7 @@ def setup_logger(name: str, to_console: bool = False) -> CustomLogger:
         )
 
         # File handler
-        log_path: str = os.path.join(LOGS_DIR, f"{name}.log")
+        log_path: Path = Path(LOGS_DIR / name).with_suffix(".log")
         fh = logging.FileHandler(log_path, encoding="utf-8")
         fh.setLevel(LOGGING_LEVEL_LOGFILES)
         fh.setFormatter(file_formatter)

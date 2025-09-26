@@ -60,7 +60,12 @@ def check_file_integrity_for_video(
         if all(key in fusion and fusion[key] is not None for key in youtube_required_info):
             if repair_mp3_file(filepath,test_run):
                 fusion["status"] = 0  # downloaded
-                update_video_db(video_id, fusion, cur, conn)
+                update_video_db(
+                    video_id,
+                    fusion,
+                    cur, conn,
+                    test_run
+                )
                 logger.debug(f"[File Checking] File valid and repaired: '{title}'")
                 return False ,time.time() - start_processing
             else:
@@ -83,7 +88,13 @@ def check_file_integrity_for_video(
         logger.info(f"[File Checking] Video {video_id} private, skipping")
         return False ,time.time() - start_processing
     else:
-        update_video_db(video_id=video_id, update_fields={"status": 3, "removed_segments_int":0, "removed_segments_duration": 0.0},cur=cur, conn=conn)
+        update_video_db(
+            video_id,
+            {"status": 3, "removed_segments_int":0, "removed_segments_duration": 0.0},
+            cur,
+            conn,
+            test_run
+        )
         logger.info(f"[File Checking] Missing in download dir, will be downloaded: {video_id}")
         return True ,time.time() - start_processing
 

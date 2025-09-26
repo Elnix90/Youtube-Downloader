@@ -1,5 +1,5 @@
 from pathlib import Path
-from sqlite3 import Cursor
+from sqlite3 import Connection, Cursor
 
 
 from FUNCTIONS.HELPERS.fileops import load
@@ -15,6 +15,7 @@ def remove_ids_not_in_list(
     download_path: Path,
     include_not_status0: bool,
     cur: Cursor,
+    conn: Connection,
     info: bool,
     error: bool,
     test_run: bool
@@ -54,11 +55,11 @@ def remove_ids_not_in_list(
                 logger.error(f"[Removing Ids] Unknown error while deleting {filename}: {e}")
                 if error: print(f"[Removing Ids] Unknown error while deleting {filename}: {e}")
 
-        if not test_run: _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
+        _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
         removed_ids += 1
         if info: fprint("",f"[Removing Ids] Removed {removed_ids} from list")
 
-
+    if not test_run: conn.commit()
     if info: print()
     if removed_ids == 0:
         logger.info("[Removing Ids] No video to remove from the database")

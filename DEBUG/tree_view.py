@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import subprocess
 import ast
@@ -42,15 +41,15 @@ def get_file_docstring(path: Path) -> str | None:
 
 
 def print_tree(root_dir: Path, prefix: str = ""):
-    entries = sorted(os.listdir(root_dir))
-    for i, item in enumerate(entries):
-        path = root_dir / item
+    entries = sorted(root_dir.iterdir())
+    for i, path in enumerate(entries):
+
 
         if is_git_ignored(path):
             continue  # skip ignored files
 
         connector = "├── " if i < len(entries) - 1 else "└── "
-        line = prefix + connector + item
+        line = prefix + connector + path.name
 
         doc_line = get_file_docstring(path)
         if doc_line:
