@@ -222,7 +222,13 @@ def process_lyrics_for_video(
 
 
     if update_fields:
-        update_video_db(video_id=video_id, update_fields=update_fields, cur=cur, conn=conn)
+        update_video_db(
+            video_id,
+            update_fields,
+            cur,
+            conn,
+            test_run
+        )
 
 
 

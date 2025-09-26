@@ -48,9 +48,11 @@ def is_special_playlist(playlist_id: str) -> bool:
 def fetch_playlist_videos(
     playlist_id: str,
     file: Path,
+    test_run: bool,
     clean: bool = False,
     info: bool = True,
-    errors: bool = True
+    errors: bool = True,
+    
 ) -> None:
 
     if info: fprint("", f"[Fetching videos] Fetching videos from playlist '{playlist_id}'")
@@ -101,7 +103,7 @@ def fetch_playlist_videos(
                 else:
                     raise
 
-        dump(data=all_videos, file=file_path)
+        if not test_run: dump(data=all_videos, file=file_path)
         if info: print()
         logger.info(f"[Fetching videos] {len(all_videos)} videos found in playlist : '{playlist_id}'")
     else:

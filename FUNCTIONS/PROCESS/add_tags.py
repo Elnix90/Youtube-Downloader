@@ -61,7 +61,13 @@ def process_tags_for_video(
     )
 
     # Update DB with merged tags
-    update_video_db(video_id, {"tags": list(all_tags)}, cur, conn)
+    update_video_db(
+        video_id,
+        {"tags": list(all_tags)},
+        cur,
+        conn,
+        test_run
+    )
 
     if success and all_tags:
         if info: fprint(progress_prefix, f"Embedded {len(all_tags)} tags into ?", title)

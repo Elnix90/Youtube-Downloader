@@ -18,6 +18,7 @@ def process_remix_of_for_video(
     progress_prefix: str,
     remix_of: str | None,
     recompute_remix_of: bool,
+    test_run: bool,
     cur: Cursor,
     conn: Connection
 ) -> float:
@@ -51,7 +52,7 @@ def process_remix_of_for_video(
         # If a strong enough match is found, set remix_of
         if best_match and best_match[1] >= REMIX_CONFIDENCE_THRESHOLD:
             match_id, confidence = best_match
-            update_video_db(video_id,{"remix_of": match_id,"confidence": confidence, "recompute_remix_of": False}, cur, conn)
+            update_video_db(video_id,{"remix_of": match_id,"confidence": confidence, "recompute_remix_of": False}, cur, conn, test_run=test_run)
             logger.info(f"[Remix Of] '{remix_of}' matched '{match_id}' with confidence {confidence:.2f}, updated remix_of")
             fprint(progress_prefix,f"[Remix Of] '{remix_of}' matched '{match_id}' with confidence {confidence:.2f}, updated remix_of")
         else:

@@ -64,7 +64,8 @@ def remove_sponsorblock_segments_for_video(
                 "removed_segments_duration": -1.0,
             },
             cur,
-            conn
+            conn,
+            test_run
         )
         return time.time() - start_cut
 
@@ -86,15 +87,15 @@ def remove_sponsorblock_segments_for_video(
                 "skips": skips,
             },
             cur,
-            conn
+            conn,
+            test_run
         )
 
         logger.info(f"[Sponsorblock] Removed {successful_segments} segments ({round(total_removed, 1)}s) from '{title}'")
 
         _ = temp_output.replace(filepath)
 
-        if info:
-            fprint(progress_prefix, f"Sucessfully cutted {len(skips)} segments from ?", title)
+        if info: fprint(progress_prefix, f"Sucessfully cutted {len(skips)} segments from ?", title)
         logger.info(f"[Sponsorblock] Sucessfully cutted {len(skips)} segments from '{title}'")
 
     except subprocess.CalledProcessError:

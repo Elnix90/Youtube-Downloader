@@ -42,6 +42,7 @@ def main_list_process() -> None:
     fetch_playlist_videos(
         playlist_id=CONFIG["processing"]["playlist_id"],
         file=PLAYLIST_VIDEOS_FILE,
+        test_run=CONFIG["processing"]["test_run"],
         clean=CONFIG["processing"]["clean"],
         info=CONFIG["processing"]["info"],
         errors=CONFIG["processing"]["error"],

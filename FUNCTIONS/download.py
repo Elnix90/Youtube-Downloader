@@ -482,7 +482,7 @@ def download_video(
 
         if not isinstance(title, str) or not isinstance(uploader, str):
 
-            update_video_db(video_id=video_id,update_fields={"status": 1}, cur=cur, conn=conn)
+            update_video_db(video_id=video_id,update_fields={"status": 1}, cur=cur, conn=conn, test_run=test_run)
             if info: fprint(progress_prefix, f"Title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             logger.error(f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'")
             return time.time() - Download_start_time
@@ -490,49 +490,53 @@ def download_video(
         if info: fprint(progress_prefix,f"Downloading ?", title)
 
 
-        download_success, message, final_filename = download_yt_dlp(
-            loc=download_path,
-            video_id=video_id,
-            title=title,
-            uploader=uploader
-        )
+        if not test_run:
+            download_success, message, final_filename = download_yt_dlp(
+                loc=download_path,
+                video_id=video_id,
+                title=title,
+                uploader=uploader
+            )
 
-        if download_success and final_filename:
-            filename: str = final_filename
-            filepath: Path = Path(download_path / filename)
+            if download_success and final_filename:
+                filename: str = final_filename
+                filepath: Path = Path(download_path / filename)
 
-            logger.debug(f"[Download] Download finished, checking file intergity: '{filename}'")
-            if repair_mp3_file(filepath=filepath, test_run=test_run): # Newly downloaded file is readable and clean
+                logger.debug(f"[Download] Download finished, checking file intergity: '{filename}'")
+                if repair_mp3_file(filepath=filepath, test_run=test_run): # Newly downloaded file is readable and clean
 
-                # Update metadata
-                data["filename"] = final_filename
-                data["status"] = 0
-                if info: fprint(progress_prefix, f"Downloaded ?", title)
-                logger.debug(f"[Download] Sucessfully downloaded '{title}")
-                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+                    # Update metadata
+                    data["filename"] = final_filename
+                    data["status"] = 0
+                    if info: fprint(progress_prefix, f"Downloaded ?", title)
+                    logger.debug(f"[Download] Sucessfully downloaded '{title}")
+                    update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn, test_run=test_run)
+
+                else:
+                    if info: fprint(progress_prefix," Downloaded file is corrupted, skipping rest of processing")
+                    logger.error(f"[Download] Downloaded file is corrupted, skipping rest of processing")
+
+                return time.time() - Download_start_time
 
             else:
-                if info: fprint(progress_prefix," Downloaded file is corrupted, skipping rest of processing")
-                logger.error(f"[Download] Downloaded file is corrupted, skipping rest of processing")
-
-            return time.time() - Download_start_time
-
+                if message == "Private video":
+                    data["status"] = 2
+                    if info: fprint(progress_prefix, f"Video {video_id} is private, skipping")
+                    logger.warning(f"[Download] Video {video_id} is private, skipping")
+                else:
+                    data["status"] = 1
+                    if info: fprint(progress_prefix, f"Video {video_id} failed to download, reason : {message}")
+                    logger.error(f"[Download] Video {video_id} failed to download, reason : {message}")
+                
+                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn, test_run=test_run)
+                return time.time() - Download_start_time
         else:
-            if message == "Private video":
-                data["status"] = 2
-                if info: fprint(progress_prefix, f"Video {video_id} is private, skipping")
-                logger.warning(f"[Download] Video {video_id} is private, skipping")
-            else:
-                data["status"] = 1
-                if info: fprint(progress_prefix, f"Video {video_id} failed to download, reason : {message}")
-                logger.error(f"[Download] Video {video_id} failed to download, reason : {message}")
-            
-            update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+            logger.warning("[Download] Test run was enabled, no download attemps made")
             return time.time() - Download_start_time
 
     else: # Data is null or unavavailable, probalby unavailable video, skipping
         data["status"] = 1
         if info: fprint(progress_prefix, f"Failed to fetch infos for '{video_id}', skipping")
         logger.info(f"[Download] Failed to fetch infos for '{video_id}', skipping")
-        update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn)
+        update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn, test_run=test_run)
         return time.time() - Download_start_time
