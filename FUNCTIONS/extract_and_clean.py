@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import cast
 
 
 from FUNCTIONS.metadata import get_metadata_tag
@@ -69,9 +68,10 @@ def extract_and_clean_video_ids(
                 data["video_id"] = video_id
 
             if video_id:
-                filepath = Path(cast(Path, data.get("filepath")))
-                valid_files[video_id] = data
-                logger.verbose(f"[Clean & Extract] Valid MP3: '{filepath.name}' with ID '{video_id}'")
+                data_filename: str | None = data.get("filepath")
+                if isinstance(data_filename, str):
+                    valid_files[video_id] = data
+                    logger.verbose(f"[Clean & Extract] Valid MP3: '{data_filename}' with ID '{video_id}'")
             else:
                 removed_files[filepath.name] = "Missing video ID in metadata"
                 if not test_run and remove: filepath.unlink(missing_ok=True)

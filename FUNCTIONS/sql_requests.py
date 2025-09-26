@@ -84,7 +84,7 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
 
         remix_of TEXT,
         recompute_remix_of BOOLEAN NOT NULL CHECK (recompute_remix_of IN (0,1)) DEFAULT (1),
-        confidence REAL CHECK (confidence > 0 AND confidence < 1)
+        confidence REAL CHECK (confidence > 0 AND confidence < 1),
 
         filename TEXT,
         status INTEGER NOT NULL CHECK (status in (0,1,2,3)) DEFAULT (3),
