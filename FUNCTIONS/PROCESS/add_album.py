@@ -4,17 +4,15 @@ It can compute the album from the uploader/title, read existing ID3 tags,
 and embed the album into an MP3 file.
 """
 
-from pathlib import Path
 import time
-
+from pathlib import Path
 
 from FUNCTIONS.HELPERS.compute_tags_and_album import compute_album
 from FUNCTIONS.HELPERS.fprint import fprint
-from FUNCTIONS.set_tags_and_album import set_album
-from FUNCTIONS.metadata import read_id3_tag
-
-
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.metadata import read_id3_tag
+from FUNCTIONS.set_tags_and_album import set_album
+
 logger = setup_logger(__name__)
 
 
@@ -67,7 +65,7 @@ def process_album_for_video(
                 fprint(
                     progress_prefix,
                     f"Embedded album '{computed_album}' into ?",
-                    title
+                    title,
                 )
             logger.info(
                 f"[Album] Embedded album '{computed_album}' into '{title}'"

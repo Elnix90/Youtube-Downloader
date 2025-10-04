@@ -12,20 +12,20 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from FUNCTIONS.HELPERS.fileops import handler
-from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import (
+    VideoInfo,
+    VideoInfoMap,
+    youtube_required_info,
+)
+from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 from FUNCTIONS.sql_requests import (
     get_video_info_from_db,
     get_videos_in_list,
     insert_video_db,
     update_video_db,
 )
-from FUNCTIONS.HELPERS.helpers import (
-    VideoInfo,
-    VideoInfoMap,
-    youtube_required_info
-)
-from FUNCTIONS.HELPERS.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -65,7 +65,7 @@ def add_new_ids_to_database(
             video_id_file
         )
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Adding IDs] Error loading '{video_id_file}': {e}")
         if errors:
             print(f"[Adding IDs] Error loading '{video_id_file}': {e}")
@@ -127,11 +127,7 @@ def add_new_ids_to_database(
                         for key in youtube_required_info
                     ):
                         update_video_db(
-                            video_id,
-                            video_data,
-                            cur,
-                            conn,
-                            test_run
+                            video_id, video_data, cur, conn, test_run
                         )
                         updated_ids += 1
                 else:
@@ -141,11 +137,11 @@ def add_new_ids_to_database(
             if info:
                 fprint(
                     "",
-                    f"[Adding IDs] Added {added_ids} | " +
-                    f"Updated {updated_ids} | {correct_ids} OK",
+                    f"[Adding IDs] Added {added_ids} | "
+                    + f"Updated {updated_ids} | {correct_ids} OK",
                 )
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"[Adding IDs] Failed for '{video_id}': {e}")
             if errors:
                 print(f"[Adding IDs] Failed for '{video_id}': {e}")
@@ -154,8 +150,8 @@ def add_new_ids_to_database(
         conn.commit()
 
     summary = (
-        f"[Adding IDs] Added {added_ids}," +
-        "Updated {updated_ids}, {correct_ids} already OK"
+        f"[Adding IDs] Added {added_ids},"
+        + "Updated {updated_ids}, {correct_ids} already OK"
     )
     logger.info(summary)
     if info:

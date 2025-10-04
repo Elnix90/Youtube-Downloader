@@ -1,13 +1,13 @@
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
-from FUNCTIONS.get_creditentials import get_authenticated_service
-from FUNCTIONS.HELPERS.fileops import handler
-from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 from CONSTANTS import PLAYLIST_VIDEOS_FILE
-from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.get_creditentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
+from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 
 logger = setup_logger(__name__)
 
@@ -34,7 +34,9 @@ def remove_duplicate_videos_from_playlist(
     )
 
     # 2. Load playlist entries with the typed JSONFileHandler
-    playlist_entries: list[PlaylistVideoEntry] = handler.load(playlist_video_file)
+    playlist_entries: list[PlaylistVideoEntry] = handler.load(
+        playlist_video_file
+    )
 
     # 3. Build mapping video_id -> list[item_id]
     video_id_to_items: dict[str, list[str]] = {}
@@ -58,7 +60,9 @@ def remove_duplicate_videos_from_playlist(
 
     # 5. Authenticate and prepare deletion
     youtube: Resource = get_authenticated_service(info)
-    logger.info("[Remove Duplicates] Removing duplicate videos from playlist...")
+    logger.info(
+        "[Remove Duplicates] Removing duplicate videos from playlist..."
+    )
     if info:
         print("[Remove Duplicates] Removing duplicate videos from playlist...")
 
@@ -70,7 +74,9 @@ def remove_duplicate_videos_from_playlist(
         # Skip the first item, keep it in the playlist
         for idx, item_id in enumerate(item_ids[1:], start=2):
             if not item_id:
-                logger.warning(f"Cannot remove duplicate: missing item_id for video {video_id}")
+                logger.warning(
+                    f"Cannot remove duplicate: missing item_id for video {video_id}"
+                )
                 continue
 
             progress_prefix = f"{progress_counter}/{total_duplicates} | "
@@ -84,7 +90,9 @@ def remove_duplicate_videos_from_playlist(
                     continue
 
                 # Perform actual deletion
-                youtube.playlistItems().delete(id=item_id).execute()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                youtube.playlistItems().delete(
+                    id=item_id
+                ).execute()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
                 removed_count += 1
                 msg = f"Removed duplicate {idx} of video {video_id}: item_id={item_id}"
                 logger.info(msg)
@@ -98,6 +106,10 @@ def remove_duplicate_videos_from_playlist(
                 if error:
                     print(msg)
 
-    logger.info(f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist")
+    logger.info(
+        f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist"
+    )
     if info:
-        print(f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist")
+        print(
+            f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist"
+        )

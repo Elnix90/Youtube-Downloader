@@ -1,18 +1,29 @@
+"""
+Strongly typed data models for YouTube playlist video entries.
+Includes helpers for parsing API responses into dataclasses.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import Any, TypedDict
 
-# --- TypedDict structures for YouTube API responses ---
+# ---------------------------------------------------------------------------
+# TypedDict structures for YouTube API responses
+# ---------------------------------------------------------------------------
 
 
 class ThumbnailItem(TypedDict):
+    """Represents a single thumbnail variant."""
+
     url: str
     width: int
     height: int
 
 
 class Thumbnails(TypedDict, total=False):
+    """Available thumbnails for a video."""
+
     default: ThumbnailItem
     medium: ThumbnailItem
     high: ThumbnailItem
@@ -21,6 +32,8 @@ class Thumbnails(TypedDict, total=False):
 
 
 class Snippet(TypedDict, total=False):
+    """YouTube snippet object inside a playlist item."""
+
     title: str
     description: str
     publishedAt: str
@@ -32,13 +45,17 @@ class Snippet(TypedDict, total=False):
 
 
 class PlaylistItem(TypedDict, total=False):
+    """Top-level playlist item from the YouTube API."""
+
     id: str
     snippet: Snippet
     status: dict[str, str]
     contentDetails: dict[str, str]
 
 
-# --- Dataclass model for internal use ---
+# ---------------------------------------------------------------------------
+# Dataclass model for internal use
+# ---------------------------------------------------------------------------
 
 
 @dataclass(slots=True)
@@ -59,38 +76,47 @@ class PlaylistVideoEntry:
     video_published_at: str
     note: str
 
+    # -----------------------------------------------------------------------
+    # Builders
+    # -----------------------------------------------------------------------
+
     @classmethod
-    def from_api_response(cls, data: dict[str, object]) -> PlaylistVideoEntry:
-        """Construct from an API response dictionary."""
-        item = data
-
-        snippet = item.get("snippet", {}) if isinstance(item.get("snippet"), dict) else {}  # pyright: ignore[reportUnknownVariableType]
-        content_details = (  # pyright: ignore[reportUnknownVariableType]
-            item.get("contentDetails", {}) if isinstance(item.get("contentDetails"), dict) else {}
-        )
-        status = item.get("status", {}) if isinstance(item.get("status"), dict) else {}  # pyright: ignore[reportUnknownVariableType]
-
-        thumbnails = snippet.get("thumbnails", {})  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        if not isinstance(thumbnails, dict):
-            thumbnails = {}
+    def from_api_response(
+        cls,
+        data: PlaylistItem,
+    ) -> PlaylistVideoEntry:
+        """
+        Construct a PlaylistVideoEntry from a YouTube API response.
+        Ensures type safety and defaults for missing fields.
+        """
+        snippet = data.get("snippet", {})
+        content = data.get("contentDetails", {})
+        status = data.get("status", {})
+        thumbnails = snippet.get("thumbnails", {})
 
         return cls(
-            playlist_item_id=str(item.get("id", "")),
-            video_id=str(content_details.get("videoId", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            playlist_id=str(snippet.get("playlistId", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            position=int(snippet.get("position", 0)),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            published_at=str(snippet.get("publishedAt", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            title=str(snippet.get("title", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            description=str(snippet.get("description", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            thumbnails=thumbnails,  # pyright: ignore[reportArgumentType]
-            video_owner_channel_title=str(snippet.get("videoOwnerChannelTitle", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            video_owner_channel_id=str(snippet.get("videoOwnerChannelId", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            privacy_status=str(status.get("privacyStatus", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            video_published_at=str(content_details.get("videoPublishedAt", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-            note=str(content_details.get("note", "")),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+            playlist_item_id=str(data.get("id", "")),
+            video_id=str(content.get("videoId", "")),
+            playlist_id=str(snippet.get("playlistId", "")),
+            position=int(snippet.get("position", 0)),
+            published_at=str(snippet.get("publishedAt", "")),
+            title=str(snippet.get("title", "")),
+            description=str(snippet.get("description", "")),
+            thumbnails=thumbnails,
+            video_owner_channel_title=str(
+                snippet.get("videoOwnerChannelTitle", "")
+            ),
+            video_owner_channel_id=str(snippet.get("videoOwnerChannelId", "")),
+            privacy_status=str(status.get("privacyStatus", "")),
+            video_published_at=str(content.get("videoPublishedAt", "")),
+            note=str(content.get("note", "")),
         )
 
-    def to_json(self) -> dict[str, object]:
+    # -----------------------------------------------------------------------
+    # Serializers
+    # -----------------------------------------------------------------------
+
+    def to_json(self) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
         """Return a serializable dictionary for JSON dumping."""
         return {
             "playlist_item_id": self.playlist_item_id,
@@ -107,4 +133,3 @@ class PlaylistVideoEntry:
             "video_published_at": self.video_published_at,
             "note": self.note,
         }
-

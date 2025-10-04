@@ -7,9 +7,9 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from FUNCTIONS.HELPERS.fileops import handler
-from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_list
 
 logger = setup_logger(__name__)
 
@@ -39,13 +39,15 @@ def remove_ids_not_in_list(
         test_run: If True, do not actually delete files or commit DB.
     """
     # Fetch current video IDs from DB
-    existing_video_ids= set(
+    existing_video_ids = set(
         get_videos_in_list(include_not_status0=include_not_status0, cur=cur)
     )
 
     try:
         playlist_entries = handler.load(video_id_file)
-        video_ids = set(entry.video_id for entry in playlist_entries if entry.video_id)
+        video_ids = set(
+            entry.video_id for entry in playlist_entries if entry.video_id
+        )
     except Exception as e:
         logger.error(f"[Removing Ids] Failed to load '{video_id_file}': {e}")
         if error:
@@ -66,8 +68,12 @@ def remove_ids_not_in_list(
             try:
                 if not test_run:
                     filepath = (download_path / filename).with_suffix(".mp3")
-                    lyrics_path = (download_path / filename).with_suffix(".lrc")
-                    thumbnail_path = (download_path / filename).with_suffix(".png")
+                    lyrics_path = (download_path / filename).with_suffix(
+                        ".lrc"
+                    )
+                    thumbnail_path = (download_path / filename).with_suffix(
+                        ".png"
+                    )
 
                     filepath.unlink(missing_ok=True)
                     lyrics_path.unlink(missing_ok=True)
@@ -79,9 +85,13 @@ def remove_ids_not_in_list(
                 if error:
                     print(f"[Removing Ids] Error removing {filename}: {e}")
             except Exception as e:
-                logger.error(f"[Removing Ids] Unknown error removing {filename}: {e}")
+                logger.error(
+                    f"[Removing Ids] Unknown error removing {filename}: {e}"
+                )
                 if error:
-                    print(f"[Removing Ids] Unknown error removing {filename}: {e}")
+                    print(
+                        f"[Removing Ids] Unknown error removing {filename}: {e}"
+                    )
 
         _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
         removed_ids += 1
@@ -101,4 +111,6 @@ def remove_ids_not_in_list(
             f"[Removing Ids] Removed {removed_ids} videos and {removed_files} files"
         )
         if info:
-            print(f"[Removing Ids] Removed {removed_ids} videos and {removed_files} files")
+            print(
+                f"[Removing Ids] Removed {removed_ids} videos and {removed_files} files"
+            )

@@ -1,14 +1,24 @@
+"""
+Loger module, handles all logs for the entire project,
+adds a custom logs level: VERBOSE, at priority 5
+to logs very low impact things
+"""
+
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, override
 
-from CONSTANTS import LOGS_DIR, LOGS_CONSOLE_GLOBALLY, LOGGING_LEVEL_CONSOLE, LOGGING_LEVEL_LOGFILES
+from colorama import Fore, Style
+from colorama import init as colorama_init
 
-from colorama import Fore, Style, init as colorama_init
+from CONSTANTS import (
+    LOGGING_LEVEL_CONSOLE,
+    LOGGING_LEVEL_LOGFILES,
+    LOGS_CONSOLE_GLOBALLY,
+    LOGS_DIR,
+)
+
 colorama_init(autoreset=True)
-
-
-
 
 
 # ─────────────────────────────
@@ -19,20 +29,35 @@ logging.addLevelName(VERBOSE, "VERBOSE")
 
 
 class CustomLogger(logging.Logger):
-    def verbose(self, msg: str, *args: Any, **kwargs: Any) -> None:  # pyright: ignore[reportAny, reportExplicitAny]
+    """Custom logger to allow the verbose level to be added safely"""
+
+    def verbose(
+        self,
+        msg: str,
+        *args: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+    ) -> None:
+        """
+        Vebose level of logging, behaves like any log level,
+        but have a priority of 5
+        """
         if self.isEnabledFor(VERBOSE):
-            self._log(VERBOSE, msg, args, **kwargs)  # pyright: ignore[reportAny]
+            self._log(
+                VERBOSE, msg, args, **kwargs  # pyright: ignore[reportAny]
+            )
 
 
 logging.setLoggerClass(CustomLogger)
-
-
 
 
 # ─────────────────────────────
 # Colored formatter
 # ─────────────────────────────
 class ColoredFormatter(logging.Formatter):
+    """
+    Colored formatter from colorama
+    """
+
     COLORS: dict[str, str] = {
         "VERBOSE": Fore.LIGHTBLACK_EX,
         "DEBUG": Fore.CYAN,
@@ -42,21 +67,21 @@ class ColoredFormatter(logging.Formatter):
         "CRITICAL": Fore.RED + Style.BRIGHT,
     }
 
-    def format(self, record: logging.LogRecord) -> str:  # pyright: ignore[reportImplicitOverride]
+    @override
+    def format(self, record: logging.LogRecord) -> str:
         color: str = self.COLORS.get(record.levelname, "")
         reset: str = Style.RESET_ALL
         message: str = super().format(record)
         return f"{color}{message}{reset}"
 
 
-
-
-
-
 # ─────────────────────────────
 # Setup logger
 # ─────────────────────────────
 def setup_logger(name: str, to_console: bool = False) -> CustomLogger:
+    """
+    Creates the logger object that will be used to summon logs
+    """
     if LOGS_CONSOLE_GLOBALLY:
         to_console = True
 
