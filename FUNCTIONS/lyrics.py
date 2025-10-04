@@ -9,10 +9,6 @@ from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-
-
-
-
 def embed_lyrics_into_mp3(
     filepath: Path,
     lyrics: str,
@@ -22,18 +18,17 @@ def embed_lyrics_into_mp3(
     original_duration: int | None
 ) -> tuple[bool, str]:
     """
-    Instead of embedding into mp3 tags, write a .lrc file next to the mp3.
+    Writes a .lrc file next to the mp3.
     Returns True on success, False otherwise.
     """
     if not filepath.exists():
         logger.error(f"[Embed lyrics] File not found : '{filepath}'")
         return False, ""
 
-
     try:
         # Sanitize/adjust lyrics for skips/tempo and convert to LRC string when appropriate.
         try:
-                lrc_text = sanitize_lyrics_to_lrc(
+            lrc_text = sanitize_lyrics_to_lrc(
                 lyrics=lyrics,
                 skips=skips,
                 file_duration=float(file_duration) if file_duration else 0.0,
@@ -59,11 +54,6 @@ def embed_lyrics_into_mp3(
         return False, ""
 
 
-
-
-
-
-
 def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
     """
     Remove the corresponding .lrc file (if present). Keep the same signature for compatibility.
@@ -82,10 +72,6 @@ def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
         if error:
             print(f"\nError removing lyrics file for {filepath}: {e}")
         return False
-
-
-
-
 
 
 def has_lyrics(mp3_path: Path) -> str | None:
@@ -110,13 +96,6 @@ def has_lyrics(mp3_path: Path) -> str | None:
     except Exception as e:
         logger.error(f"[Lyrics Check] Error checking lyrics for '{mp3_path.name}': {e}")
         return None
-
-
-
-
-
-
-
 
 
 logger = setup_logger(__name__)
@@ -185,6 +164,7 @@ def is_synchronized_lyrics(text: str) -> bool:
 
     logger.debug("[Lyrics Detection] Text is NOT synchronized")
     return False
+
 
 # ---------- 2. Parse LRC ----------
 def parse_lrc(lyrics: str) -> list[tuple[float, str]]:

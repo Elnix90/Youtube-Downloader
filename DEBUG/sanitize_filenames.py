@@ -1,9 +1,11 @@
 from pathlib import Path
 from sqlite3 import Cursor
 
-from FUNCTIONS.helpers import sanitize_text
-from logger import setup_logger
+from FUNCTIONS.HELPERS.text_helpers import sanitize_text
+from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
+
+
 
 def sanitize_all_filenames(download_dir: Path, cur: Cursor) -> None:
     """
