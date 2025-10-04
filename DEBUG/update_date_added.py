@@ -1,12 +1,12 @@
-from pathlib import Path
 import sqlite3
 import time
+from pathlib import Path
 
 from FUNCTIONS.HELPERS.fileops import handler
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
-logger = setup_logger(__name__)
 
+logger = setup_logger(__name__)
 
 
 def update_date_added(playlist_file: Path, cur: sqlite3.Cursor) -> None:
@@ -14,18 +14,22 @@ def update_date_added(playlist_file: Path, cur: sqlite3.Cursor) -> None:
 
     updated_ids: int = 0
     errored_ids: int = 0
-    total_videos= len(video_ids)
+    total_videos = len(video_ids)
 
     for video_id in video_ids:
         try:
-            _ = cur.execute("""
+            _ = cur.execute(
+                """
                 UPDATE Videos
                 SET date_added = ?
                 WHERE video_id = ?
             """,
-            (time.time(),video_id)
+                (time.time(), video_id),
             )
             updated_ids += 1
         except sqlite3.OperationalError:
             errored_ids += 1
-        fprint(f"{updated_ids + errored_ids}/{total_videos} | ",f"Updated {updated_ids}, failed to update {errored_ids} (likely not present db)")
+        fprint(
+            f"{updated_ids + errored_ids}/{total_videos} | ",
+            f"Updated {updated_ids}, failed to update {errored_ids} (likely not present db)",
+        )

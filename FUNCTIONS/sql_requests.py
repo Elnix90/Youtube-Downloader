@@ -1,37 +1,41 @@
+import json
 import sqlite3
 import time
 from typing import Literal
-import json
-
 
 from CONSTANTS import DB_PATH
-from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, remove_data_from_video_info
-
-
+from FUNCTIONS.HELPERS.helpers import (
+    VideoInfo,
+    VideoInfoKey,
+    remove_data_from_video_info,
+)
 from FUNCTIONS.HELPERS.logger import setup_logger
+
 logger = setup_logger(__name__)
-
-
-
-
 
 
 def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
     """
     Connect to the SQLite database. If the DB file does not exist, create it.
     """
-    
+
     if not DB_PATH.exists():
         if create_if_not:
-            logger.info(f"[Get DB conn] Database file not found, creating: {DB_PATH}")
-            DB_PATH.parent.mkdir(parents=True, exist_ok=True)  # ensure parent folder exists
+            logger.info(
+                f"[Get DB conn] Database file not found, creating: {DB_PATH}"
+            )
+            DB_PATH.parent.mkdir(
+                parents=True, exist_ok=True
+            )  # ensure parent folder exists
             # This will create an empty SQLite database
             conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             logger.debug("[Get DB conn] New database created")
             return conn
         else:
-            raise FileNotFoundError (f"{DB_PATH} does not exists, stopping execution here")
+            raise FileNotFoundError(
+                f"{DB_PATH} does not exists, stopping execution here"
+            )
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -39,12 +43,10 @@ def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
     return conn
 
 
-
-
 def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
 
-
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS videos (
         video_id TEXT UNIQUE PRIMARY KEY,
         title TEXT,
@@ -93,14 +95,12 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         date_added REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0),
         date_modified REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
     )
-    """)
+    """
+    )
     logger.debug("[Init DB] Initialized videos")
 
-
-
-
-
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS removed_segments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         video_id TEXT NOT NULL,
@@ -108,24 +108,22 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         segment_end REAL NOT NULL,
         FOREIGN KEY(video_id) REFERENCES videos(video_id) ON DELETE CASCADE
     )
-    """)
+    """
+    )
     logger.debug("[Init DB] Initialized removed_segments")
 
-
-
-
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS tags (
         tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
         tag TEXT UNIQUE NOT NULL
     )
-    """)
+    """
+    )
     logger.debug("[Init DB] Initialized tags")
 
-
-
-
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS video_tags (
         video_id TEXT NOT NULL,
         tag_id INTEGER NOT NULL,
@@ -133,51 +131,65 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         FOREIGN KEY(video_id) REFERENCES videos(video_id) ON DELETE CASCADE,
         FOREIGN KEY(tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
     )
-    """)
+    """
+    )
     logger.debug("[Init DB] Initialized video_tags")
 
     conn.commit()
 
 
-
-
-
-
-
-
-
-def _apply_skips_and_tags(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -> None:
+def _apply_skips_and_tags(
+    video_id: str, data: VideoInfo, cur: sqlite3.Cursor
+) -> None:
     # --- Skips ---
     if "skips" in data:
-        _ = cur.execute("DELETE FROM removed_segments WHERE video_id = ?", (video_id,))
+        _ = cur.execute(
+            "DELETE FROM removed_segments WHERE video_id = ?", (video_id,)
+        )
         for start, end in data["skips"]:
             _ = cur.execute(
                 "INSERT INTO removed_segments (video_id, segment_start, segment_end) VALUES (?, ?, ?)",
-                (video_id, start, end)
+                (video_id, start, end),
             )
-        logger.debug(f"[DB] Applied {len(data['skips'])} removed_segments for '{video_id}'")
+        logger.debug(
+            f"[DB] Applied {len(data['skips'])} removed_segments for '{video_id}'"
+        )
 
     # --- Tags ---
     if "tags" in data:
-        _ = cur.execute("DELETE FROM video_tags WHERE video_id = ?", (video_id,))
+        _ = cur.execute(
+            "DELETE FROM video_tags WHERE video_id = ?", (video_id,)
+        )
         for tag in data["tags"]:
-            _ = cur.execute("INSERT OR IGNORE INTO tags (tag) VALUES (?)", (tag,))
+            _ = cur.execute(
+                "INSERT OR IGNORE INTO tags (tag) VALUES (?)", (tag,)
+            )
             _ = cur.execute("SELECT tag_id FROM tags WHERE tag = ?", (tag,))
             tag_id = cur.fetchone()[0]  # pyright: ignore[reportAny]
-            _ = cur.execute("INSERT OR IGNORE INTO video_tags (video_id, tag_id) VALUES (?, ?)", (video_id, tag_id))
+            _ = cur.execute(
+                "INSERT OR IGNORE INTO video_tags (video_id, tag_id) VALUES (?, ?)",
+                (video_id, tag_id),
+            )
         logger.debug(f"[DB] Applied {len(data['tags'])} tags for '{video_id}'")
 
 
-
-
-
-
-def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
+def insert_video_db(
+    video_data: VideoInfo,
+    cur: sqlite3.Cursor,
+    conn: sqlite3.Connection,
+    test_run: bool,
+) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
-    video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
+    video_columns = {
+        row["name"] for row in cur.fetchall()
+    }  # pyright: ignore[reportAny]
 
     # Extract valid fields
-    video_row = {k: v for k, v in video_data.items() if k in video_columns and k not in {"skips", "tags"}}
+    video_row = {
+        k: v
+        for k, v in video_data.items()
+        if k in video_columns and k not in {"skips", "tags"}
+    }
     if "video_id" not in video_row:
         logger.error("[Insert Video] Missing 'video_id'")
         return
@@ -187,32 +199,45 @@ def insert_video_db(video_data: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Co
     sql = f"INSERT OR IGNORE INTO videos ({columns}) VALUES ({placeholders})"
     _ = cur.execute(sql, tuple(video_row.values()))
 
-    _apply_skips_and_tags(video_id=video_row["video_id"], data=video_data, cur=cur)  # pyright: ignore[reportArgumentType]
+    _apply_skips_and_tags(
+        video_id=video_row["video_id"], data=video_data, cur=cur
+    )  # pyright: ignore[reportArgumentType]
     if not test_run:
         conn.commit()
-        logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
+        logger.info(
+            f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields"
+        )
     else:
-        logger.info("[Insert Video] Test_run wan enabled, didn't inserted anything")
+        logger.info(
+            "[Insert Video] Test_run wan enabled, didn't inserted anything"
+        )
 
 
-
-
-
-
-
-
-
-def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
+def update_video_db(
+    video_id: str,
+    update_fields: VideoInfo,
+    cur: sqlite3.Cursor,
+    conn: sqlite3.Connection,
+    test_run: bool,
+) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
-    video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
+    video_columns = {
+        row["name"] for row in cur.fetchall()
+    }  # pyright: ignore[reportAny]
 
     # Secutity to avoid rewriting date added
-    update_fields = remove_data_from_video_info(update_fields,["date_added","date_updated"])
+    update_fields = remove_data_from_video_info(
+        update_fields, ["date_added", "date_updated"]
+    )
 
     # Update only valid DB fields
     EXCLUDE_FOR_MAIN = {"skips", "tags"}
-    video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
-    
+    video_update_data = {
+        k: v
+        for k, v in update_fields.items()
+        if k in video_columns and k not in EXCLUDE_FOR_MAIN
+    }
+
     video_update_data["date_modified"] = time.time()
 
     if video_update_data:
@@ -224,50 +249,54 @@ def update_video_db(video_id: str, update_fields: VideoInfo, cur: sqlite3.Cursor
     _apply_skips_and_tags(video_id=video_id, data=update_fields, cur=cur)
     if not test_run:
         conn.commit()
-        logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
+        logger.debug(
+            f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields"
+        )
     else:
-        logger.info("[Update Video] Test_run wan enabled, didn't updated anything")
+        logger.info(
+            "[Update Video] Test_run wan enabled, didn't updated anything"
+        )
 
 
-
-
-
-
-def remove_video(video_id: str, cur: sqlite3.Cursor, conn: sqlite3.Connection, test_run: bool) -> None:
+def remove_video(
+    video_id: str,
+    cur: sqlite3.Cursor,
+    conn: sqlite3.Connection,
+    test_run: bool,
+) -> None:
     """
     Remove a video and all its related data from the database.
     Cascades take care of related rows in removed_segments and video_tags.
     """
     _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
     if cur.rowcount > 0:
-        logger.info(f"[Remove Video] Successfully removed video_id '{video_id}' and related data")
+        logger.info(
+            f"[Remove Video] Successfully removed video_id '{video_id}' and related data"
+        )
     else:
-        logger.warning(f"[Remove Video] No video found with video_id '{video_id}'")
+        logger.warning(
+            f"[Remove Video] No video found with video_id '{video_id}'"
+        )
     if not test_run:
         conn.commit()
         logger.debug(f"[Remove Video] Removed '{video_id}' form database")
     else:
-        logger.info("[Remove DB] Test_run wan enabled, didn't removed anything")
+        logger.info(
+            "[Remove DB] Test_run wan enabled, didn't removed anything"
+        )
 
 
-
-
-
-
-
-
-
-def get_videos_in_list(include_not_status0: bool,cur: sqlite3.Cursor) -> list[str]:
+def get_videos_in_list(
+    include_not_status0: bool, cur: sqlite3.Cursor
+) -> list[str]:
     if include_not_status0:
         _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
     else:
-        _ = cur.execute("SELECT video_id FROM videos WHERE status IN (0,3) ORDER BY date_added ASC")
+        _ = cur.execute(
+            "SELECT video_id FROM videos WHERE status IN (0,3) ORDER BY date_added ASC"
+        )
     rows = cur.fetchall()
     return [row["video_id"] for row in rows]  # pyright: ignore[reportAny]
-
-
-
-
 
 
 # -----------------------------
@@ -282,17 +311,22 @@ def safe_int(row: sqlite3.Row, key: VideoInfoKey) -> int:
     value = row[key] if key in row.keys() else None
     return value if isinstance(value, int) else 0
 
+
 def safe_status(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2, 3]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, int) and value in (0, 1, 2, 3):
         return value
-    return 3 # Unknown
+    return 3  # Unknown
 
-def safe_lyrics_to_use(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2]:
+
+def safe_lyrics_to_use(
+    row: sqlite3.Row, key: VideoInfoKey
+) -> Literal[0, 1, 2]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, int) and value in (0, 1, 2):
         return value
     return 0
+
 
 def safe_float(row: sqlite3.Row, key: VideoInfoKey) -> float:
     value = row[key] if key in row.keys() else None
@@ -304,13 +338,14 @@ def safe_bool(row: sqlite3.Row, key: VideoInfoKey) -> bool:
     return bool(value) if isinstance(value, int) else False
 
 
-
 def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
     value = row[key] if key in row.keys() else None
     if isinstance(value, str):
         try:
             parsed = json.loads(value)  # pyright: ignore[reportAny]
-            if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):  # pyright: ignore[reportUnknownVariableType]
+            if isinstance(parsed, list) and all(
+                isinstance(x, str) for x in parsed
+            ):  # pyright: ignore[reportUnknownVariableType]
                 return parsed  # pyright: ignore[reportUnknownVariableType]
         except Exception:
             return []
@@ -342,44 +377,32 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
         "upload_date": safe_str(row, "upload_date"),
         "duration": safe_int(row, "duration"),
         "duration_string": safe_str(row, "duration_string"),
-
-        "removed_segments_int": safe_int(row,"removed_segments_int"),
-        "removed_segments_duration": safe_float(row,"removed_segments_duration"),
-
+        "removed_segments_int": safe_int(row, "removed_segments_int"),
+        "removed_segments_duration": safe_float(
+            row, "removed_segments_duration"
+        ),
         "lyrics": safe_str(row, "lyrics"),
         "subtitles": safe_str(row, "subtitles"),
         "syncedlyrics": safe_str(row, "syncedlyrics"),
         "auto_subs": safe_str(row, "auto_subs"),
         "try_lyrics_if_not": safe_bool(row, "try_lyrics_if_not"),
-
         "update_thumbnail": safe_bool(row, "update_thumbnail"),
         "remove_thumbnail": safe_bool(row, "remove_thumbnail"),
-
         "remove_lyrics": safe_bool(row, "remove_lyrics"),
-        "lyrics_retries": safe_int(row,"lyrics_retries"),
-
+        "lyrics_retries": safe_int(row, "lyrics_retries"),
         "tags": safe_str_list(row, "tags"),
-
         "recompute_tags": safe_bool(row, "recompute_tags"),
         "recompute_album": safe_bool(row, "recompute_album"),
         "recompute_yt_info": safe_bool(row, "recompute_yt_info"),
-
         "remix_of": safe_str(row, "remix_of"),
         "recompute_remix_of": safe_bool(row, "recompute_remix_of"),
         "confidence": safe_float(row, "confidence"),
-
         "filename": safe_str(row, "filename"),
         "status": safe_status(row, "status"),
         "reason": safe_str(row, "reason"),
-
         "date_added": safe_float(row, "date_added"),
         "date_modified": safe_float(row, "date_modified"),
     }
-
-
-
-
-
 
 
 def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
@@ -392,48 +415,55 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
     _ = cur.execute("SELECT * FROM videos WHERE video_id = ?", (video_id,))
     row: sqlite3.Row = cur.fetchone()  # pyright: ignore[reportAny]
     if not row:
-        logger.verbose(f"[Get Video Info] No entry found for video_id '{video_id}'")
+        logger.verbose(
+            f"[Get Video Info] No entry found for video_id '{video_id}'"
+        )
         return {}
 
     # Only add keys with non-null values
     video_info: VideoInfo = row_to_video_info(row=row)
 
-
     # --- Fetch tags ---
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
         SELECT t.tag
         FROM tags t
         JOIN video_tags vt ON t.tag_id = vt.tag_id
         WHERE vt.video_id = ?
-    """, (video_id,))
-    tags = [tag_row["tag"] for tag_row in cur.fetchall()]  # pyright: ignore[reportAny]
+    """,
+        (video_id,),
+    )
+    tags = [
+        tag_row["tag"] for tag_row in cur.fetchall()
+    ]  # pyright: ignore[reportAny]
     if tags:
         video_info["tags"] = tags
 
     # --- Fetch removed segments ---
-    _ = cur.execute("""
+    _ = cur.execute(
+        """
         SELECT segment_start, segment_end
         FROM removed_segments
         WHERE video_id = ?
         ORDER BY segment_start
-    """, (video_id,))
-    skips: list[tuple[float, float]] = [(seg_row["segment_start"], seg_row["segment_end"]) for seg_row in cur.fetchall()]  # pyright: ignore[reportAny]
+    """,
+        (video_id,),
+    )
+    skips: list[tuple[float, float]] = [
+        (seg_row["segment_start"], seg_row["segment_end"])
+        for seg_row in cur.fetchall()
+    ]  # pyright: ignore[reportAny]
     if skips:
         video_info["skips"] = skips
 
-    logger.verbose(f"[Get Video Info] Retrieved info for video_id '{video_id}'")
+    logger.verbose(
+        f"[Get Video Info] Retrieved info for video_id '{video_id}'"
+    )
 
     video_info_copy = video_info.copy()
-
 
     for key, value in video_info_copy.items():
         if value is None or (isinstance(value, str) and value == ""):
             del video_info[key]
 
-
     return video_info
-
-
-
-
-

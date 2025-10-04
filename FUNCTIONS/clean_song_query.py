@@ -1,13 +1,11 @@
 import re
 import unicodedata
 
-
 from CONSTANTS import UNWANTED_PATTERNS_FILE
+from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import load_patterns
 
-from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
-
 
 
 def clean_song_query(query: str) -> str:
@@ -28,7 +26,9 @@ def clean_song_query(query: str) -> str:
             query = re.sub(regex, '', query, flags=re.IGNORECASE)
         else:
             # Handle plain word/phrase pattern
-            query = re.sub(rf"\b{re.escape(pattern)}\b", '', query, flags=re.IGNORECASE)
+            query = re.sub(
+                rf"\b{re.escape(pattern)}\b", '', query, flags=re.IGNORECASE
+            )
 
     # Remove "feat ..." or "ft ..." with the artist name
     query = re.sub(r'\b(feat|ft)\.? [\w\s]+', '', query, flags=re.IGNORECASE)

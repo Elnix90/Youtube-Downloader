@@ -3,13 +3,11 @@ Constants loader for YouTube Music Downloader
 Loads config.toml (validated) and exposes constants.
 """
 
-from pathlib import Path
 import logging
 import sys
+from pathlib import Path
 
 from CONFIG.config_loader import load_config
-
-
 
 # ---------- Load config ----------
 
@@ -23,9 +21,8 @@ if not CONFIG_FILE.exists():
 config = load_config(CONFIG_FILE)
 
 
-
-
 # ---------- Validation ----------
+
 
 def validate_config() -> None:
     required_sections = ["paths", "patterns", "processing", "logging"]
@@ -34,17 +31,22 @@ def validate_config() -> None:
             raise ValueError(f"Missing section in config.toml: [{section}]")
 
     # Check critical paths
-    download_path = Path(config["paths"]["download_path"]).expanduser().resolve()
+    download_path = (
+        Path(config["paths"]["download_path"]).expanduser().resolve()
+    )
     if not download_path.parent.exists():
-        print(f"Warning: Parent directory of download_path does not exist: {download_path.parent}; will be created")
+        print(
+            f"Warning: Parent directory of download_path does not exist: {download_path.parent}; will be created"
+        )
 
     db_path = Path(config["paths"]["db_path"])
     if not db_path.exists() and not db_path.parent.exists():
-        print(f"Warning: Parent directory of db_path does not exist: {db_path.parent}")
+        print(
+            f"Warning: Parent directory of db_path does not exist: {db_path.parent}"
+        )
+
 
 validate_config()
-
-
 
 
 # ---------- Constants ----------
@@ -59,7 +61,9 @@ PATTERN_DIR: Path = CONFIG_DIR / "PATTERNS"
 TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 
 # Critical paths
-DOWNLOAD_PATH: Path = Path(config["paths"]["download_path"]).expanduser().resolve()
+DOWNLOAD_PATH: Path = (
+    Path(config["paths"]["download_path"]).expanduser().resolve()
+)
 DB_PATH: Path = Path(config["paths"]["db_path"])
 
 # Creds files
@@ -72,14 +76,24 @@ CORRECT_NOT_IN_DIR_FILE: Path = JSON_DIR / "correct_not_in_db.json"
 UNAVAILABLE_VIDEOS_FILE: Path = JSON_DIR / "unavailable_videos.json"
 
 # Pattern files
-UNWANTED_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["unwanted_patterns_file"]
-REMIX_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["remix_patterns_file"]
-PRIVATE_PATTERNS_FILE: Path = PATTERN_DIR / config["patterns"]["private_patterns_file"]
-TRUSTED_ARTISTS_FILE: Path = PATTERN_DIR / config["patterns"]["trusted_artists_file"]
+UNWANTED_PATTERNS_FILE: Path = (
+    PATTERN_DIR / config["patterns"]["unwanted_patterns_file"]
+)
+REMIX_PATTERNS_FILE: Path = (
+    PATTERN_DIR / config["patterns"]["remix_patterns_file"]
+)
+PRIVATE_PATTERNS_FILE: Path = (
+    PATTERN_DIR / config["patterns"]["private_patterns_file"]
+)
+TRUSTED_ARTISTS_FILE: Path = (
+    PATTERN_DIR / config["patterns"]["trusted_artists_file"]
+)
 
 # Processing
 MAX_LYRICS_RETRIES: int = config["processing"]["max_lyrics_retries"]
-REMIX_CONFIDENCE_THRESHOLD: float = config["processing"]["remix_confidence_threshold"]
+REMIX_CONFIDENCE_THRESHOLD: float = config["processing"][
+    "remix_confidence_threshold"
+]
 
 # Logging
 LOGS_CONSOLE_GLOBALLY: bool = config["logging"]["console_globally"]
@@ -95,8 +109,12 @@ LOGGING_LEVELS: dict[str, int] = {
     "CRITICAL": logging.CRITICAL,
 }
 
-LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[config["logging"]["level_console"].upper()]
+LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[
+    config["logging"]["level_console"].upper()
+]
 
-LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[config["logging"]["level_logfiles"].upper()]
+LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[
+    config["logging"]["level_logfiles"].upper()
+]
 
-CONFIG= config
+CONFIG = config

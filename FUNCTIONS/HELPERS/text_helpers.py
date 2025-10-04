@@ -1,76 +1,115 @@
+"""
+Text helper utilities.
+
+Provides functions for sanitizing text (e.g., filenames),
+loading word or regex patterns from files, and detecting
+whole-word matches within text.
+"""
+
+from __future__ import annotations
+
+import re
+import unicodedata
 from pathlib import Path
 
-import unicodedata
-import re
-
 from FUNCTIONS.HELPERS.logger import setup_logger
+
 logger = setup_logger(__name__)
 
 
-
-
-
-
 def sanitize_text(text: str) -> str:
-    old_filename = text
-    text = text or ""
-    text = text.strip()
+    """
+    Sanitize a text string by removing unsafe characters and accents.
 
-    # Normalize Unicode (NFKD decomposes accents/emoji)
+    Args:
+        text: The raw text to sanitize.
+
+    Returns:
+        A cleaned and title-cased string safe for use in filenames
+        or text comparison.
+    """
+    original: str = text
+    text = (text or "").strip()
+
+    # Normalize Unicode (NFKD decomposes accents and emoji)
     text = unicodedata.normalize("NFKD", text)
 
-    # Remove accents/diacritics (keep base ASCII letters)
-    text = "".join(
-        c for c in text
-        if not unicodedata.combining(c)
-    )
+    # Remove accents/diacritics (keep ASCII base letters)
+    text = "".join(c for c in text if not unicodedata.combining(c))
 
     # Remove non-ASCII characters
     text = text.encode("ascii", "ignore").decode("ascii")
 
-    # Remove filesystem-forbidden chars
+    # Remove forbidden filesystem characters
     text = re.sub(r'[\\/:*?"<>|~.\x00-\x1F]', "", text)
 
-    # Collapse spaces
+    # Collapse multiple spaces
     text = re.sub(r"\s+", " ", text)
 
-    # Only allow safe characters: letters, digits, space, dash, underscore, parentheses, dot
+    # Allow only safe characters
     text = re.sub(r"[^A-Za-z0-9 _\-\(\).]", "", text)
 
     # Trim trailing dots/spaces again
     text = text.rstrip(". ").strip()
 
-    logger.verbose(f"[Sanitize Filename] Sanitized '{old_filename}' to '{text}'")
+    logger.verbose(f"[Sanitize] '{original}' → '{text}'")
     return text.title()
-
-
-
 
 
 def load_patterns(file: Path) -> set[str]:
     """
-    Load non-comment patterns from a file into a set
+    Load non-comment patterns from a file into a set.
+
+    Each non-empty line that is not a comment ('#') or regex
+    directive ('re:') is cleaned with `sanitize_text` and added.
+
+    Args:
+        file: Path to the file containing patterns.
+
+    Returns:
+        A set of sanitized string patterns.
     """
     if not file.exists():
         return set()
+
     try:
-        lines = file.read_text(encoding="utf-8").splitlines()
-        patterns ={sanitize_text(line.strip()) for line in lines if line.strip() and not line.startswith("#") and not line.startswith("re:")}
-        logger.verbose(f"[Load patterns] Sucessfully loaded {len(patterns)} patterns from '{file}'")
+        lines: list[str] = file.read_text(encoding="utf-8").splitlines()
+
+        patterns: set[str] = {
+            sanitize_text(line.strip())
+            for line in lines
+            if (
+                line.strip()
+                and not line.startswith("#")
+                and not line.startswith("re:")
+            )
+        }
+
+        logger.verbose(
+            f"[Load Patterns] Loaded {len(patterns)} "
+            + f"patterns from '{file}'"
+        )
         return patterns
-    except Exception as e:
-        logger.error(f"[Compute Tags] Failed to load trusted artists: {e}")
+
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        logger.error(f"[Load Patterns] Failed to load '{file}': {exc}")
         return set()
-
-
 
 
 def contains_whole_word(text: str, word: str) -> bool:
     """
-    Return True if `word` exists as a whole word inside `text`.
-    Case-insensitive.
+    Determine if a whole word appears in the provided text.
+
+    Args:
+        text: The text to search within.
+        word: The target word to look for.
+
+    Returns:
+        True if `word` exists as a whole word inside `text`
+        (case-insensitive), otherwise False.
     """
     if not text or not word:
         return False
-    pattern = r"\b" + re.escape(word) + r"\b"
-    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+    pattern: str = rf"\b{re.escape(word)}\b"
+    return bool(re.search(pattern, text, flags=re.IGNORECASE))

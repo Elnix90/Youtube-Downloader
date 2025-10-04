@@ -1,10 +1,6 @@
-from pathlib import Path
-import subprocess
 import ast
-
-
-
-
+import subprocess
+from pathlib import Path
 
 
 def is_git_ignored(path: Path) -> bool:
@@ -17,9 +13,6 @@ def is_git_ignored(path: Path) -> bool:
         return result.returncode == 0
     except FileNotFoundError:
         return False
-
-
-
 
 
 def get_file_docstring(path: Path) -> str | None:
@@ -37,13 +30,9 @@ def get_file_docstring(path: Path) -> str | None:
     return None
 
 
-
-
-
 def print_tree(root_dir: Path, prefix: str = ""):
     entries = sorted(root_dir.iterdir())
     for i, path in enumerate(entries):
-
 
         if is_git_ignored(path):
             continue  # skip ignored files
@@ -58,7 +47,10 @@ def print_tree(root_dir: Path, prefix: str = ""):
         print(line)
 
         if path.is_dir():
-            print_tree(path, prefix + ("│   " if i < len(entries) - 1 else "    "))
+            print_tree(
+                path, prefix + ("│   " if i < len(entries) - 1 else "    ")
+            )
+
 
 # Run from current directory
 print_tree(Path("."))

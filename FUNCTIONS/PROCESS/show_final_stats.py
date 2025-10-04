@@ -1,13 +1,13 @@
-from typing import Literal, cast
-
 from pathlib import Path
 from sqlite3 import Cursor
+from typing import Literal, cast
+
 from CONSTANTS import CORRECT_NOT_IN_DIR_FILE, UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.HELPERS.fileops import handler
 from FUNCTIONS.HELPERS.helpers import VideoInfoMap
-
 from FUNCTIONS.HELPERS.logger import setup_logger
+
 logger = setup_logger(__name__)
 
 
@@ -25,7 +25,7 @@ def show_final_stats(
     cur: Cursor,
     test_run: bool,
     remove_malformatted: bool,
-    force_mp3_presence: bool
+    force_mp3_presence: bool,
 ) -> None:
     """
     Show information about the processed videos: correctly formatted, downloaded,
@@ -38,15 +38,16 @@ def show_final_stats(
         info=False,
         test_run=test_run,
         remove=remove_malformatted,
-        force_mp3_presence=force_mp3_presence
+        force_mp3_presence=force_mp3_presence,
     )
 
     # Prepare a mapping of video_id -> empty VideoInfo for all downloaded videos in DB
     list_without_unavailable: VideoInfoMap = {}
 
-    _= cur.execute("SELECT video_id, status FROM videos")
+    _ = cur.execute("SELECT video_id, status FROM videos")
     infos: set[tuple[str, Literal[0, 1, 2, 3]]] = {
-        (row["video_id"], cast(Literal[0, 1, 2, 3], row["status"])) for row in cur.fetchall()  # pyright: ignore[reportAny]
+        (row["video_id"], cast(Literal[0, 1, 2, 3], row["status"]))
+        for row in cur.fetchall()  # pyright: ignore[reportAny]
     }
 
     # Keep only videos with status 0 (downloaded)
@@ -55,28 +56,44 @@ def show_final_stats(
             list_without_unavailable[video_id] = {}  # type: ignore
 
     # Compute differences
-    not_in_dir: set[str] = set(list_without_unavailable.keys()) - set(ids_present_in_down_dir.keys())
-    not_in_list: set[str] = set(ids_present_in_down_dir.keys()) - set(list_without_unavailable.keys())
+    not_in_dir: set[str] = set(list_without_unavailable.keys()) - set(
+        ids_present_in_down_dir.keys()
+    )
+    not_in_list: set[str] = set(ids_present_in_down_dir.keys()) - set(
+        list_without_unavailable.keys()
+    )
 
     final_stats: list[str] = []
 
     if not not_in_dir and not not_in_list:
-        final_stats.append(" ✅ The database and the download dir have been successfully synchronized")
+        final_stats.append(
+            " ✅ The database and the download dir have been successfully synchronized"
+        )
     else:
         if not not_in_dir:
-            final_stats.append(f" - {len(list_without_unavailable)} ids are in the database and correctly downloaded")
+            final_stats.append(
+                f" - {len(list_without_unavailable)} ids are in the database and correctly downloaded"
+            )
         else:
-            final_stats.append(f" - {len(infos) - len(not_in_dir)} ids have not been downloaded, marked as unavailable")
+            final_stats.append(
+                f" - {len(infos) - len(not_in_dir)} ids have not been downloaded, marked as unavailable"
+            )
             if len(not_in_dir) < 10:
                 for vid in not_in_dir:
                     final_stats.append(f"   • {vid}")
                 final_stats.append("")
             else:
-                handler.dump(data=list(not_in_dir), file=UNAVAILABLE_VIDEOS_FILE)  # pyright: ignore[reportArgumentType]
-                final_stats.append(f"   • List written in {UNAVAILABLE_VIDEOS_FILE}")
+                handler.dump(
+                    data=list(not_in_dir), file=UNAVAILABLE_VIDEOS_FILE
+                )  # pyright: ignore[reportArgumentType]
+                final_stats.append(
+                    f"   • List written in {UNAVAILABLE_VIDEOS_FILE}"
+                )
 
         if not not_in_list:
-            final_stats.append(f" - All downloaded files are in the database and correctly formatted")
+            final_stats.append(
+                " - All downloaded files are in the database and correctly formatted"
+            )
         else:
             final_stats.append(
                 f" - {len(not_in_list)} correctly formatted files are in the download directory but not in the database (pass add_folder_files_not_in_list = True to add them to the database)"
@@ -86,13 +103,19 @@ def show_final_stats(
                     final_stats.append(f"   • {vid}")
                 final_stats.append("\n")
             else:
-                handler.dump(data=list(not_in_list), file=CORRECT_NOT_IN_DIR_FILE)  # pyright: ignore[reportArgumentType]
-                final_stats.append(f"   • List written in {CORRECT_NOT_IN_DIR_FILE}")
+                handler.dump(
+                    data=list(not_in_list), file=CORRECT_NOT_IN_DIR_FILE
+                )  # pyright: ignore[reportArgumentType]
+                final_stats.append(
+                    f"   • List written in {CORRECT_NOT_IN_DIR_FILE}"
+                )
 
     # Print summary
-    print(f"\n[TOTAL]:\n - {len(infos)} total videos in the database "+
-        f"{'(contains privates and unavailable)' if len(list_without_unavailable) < len(infos) else ''}\n"+
-        f" - {len(ids_present_in_down_dir)} total videos in download directory")
+    print(
+        f"\n[TOTAL]:\n - {len(infos)} total videos in the database "
+        + f"{'(contains privates and unavailable)' if len(list_without_unavailable) < len(infos) else ''}\n"
+        + f" - {len(ids_present_in_down_dir)} total videos in download directory"
+    )
     print("\n".join(final_stats))
 
     # Print durations

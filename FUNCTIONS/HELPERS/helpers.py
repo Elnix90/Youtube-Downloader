@@ -1,13 +1,18 @@
-from datetime import datetime
-from typing import TypeAlias, TypedDict, Literal
-from pathlib import Path
+"""
+Helper module, contains some helper functions
+used all across the project
+"""
 
+from datetime import datetime
+from pathlib import Path
+from typing import Literal, TypeAlias, TypedDict
 
 
 class VideoInfo(TypedDict, total=False):
     """
     Types for VideoInfo dict
     """
+
     video_id: str
     title: str
     thumbnail_url: str
@@ -52,15 +57,14 @@ class VideoInfo(TypedDict, total=False):
     confidence: float
 
     filename: str
-    status: Literal[0,1,2,3] # downloaded / unavailable / private / unknown
-    reason: str # If the file is downloaded and fails this key is added with why it has failed
+    status: Literal[0, 1, 2, 3]  # downloaded / unavailable / private / unknown
+    reason: str  # Why download has failed
 
     date_added: float
     date_modified: float
 
 
 VideoInfoKey = Literal[
-
     "video_id",
     "title",
     "thumbnail_url",
@@ -101,15 +105,18 @@ VideoInfoKey = Literal[
     "status",
     "reason",
     "date_added",
-    "date_modified"
+    "date_modified",
 ]
-
 
 
 VideoInfoMap: TypeAlias = dict[str, VideoInfo]
 
 
 class ExtractedInfo(TypedDict, total=False):
+    """
+    Type safe extracted infos from yt-dlp
+    """
+
     id: str | None
     fulltitle: str | None
     title: str | None
@@ -133,7 +140,6 @@ class ExtractedInfo(TypedDict, total=False):
     automatic_captions: dict[str, list[dict[str, str]]] | None
 
 
-
 youtube_required_info: set[str] = {
     "video_id",
     "title",
@@ -143,34 +149,46 @@ youtube_required_info: set[str] = {
     "duration",
     "uploader",
     "upload_date",
-    "duration_string"
+    "duration_string",
 }
 
 
 class Postprocessor(TypedDict, total=False):
+    """
+    Defines the types for Postprocessors args for yt_dlp type check
+    """
+
     key: str
     preferredcodec: str
     preferredquality: str
 
 
-
-
-
 class QuietLogger:
-    def debug(self, msg: str) -> None:  # pyright: ignore[reportUnusedParameter]
-        return None
+    """
+    Used to shut yt-dlp and mannually handle errors or warnings
+    """
 
-    def warning(self, msg: str) -> None:  # pyright: ignore[reportUnusedParameter]
-        return None
+    def debug(self, _msg: str) -> None:
+        """
+        Empty method to catch debug output of yt-dlp
+        """
 
-    def error(self, msg: str) -> None:  # pyright: ignore[reportUnusedParameter]
-        return None
+    def warning(self, _msg: str) -> None:
+        """
+        Empty method to catch warning output of yt-dlp
+        """
+
+    def error(self, _msg: str) -> None:
+        """
+        Empty method to catch error output of yt-dlp
+        """
 
 
+class YdlOpt(TypedDict, total=False):
+    """
+    Type safe options for yt-dlp download
+    """
 
-
-
-class Ydl_opt(TypedDict, total=False):
     outtmpl: dict[str, str]
     quiet: bool
     noprogress: bool
@@ -178,29 +196,23 @@ class Ydl_opt(TypedDict, total=False):
     ignoreerrors: bool
     logger: QuietLogger
     verbose: bool
-    
+
     format: str
     postprocessor_args: list[str]
     add_metadata: bool
     embed_metadata: bool
     postprocessors: list[Postprocessor]
-    # progress_hooks: list[Callable[[dict[str, Any]], None]]
     http_headers: dict[str, str]
     extractor_args: dict[str, list[str]]
     fragment_retries: int
     retries: int
-    
+
     writesubtitles: bool
     writeautomaticsub: bool
     subtitlesformat: str
     subtitleslangs: list[str]
 
     proxy: str
-
-
-
-
-
 
 
 def lyrics_lrc_path_for_mp3(mp3_path: Path) -> Path:
@@ -213,32 +225,46 @@ def thumbnail_png_path_for_mp3(mp3_path: Path) -> Path:
     return mp3_path.with_suffix(".png")
 
 
-
-
-def remove_data_from_video_info(data: VideoInfo, to_remove: list[str]) -> VideoInfo:
+def remove_data_from_video_info(
+    data: VideoInfo, to_remove: list[str]
+) -> VideoInfo:
+    """
+    Removes data passed in to_remove from a VideoInfo dict,
+    returns the nex dict
+    """
     for r in to_remove:
         if r in data:
             del data[r]
     return data
 
 
-
-def timestamp_to_id3_unique(ts: float | int) -> str:
+def timestamp_to_id3_unique(
+    ts: float | int, include_time: bool = False
+) -> str:
     """
-    Convert a Unix timestamp to a unique sortable string
-    compatible with TDRC ID3 tag.
-    Format: YYYYMMDDHHMMSS
-    """
-    return datetime.fromtimestamp(timestamp=ts).strftime(format="%Y%m%d%H%M%S")
+    Convert a Unix timestamp to a unique, sortable string
+    compatible with ID3-style date formats.
 
+    Args:
+        ts (float | int): Unix timestamp.
+        include_time (bool): If True, include hours, minutes, and seconds.
+
+    Returns:
+        str: Date string in format 'YYYY-MM-DD' or 'YYYY-MM-DD_HH-MM-SS'.
+    """
+    dt = datetime.fromtimestamp(ts)
+    if include_time:
+        return dt.strftime("%Y-%m-%d_%H-%M-%S")
+    else:
+        return dt.strftime("%Y-%m-%d")
 
 
 def normalize_skips(info: VideoInfo) -> VideoInfo:
+    """
+    Transforms skips from VideoInfo that can be list due to json parsing to
+    real tuples for later iteration
+    """
     if "skips" in info:
-        info["skips"] = [(x,y) for x,y in info["skips"]]
+        info["skips"] = list(info["skips"])
+        # info["skips"] = [(x, y) for x, y in info["skips"]]
     return info
-
-
-
-
-

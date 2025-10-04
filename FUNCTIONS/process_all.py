@@ -1,81 +1,73 @@
+import time
+from datetime import timedelta
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 from typing import Literal
-import time
-from datetime import timedelta
-
-
-
 
 from CONSTANTS import OVERWRITE_UNCHANGED
-from FUNCTIONS.PROCESS.add_new_ids import add_new_ids_to_database
-from FUNCTIONS.PROCESS.remove_ids_not_in_list import remove_ids_not_in_list
+from FUNCTIONS.download import download_video, safe_extract_info
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
+from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
+from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.PROCESS.add_album import process_album_for_video
 from FUNCTIONS.PROCESS.add_lyrics import process_lyrics_for_video
+from FUNCTIONS.PROCESS.add_new_ids import add_new_ids_to_database
 from FUNCTIONS.PROCESS.add_tags import process_tags_for_video
 from FUNCTIONS.PROCESS.add_thumbails import process_thumbnail_for_video
-from FUNCTIONS.PROCESS.check_file_integrity import check_file_integrity_for_video
-from FUNCTIONS.PROCESS.remove_sponsorblock_segments import remove_sponsorblock_segments_for_video
+from FUNCTIONS.PROCESS.check_file_integrity import (
+    check_file_integrity_for_video,
+)
 from FUNCTIONS.PROCESS.embed_metadata import embed_metadata_for_video
-from FUNCTIONS.PROCESS.add_album import process_album_for_video
 from FUNCTIONS.PROCESS.remix_of import process_remix_of_for_video
-from FUNCTIONS.download import download_video, safe_extract_info
-from FUNCTIONS.sql_requests import get_videos_in_list, get_video_info_from_db, init_db, update_video_db
-from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
-from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.PROCESS.remove_ids_not_in_list import remove_ids_not_in_list
+from FUNCTIONS.PROCESS.remove_sponsorblock_segments import (
+    remove_sponsorblock_segments_for_video,
+)
+from FUNCTIONS.sql_requests import (
+    get_video_info_from_db,
+    get_videos_in_list,
+    init_db,
+    update_video_db,
+)
 
-from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
-
-
 
 
 def process_all(
     download_path: Path,
     playlist_video_file: Path,
-
     use_sponsorblock: bool,
     get_lyrics: bool,
     get_thumbnail: bool,
     embed_metadata: bool,
     add_tags: bool,
     add_album: bool,
-
     force_recompute_lyrics: bool,
     force_recompute_thumbnails: bool,
     force_recompute_tags: bool,
     force_recompute_album: bool,
     force_recompute_yt_info: bool,
     force_recompute_remix_of: bool,
-
     sponsorblock_categories: list[str],
     thumbnail_format: Literal["pad", "crop"],
-
     sep: str,
     start_def: str,
     end_def: str,
     tag_sep: str,
-
     retry_unavailable: bool,
     retry_private: bool,
-
     get_remix_of: bool,
-
     info: bool,
     error: bool,
     test_run: bool,
-
     remove_malformatted: bool,
     remove_no_longer_in_playlist: bool,
     add_folder_files_not_in_list: bool,
     force_mp3_presence: bool,
-
     cur: Cursor,
-    conn: Connection
-) -> dict[str,float | None]:
-
-
-
+    conn: Connection,
+) -> dict[str, float | None]:
 
     # --- Process all videos ---
 
@@ -86,9 +78,10 @@ def process_all(
 
     ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(
         download_path,
-        info=info,test_run=test_run,
+        info=info,
+        test_run=test_run,
         remove=remove_malformatted,
-        force_mp3_presence=force_mp3_presence
+        force_mp3_presence=force_mp3_presence,
     )
 
     include_not_status0: bool = retry_private or retry_unavailable
@@ -102,9 +95,8 @@ def process_all(
         info=info,
         errors=error,
         cur=cur,
-        conn=conn
+        conn=conn,
     )
-
 
     if remove_no_longer_in_playlist:
         remove_ids_not_in_list(
@@ -115,9 +107,8 @@ def process_all(
             error=error,
             cur=cur,
             conn=conn,
-            test_run=test_run
+            test_run=test_run,
         )
-
 
     video_ids: list[str] = get_videos_in_list(include_not_status0, cur)
 
@@ -126,31 +117,24 @@ def process_all(
     total_videos: int = len(video_ids)
     progress_count: int = 1
 
-
     calculating_duration: float = 0.0
     download_duration: float = 0.0
-    cut_duration:  float = 0.0
+    cut_duration: float = 0.0
     lyrics_duration: float = 0.0
     thumbnail_duration: float = 0.0
     tag_duration: float = 0.0
     album_duration: float = 0.0
     metadata_duration: float = 0.0
 
-
-
-
-    if info: print(f"[PROCESSING] Processing {total_videos} videos...")
+    if info:
+        print(f"[PROCESSING] Processing {total_videos} videos...")
     logger.info(f"[PROCESSING] Processing {total_videos} videos...")
-
 
     for video_id in video_ids:
 
         start_processing: float = time.time()
 
         progress_prefix = f"{progress_count:{len(str(total_videos))}d}/{total_videos} | {eta_str} | "
-
-
-
 
         need_download, checking_duration = check_file_integrity_for_video(
             video_id=video_id,
@@ -160,10 +144,9 @@ def process_all(
             retry_private=retry_private,
             cur=cur,
             conn=conn,
-            test_run=test_run
+            test_run=test_run,
         )
         calculating_duration += checking_duration
-
 
         if need_download:
             download_duration += download_video(
@@ -175,41 +158,60 @@ def process_all(
                 info=info,
                 cur=cur,
                 conn=conn,
-                test_run=test_run
+                test_run=test_run,
             )
-
 
         data: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)
 
         recompute_yt_info: bool | None = data.get("recompute_yt_info")
 
         if recompute_yt_info or force_recompute_yt_info:
-            fprint(progress_prefix, f"[Re-Fetching] Re-fetch video_data from youtube for '{video_id}' (?)", data.get("title") or 'no title provided')
+            fprint(
+                progress_prefix,
+                f"[Re-Fetching] Re-fetch video_data from youtube for '{video_id}' (?)",
+                data.get("title") or 'no title provided',
+            )
             logger.debug("[Process] Re-fetch yt data")
             state, new_info = safe_extract_info(id_or_url=video_id)
 
             if state == 0:
                 data.update(new_info)
                 data["recompute_yt_info"] = False
-                update_video_db(video_id=video_id, update_fields=data, cur=cur, conn=conn, test_run=test_run)
-                fprint(progress_prefix,f"Sucessfully fetched and updated new data from Youtube for '{video_id}'")
-                logger.info(f"[Process] Sucessfully fetched and updated  new data from Youtube for '{video_id}'")
+                update_video_db(
+                    video_id=video_id,
+                    update_fields=data,
+                    cur=cur,
+                    conn=conn,
+                    test_run=test_run,
+                )
+                fprint(
+                    progress_prefix,
+                    f"Sucessfully fetched and updated new data from Youtube for '{video_id}'",
+                )
+                logger.info(
+                    f"[Process] Sucessfully fetched and updated  new data from Youtube for '{video_id}'"
+                )
             else:
-                logger.warning(f"[Process] Error while re-fetching data from yt for '{video_id}', no new data")
-
-
-
+                logger.warning(
+                    f"[Process] Error while re-fetching data from yt for '{video_id}', no new data"
+                )
 
         filename: str | None = data.get("filename")
         filepath: Path | None = download_path / filename if filename else None
-        removed_segments_int: int = data.get("removed_segments_int",0)
-        removed_segments_duration: float = data.get("removed_segments_duration",0.0)
-
-
+        removed_segments_int: int = data.get("removed_segments_int", 0)
+        removed_segments_duration: float = data.get(
+            "removed_segments_duration", 0.0
+        )
 
         if filepath is None or not filepath.exists():
-            if info: fprint(progress_prefix, f"Missing filename, title or file not found for '{video_id}', skipping rest of processing")
-            logger.debug(f"[Process All] Missing filename, title or file not found for '{video_id}', skipping rest of processing")
+            if info:
+                fprint(
+                    progress_prefix,
+                    f"Missing filename, title or file not found for '{video_id}', skipping rest of processing",
+                )
+            logger.debug(
+                f"[Process All] Missing filename, title or file not found for '{video_id}', skipping rest of processing"
+            )
             progress_count += 1
             continue
 
@@ -218,7 +220,7 @@ def process_all(
 
         try_lyrics_if_not: bool = data.get("try_lyrics_if_not", False)
         remove_lyrics: bool = data.get("remove_lyrics", False)
-        lyrics_retries: int = data.get("lyrics_retries",0)
+        lyrics_retries: int = data.get("lyrics_retries", 0)
         subtitles: str | None = data.get("subtitles")
         auto_subs: str | None = data.get("auto_subs")
         skips: list[tuple[float, float]] | None = data.get("skips")
@@ -234,9 +236,9 @@ def process_all(
         recompute_tags = data.get("recompute_tags") or force_recompute_tags
         recompute_album = data.get("recompute_tags") or force_recompute_album
 
-        recompute_remix_of: bool = data.get("recompute_remix_of") or force_recompute_remix_of
-
-
+        recompute_remix_of: bool = (
+            data.get("recompute_remix_of") or force_recompute_remix_of
+        )
 
         if use_sponsorblock:
             cut_duration += remove_sponsorblock_segments_for_video(
@@ -250,9 +252,8 @@ def process_all(
                 progress_prefix=progress_prefix,
                 categories=sponsorblock_categories,
                 info=info,
-                test_run=test_run
+                test_run=test_run,
             )
-
 
         if get_lyrics:
             lyrics_duration += process_lyrics_for_video(
@@ -261,10 +262,8 @@ def process_all(
                 remove_lyrics=remove_lyrics,
                 lyrics_retries=lyrics_retries,
                 title=title,
-
                 subtitles=subtitles,
                 auto_subs=auto_subs,
-
                 skips=skips,
                 duration=duration,
                 remix_of=remix_of,
@@ -276,9 +275,8 @@ def process_all(
                 cur=cur,
                 conn=conn,
                 test_run=test_run,
-                recompute_lyrics=force_recompute_lyrics
+                recompute_lyrics=force_recompute_lyrics,
             )
-
 
         if get_thumbnail:
             thumbnail_duration += process_thumbnail_for_video(
@@ -295,9 +293,8 @@ def process_all(
                 cur=cur,
                 conn=conn,
                 test_run=test_run,
-                force_recompute_thumbnails=force_recompute_thumbnails
+                force_recompute_thumbnails=force_recompute_thumbnails,
             )
-
 
         if add_tags:
             calculating_duration += process_tags_for_video(
@@ -305,7 +302,6 @@ def process_all(
                 title=title,
                 uploader=uploader,
                 existing_tags=existing_tags,
-
                 filepath=filepath,
                 progress_prefix=progress_prefix,
                 info=info,
@@ -317,9 +313,8 @@ def process_all(
                 sep=sep,
                 start_def=start_def,
                 end_def=end_def,
-                tag_sep=tag_sep
+                tag_sep=tag_sep,
             )
-
 
         if add_album:
             calculating_duration += process_album_for_video(
@@ -341,10 +336,9 @@ def process_all(
                 cur=cur,
                 info=info,
                 error=error,
-                test_run=test_run
+                test_run=test_run,
             )
             metadata_duration += metadata_time
-
 
         if get_remix_of:
             calculating_duration += process_remix_of_for_video(
@@ -354,25 +348,28 @@ def process_all(
                 recompute_remix_of=recompute_remix_of,
                 test_run=test_run,
                 cur=cur,
-                conn=conn
+                conn=conn,
             )
-
-
-
 
         progress_count += 1
         if info:
-            if OVERWRITE_UNCHANGED and unchanged: print("\r\033[F")
-            else: print()
+            if OVERWRITE_UNCHANGED and unchanged:
+                print("\r\033[F")
+            else:
+                print()
 
         avg_times.append(time.time() - start_processing)
         if len(avg_times) > 5:
             _ = avg_times.pop(0)
 
-        eta_seconds: int =round((sum(avg_times) / len(avg_times)) * (total_videos - progress_count + 1))
+        eta_seconds: int = round(
+            (sum(avg_times) / len(avg_times))
+            * (total_videos - progress_count + 1)
+        )
         eta_str = str(timedelta(seconds=eta_seconds))
 
-    if info: print()
+    if info:
+        print()
 
     Processing_end_time: float = time.time()
     Processing_total_time: float = Processing_end_time - Processing_start_time
@@ -381,10 +378,10 @@ def process_all(
         "total": Processing_total_time,
         "calculating_duration": calculating_duration,
         "download_duration": download_duration if download_duration else None,
-        "cut_duration":  cut_duration,
+        "cut_duration": cut_duration,
         "lyrics_duration": lyrics_duration,
         "thumbnail_duration": thumbnail_duration,
         "tag_duration": tag_duration,
         "album_duration": album_duration,
-        "metadata_duration": metadata_duration
+        "metadata_duration": metadata_duration,
     }
