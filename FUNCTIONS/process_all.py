@@ -84,13 +84,18 @@ def process_all(
     # Initialise the database if not (create it)
     init_db(cur=cur, conn=conn)
 
-    ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(download_path, info=info,test_run=test_run, remove=remove_malformatted, force_mp3_presence=force_mp3_presence)
+    ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(
+        download_path,
+        info=info,test_run=test_run,
+        remove=remove_malformatted,
+        force_mp3_presence=force_mp3_presence
+    )
 
     include_not_status0: bool = retry_private or retry_unavailable
 
     add_new_ids_to_database(
         video_id_file=playlist_video_file,
-        ids_presents_in_down_dir=ids_present_in_down_dir,
+        ids_present_in_down_dir=ids_present_in_down_dir,
         add_folder_files_not_in_list=add_folder_files_not_in_list,
         include_not_status0=include_not_status0,
         test_run=test_run,
@@ -324,7 +329,6 @@ def process_all(
                 progress_prefix=progress_prefix,
                 recompute_album=recompute_album,
                 info=info,
-                error=error,
                 test_run=test_run,
             )
 

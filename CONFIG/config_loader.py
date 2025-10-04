@@ -82,11 +82,16 @@ class LoggingConfig(TypedDict):
     overlap_fprint: bool
     overwrite_unchanged: bool
 
+class OtherConfig(TypedDict):
+    music_playlist_id: str | None
+    clean: bool
+
 class Config(TypedDict):
     paths: PathsConfig
     patterns: PatternsConfig
     processing: ProcessingConfig
     logging: LoggingConfig
+    other: OtherConfig
 
 
 

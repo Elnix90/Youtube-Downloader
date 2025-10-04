@@ -7,7 +7,7 @@ from pathlib import Path
 import logging
 import sys
 
-from CONFIG.config_loader import Config, load_config
+from CONFIG.config_loader import load_config
 
 
 
@@ -87,6 +87,7 @@ OVERLAP_FPRINT: bool = config["logging"]["overlap_fprint"]
 OVERWRITE_UNCHANGED: bool = config["logging"]["overwrite_unchanged"]
 
 LOGGING_LEVELS: dict[str, int] = {
+    "VERBOSE": 5,
     "DEBUG": logging.DEBUG,
     "INFO": logging.INFO,
     "WARNING": logging.WARNING,
@@ -94,13 +95,8 @@ LOGGING_LEVELS: dict[str, int] = {
     "CRITICAL": logging.CRITICAL,
 }
 
-LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS.get(
-    config["logging"]["level_console"].upper(),
-    logging.WARNING
-)
-LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS.get(
-    config["logging"]["level_logfiles"].upper(),
-    logging.DEBUG
-)
+LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[config["logging"]["level_console"].upper()]
 
-CONFIG: Config = config
+LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[config["logging"]["level_logfiles"].upper()]
+
+CONFIG= config

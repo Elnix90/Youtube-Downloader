@@ -69,7 +69,7 @@ def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "b
         "format": format_str,
         "add_metadata": True,
         "embed_metadata": True,
-        "verbose": True,
+        "verbose": False,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -91,8 +91,7 @@ def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "b
         "noprogress": True,
         "no_warnings": True,
         "ignoreerrors": True,
-        "logger": QuietLogger(),
-        "verbose": False
+        "logger": QuietLogger()
     }
 
 

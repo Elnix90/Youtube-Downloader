@@ -5,6 +5,9 @@ from pathlib import Path
 
 
 class VideoInfo(TypedDict, total=False):
+    """
+    Types for VideoInfo dict
+    """
     video_id: str
     title: str
     thumbnail_url: str

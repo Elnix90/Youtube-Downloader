@@ -45,7 +45,7 @@ def main_list_process() -> None:
         test_run=CONFIG["processing"]["test_run"],
         clean=CONFIG["processing"]["clean"],
         info=CONFIG["processing"]["info"],
-        errors=CONFIG["processing"]["error"],
+        error=CONFIG["processing"]["error"],
     )
 
     # Step 2: Process database and files
