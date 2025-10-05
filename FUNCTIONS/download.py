@@ -322,7 +322,7 @@ def safe_extract_info(
         with yt_dlp.YoutubeDL(
             params=ydl_fetch_opt  # pyright: ignore[reportArgumentType]
         ) as ydl:
-            info: ExtractedInfo = cast(
+            info = cast(
                 ExtractedInfo,
                 cast(object, ydl.extract_info(url=url, download=False)),
             )

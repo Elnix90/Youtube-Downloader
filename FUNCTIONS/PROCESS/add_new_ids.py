@@ -19,7 +19,6 @@ from FUNCTIONS.HELPERS.helpers import (
     youtube_required_info,
 )
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 from FUNCTIONS.sql_requests import (
     get_video_info_from_db,
     get_videos_in_list,
@@ -61,7 +60,7 @@ def add_new_ids_to_database(
     )
 
     try:
-        playlist_entries: list[PlaylistVideoEntry] = load(video_id_file)
+        playlist_entries = load(video_id_file)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Adding IDs] Error loading '{video_id_file}': {e}")
@@ -148,8 +147,8 @@ def add_new_ids_to_database(
         conn.commit()
 
     summary = (
-        f"[Adding IDs] Added {added_ids}," +
-        f"Updated {updated_ids}, {correct_ids} already OK"
+        f"[Adding IDs] Added {added_ids},"
+        + f"Updated {updated_ids}, {correct_ids} already OK"
     )
     logger.info(summary)
     if info:

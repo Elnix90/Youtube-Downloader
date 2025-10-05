@@ -12,6 +12,7 @@ class VideoInfo(TypedDict, total=False):
     """
     Types for VideoInfo dict
     """
+    position: int
 
     video_id: str
     title: str
@@ -65,6 +66,7 @@ class VideoInfo(TypedDict, total=False):
 
 
 VideoInfoKey = Literal[
+    "position",
     "video_id",
     "title",
     "thumbnail_url",
@@ -213,6 +215,7 @@ class YdlOpt(TypedDict, total=False):
     subtitleslangs: list[str]
 
     proxy: str
+    extract_flat: bool
 
 
 def lyrics_lrc_path_for_mp3(mp3_path: Path) -> Path:

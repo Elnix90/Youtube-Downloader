@@ -33,8 +33,8 @@ def remove_duplicate_videos_from_playlist(
         error=error,
     )
 
-    # 2. Load playlist entries with the typed JSONFileHandler
-    playlist_entries: list[PlaylistVideoEntry] = load(playlist_video_file)
+    # 2. Load playlist entries
+    playlist_entries = load(playlist_video_file)
 
     # 3. Build mapping video_id -> list[item_id]
     video_id_to_items: dict[str, list[str]] = {}

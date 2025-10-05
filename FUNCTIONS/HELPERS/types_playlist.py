@@ -6,7 +6,7 @@ Includes helpers for parsing API responses into dataclasses.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import TypedDict
 
 # ---------------------------------------------------------------------------
 # TypedDict structures for YouTube API responses
@@ -74,7 +74,6 @@ class PlaylistVideoEntry:
     video_owner_channel_id: str
     privacy_status: str
     video_published_at: str
-    note: str
 
     # -----------------------------------------------------------------------
     # Builders
@@ -109,14 +108,13 @@ class PlaylistVideoEntry:
             video_owner_channel_id=str(snippet.get("videoOwnerChannelId", "")),
             privacy_status=str(status.get("privacyStatus", "")),
             video_published_at=str(content.get("videoPublishedAt", "")),
-            note=str(content.get("note", "")),
         )
 
     # -----------------------------------------------------------------------
     # Serializers
     # -----------------------------------------------------------------------
 
-    def to_json(self) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+    def to_json(self) -> dict[str, object]:
         """Return a serializable dictionary for JSON dumping."""
         return {
             "playlist_item_id": self.playlist_item_id,
@@ -131,5 +129,4 @@ class PlaylistVideoEntry:
             "video_owner_channel_id": self.video_owner_channel_id,
             "privacy_status": self.privacy_status,
             "video_published_at": self.video_published_at,
-            "note": self.note,
         }
