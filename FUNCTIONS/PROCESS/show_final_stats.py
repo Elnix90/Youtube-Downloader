@@ -1,3 +1,9 @@
+"""
+modules that recaives the differnents processing times for the
+operations and show them cleanly
+"""
+
+
 from pathlib import Path
 from sqlite3 import Cursor
 from typing import Literal, cast
@@ -72,11 +78,13 @@ def show_final_stats(
     else:
         if not not_in_dir:
             final_stats.append(
-                f" - {len(list_without_unavailable)} ids are in the database and correctly downloaded"
+                f" - {len(list_without_unavailable)}"
+                + "ids are in the database and correctly downloaded"
             )
         else:
             final_stats.append(
-                f" - {len(infos) - len(not_in_dir)} ids have not been downloaded, marked as unavailable"
+                f" - {len(infos) - len(not_in_dir)}"
+                + "ids have not been downloaded, marked as unavailable"
             )
             if len(not_in_dir) < 10:
                 for vid in not_in_dir:
@@ -94,7 +102,10 @@ def show_final_stats(
             )
         else:
             final_stats.append(
-                f" - {len(not_in_list)} correctly formatted files are in the download directory but not in the database (pass add_folder_files_not_in_list = True to add them to the database)"
+                f" - {len(not_in_list)}"
+                + "correctly formatted files are in the download directory but"
+                + "not in the database"
+                + "(pass add_folder_files_not_in_list = True to add them to the database)"
             )
             if len(not_in_list) < 10:
                 for vid in not_in_list:
@@ -109,7 +120,9 @@ def show_final_stats(
     # Print summary
     print(
         f"\n[TOTAL]:\n - {len(infos)} total videos in the database "
-        + f"{'(contains privates and unavailable)' if len(list_without_unavailable) < len(infos) else ''}\n"
+        + '(contains privates and unavailable)'
+        if len(list_without_unavailable) < len(infos)
+        else '\n'
         + f" - {len(ids_present_in_down_dir)} total videos in download directory"
     )
     print("\n".join(final_stats))
