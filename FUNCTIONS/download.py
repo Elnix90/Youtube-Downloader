@@ -229,15 +229,17 @@ def _pick_subtitles(
             entries = automatic_subtitles[original_lang]
         elif automatic_subtitles:
             entries = next(
-                iter(automatic_subtitles.values()), []
-            )  # pyright: ignore[reportUnknownArgumentType]
+                iter(automatic_subtitles.values()),
+                [],  # pyright: ignore[reportUnknownArgumentType]
+            )
     else:
         if original_lang and original_lang in subtitles:
             entries = subtitles[original_lang]
         elif subtitles:
             entries = next(
-                iter(subtitles.values()), []
-            )  # pyright: ignore[reportUnknownArgumentType]
+                iter(subtitles.values()),
+                [],  # pyright: ignore[reportUnknownArgumentType]
+            )
 
     if not entries:
         logger.debug(
@@ -318,8 +320,8 @@ def safe_extract_info(
 
     try:
         with yt_dlp.YoutubeDL(
-            params=ydl_fetch_opt
-        ) as ydl:  # pyright: ignore[reportArgumentType]
+            params=ydl_fetch_opt  # pyright: ignore[reportArgumentType]
+        ) as ydl:
             info: ExtractedInfo = cast(
                 ExtractedInfo,
                 cast(object, ydl.extract_info(url=url, download=False)),
@@ -439,8 +441,8 @@ def download_yt_dlp(
         try:
             logger.debug(f"[Download] Attempt {attempt} for video {video_id}")
             with yt_dlp.YoutubeDL(
-                ydl_opts
-            ) as ydl:  # pyright: ignore[reportArgumentType]
+                ydl_opts  # pyright: ignore[reportArgumentType]
+            ) as ydl:
                 ydl.download([url])
             # Check file after download - optional: add call to your repair_mp3_file here
             final_path = loc / final_filename_with_ext

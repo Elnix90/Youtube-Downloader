@@ -181,8 +181,8 @@ def insert_video_db(
 ) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {
-        row["name"] for row in cur.fetchall()
-    }  # pyright: ignore[reportAny]
+        row["name"] for row in cur.fetchall()  # pyright: ignore[reportAny]
+    }
 
     # Extract valid fields
     video_row = {
@@ -200,8 +200,10 @@ def insert_video_db(
     _ = cur.execute(sql, tuple(video_row.values()))
 
     _apply_skips_and_tags(
-        video_id=video_row["video_id"], data=video_data, cur=cur
-    )  # pyright: ignore[reportArgumentType]
+        video_id=video_row["video_id"],  # pyright: ignore[reportArgumentType]
+        data=video_data,
+        cur=cur,
+    )
     if not test_run:
         conn.commit()
         logger.info(
@@ -222,8 +224,8 @@ def update_video_db(
 ) -> None:
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {
-        row["name"] for row in cur.fetchall()
-    }  # pyright: ignore[reportAny]
+        row["name"] for row in cur.fetchall()  # pyright: ignore[reportAny]
+    }
 
     # Secutity to avoid rewriting date added
     update_fields = remove_data_from_video_info(
@@ -344,8 +346,9 @@ def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
         try:
             parsed = json.loads(value)  # pyright: ignore[reportAny]
             if isinstance(parsed, list) and all(
-                isinstance(x, str) for x in parsed
-            ):  # pyright: ignore[reportUnknownVariableType]
+                isinstance(x, str)
+                for x in parsed  # pyright: ignore[reportUnknownVariableType]
+            ):
                 return parsed  # pyright: ignore[reportUnknownVariableType]
         except Exception:
             return []
@@ -434,8 +437,9 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
         (video_id,),
     )
     tags = [
-        tag_row["tag"] for tag_row in cur.fetchall()
-    ]  # pyright: ignore[reportAny]
+        tag_row["tag"]
+        for tag_row in cur.fetchall()  # pyright: ignore[reportAny]
+    ]
     if tags:
         video_info["tags"] = tags
 
@@ -451,8 +455,8 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
     )
     skips: list[tuple[float, float]] = [
         (seg_row["segment_start"], seg_row["segment_end"])
-        for seg_row in cur.fetchall()
-    ]  # pyright: ignore[reportAny]
+        for seg_row in cur.fetchall()  # pyright: ignore[reportAny]
+    ]
     if skips:
         video_info["skips"] = skips
 

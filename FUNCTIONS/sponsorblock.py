@@ -26,8 +26,9 @@ def get_skip_segments(
         response.raise_for_status()
         segments = response.json()  # pyright: ignore[reportAny]
         skips: list[tuple[float, float]] = [
-            (seg["segment"][0], seg["segment"][1]) for seg in segments
-        ]  # pyright: ignore[reportAny]
+            (seg["segment"][0], seg["segment"][1])
+            for seg in segments  # pyright: ignore[reportAny]
+        ]
         logger.info(
             f"[Get skips] Sucessfully got {len(skips)} skips for '{video_id}'"
         )

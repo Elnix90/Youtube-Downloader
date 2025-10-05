@@ -184,8 +184,8 @@ def is_synchronized_lyrics(text: str) -> bool:
         maybe = json.loads(text)  # pyright: ignore[reportAny]
         if isinstance(maybe, list) and all(
             isinstance(item, (list, tuple))
-            and len(item)
-            in (2, 3)  # pyright: ignore[reportUnknownArgumentType]
+            and len(item)  # pyright: ignore[reportUnknownArgumentType]
+            in (2, 3)
             for item in maybe  # pyright: ignore[reportUnknownVariableType]
         ):
             logger.debug(
@@ -303,19 +303,43 @@ def sanitize_lyrics_to_lrc(
         maybe = json.loads(lyrics)  # pyright: ignore[reportAny]
         if isinstance(maybe, list):
             for item in maybe:  # pyright: ignore[reportUnknownVariableType]
-                if isinstance(item, (list, tuple)) and len(item) in (
+                if isinstance(item, (list, tuple)) and len(
+                    item  # pyright: ignore[reportUnknownArgumentType]
+                ) in (
                     2,
                     3,
-                ):  # pyright: ignore[reportUnknownArgumentType]
+                ):
                     s = float(
-                        item[0]
-                    )  # pyright: ignore[reportUnknownArgumentType]
+                        item[0]  # pyright: ignore[reportUnknownArgumentType]
+                    )
                     e = (
-                        float(item[1]) if len(item) == 3 else file_duration
-                    )  # pyright: ignore[reportUnknownArgumentType]
+                        float(
+                            item[
+                                1
+                            ]  # pyright: ignore[reportUnknownArgumentType]
+                        )
+                        if len(
+                            item  # pyright: ignore[reportUnknownArgumentType]
+                        )
+                        == 3
+                        else file_duration
+                    )
                     t = (
-                        str(item[2]) if len(item) == 3 else str(item[1])
-                    )  # pyright: ignore[reportUnknownArgumentType]
+                        str(
+                            item[
+                                2
+                            ]  # pyright: ignore[reportUnknownArgumentType]
+                        )
+                        if len(
+                            item  # pyright: ignore[reportUnknownArgumentType]
+                        )
+                        == 3
+                        else str(
+                            item[
+                                1
+                            ]  # pyright: ignore[reportUnknownArgumentType]
+                        )
+                    )
                     parsed_triplets.append((s, e, t))
     except Exception:
         parsed_triplets = []
@@ -373,8 +397,8 @@ def sanitize_lyrics_to_lrc(
 
     # Final LRC lines (start time + text)
     final_entries: list[tuple[float, str]] = [
-        (max(0.0, s), txt) for s, e, txt in parsed_triplets
-    ]  # pyright: ignore[reportUnusedVariable]
+        (max(0.0, s), txt) for s, _, txt in parsed_triplets
+    ]
     final_entries.sort(key=lambda x: x[0])
 
     # Deduplicate

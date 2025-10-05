@@ -6,7 +6,7 @@ not present in a given playlist JSON file.
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_list
@@ -44,7 +44,7 @@ def remove_ids_not_in_list(
     )
 
     try:
-        playlist_entries = handler.load(video_id_file)
+        playlist_entries = load(video_id_file)
         video_ids = set(
             entry.video_id for entry in playlist_entries if entry.video_id
         )

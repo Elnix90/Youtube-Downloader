@@ -289,7 +289,6 @@ def process_all(
                 thumbnail_format=thumbnail_format,
                 progress_prefix=progress_prefix,
                 info=info,
-                error=error,
                 cur=cur,
                 conn=conn,
                 test_run=test_run,

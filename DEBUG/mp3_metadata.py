@@ -25,20 +25,25 @@ def write_metadata_to_json(
     try:
         audio: MP3 | None = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            comments = audio.tags.getall(
+            comments = audio.tags.getall(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                 'TXXX'
-            )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            )
             for (
                 comment
             ) in comments:  # pyright: ignore[reportUnknownVariableType]
                 if (
                     isinstance(comment, TXXX)
-                    and comment.desc.lower() == tag.lower()
-                ):  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                    and comment.desc.lower()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                    == tag.lower()
+                ):
                     try:
-                        data = json.loads(
-                            comment.text[0]
-                        )  # pyright: ignore[reportUnknownMemberType, reportAny, reportUnknownArgumentType, reportAttributeAccessIssue]
+                        data: VideoInfo = (  # pyright: ignore[reportAny]
+                            json.loads(
+                                comment.text[  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+                                    0
+                                ]
+                            )
+                        )
                     except Exception as e:
                         logger.warning(
                             f"[Get Metadata Tag] Exception during converting to python dict: {e}"
