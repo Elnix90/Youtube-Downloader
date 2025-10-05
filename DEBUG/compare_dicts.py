@@ -1,8 +1,12 @@
+"""
+Compares 2 dicts and prints the differences
+"""
+
 from typing import Any
 
 
 def compare_dicts(
-    dict1: dict[str, Any],
+    dict1: dict[str, Any],  # pyright: ignore[reportExplicitAny]
     dict2: dict[str, Any],  # pyright: ignore[reportExplicitAny]
 ) -> None:
     """
@@ -24,5 +28,6 @@ def compare_dicts(
     for key in keys1 & keys2:
         if dict1[key] != dict2[key]:
             print(
-                f"Different value for key '{key}': dict1 = {dict1[key]} | dict2 = {dict2[key]}"
+                f"Different value for key '{key}': dict1 = {dict1[key]} | "
+                + f"dict2 = {dict2[key]}"
             )

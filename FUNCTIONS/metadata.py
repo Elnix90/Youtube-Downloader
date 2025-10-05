@@ -5,8 +5,8 @@ from typing import Literal
 from mutagen._util import MutagenError
 from mutagen.id3 import (
     ID3,
-    Frames,
-)  # pyright: ignore[reportUnknownVariableType]
+    Frames,  # pyright: ignore[reportUnknownVariableType]
+)
 from mutagen.id3._frames import TXXX
 from mutagen.mp3 import MP3
 
@@ -29,20 +29,23 @@ def get_metadata_tag(
     try:
         audio: MP3 | None = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            comments = audio.tags.getall(
+            comments = audio.tags.getall(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                 'TXXX'
-            )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            )
             for (
                 comment
             ) in comments:  # pyright: ignore[reportUnknownVariableType]
                 if (
                     isinstance(comment, TXXX)
-                    and comment.desc.lower() == tag.lower()
-                ):  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                    and comment.desc.lower()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                    == tag.lower()
+                ):
                     try:
-                        data = json.loads(
-                            comment.text[0]
-                        )  # pyright: ignore[reportUnknownMemberType, reportAny, reportUnknownArgumentType, reportAttributeAccessIssue]
+                        data = json.loads(  # pyright: ignore[reportAny]
+                            comment.text[  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType, reportAttributeAccessIssue]
+                                0
+                            ]
+                        )
                     except Exception as e:
                         logger.warning(
                             f"[Get Metadata Tag] Exception during converting to python dict: {e}"
@@ -87,9 +90,9 @@ def repair_mp3_file(filepath: Path, test_run: bool) -> bool:
     try:
         audio = MP3(str(filepath), ID3=ID3)
         # Attempt to access tags to trigger loading/validation
-        _ = (
+        _ = (  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             audio.tags
-        )  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        )
 
         # Try saving tags to fix minor corruptions or header problems
         if not test_run:
@@ -126,16 +129,16 @@ def read_id3_tag(
     try:
         audio = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            frame = audio.tags.get(
+            frame = audio.tags.get(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                 frame_id
-            )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            )
             if frame:
                 if hasattr(
-                    frame, 'text'
-                ):  # pyright: ignore[reportUnknownArgumentType]
-                    text = (
+                    frame, 'text'  # pyright: ignore[reportUnknownArgumentType]
+                ):
+                    text = (  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                         frame.text
-                    )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+                    )
                     if isinstance(text, list):
                         logger.verbose(
                             f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'"
@@ -150,15 +153,15 @@ def read_id3_tag(
                         )
                         return [text], 0
                 elif hasattr(
-                    frame, 'data'
-                ):  # pyright: ignore[reportUnknownArgumentType]
+                    frame, 'data'  # pyright: ignore[reportUnknownArgumentType]
+                ):
                     logger.verbose(
                         f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'"
                     )
                     return (
-                        frame.data,
+                        frame.data,  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                         0,
-                    )  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                    )
 
         logger.info(
             f"[Read Tag] No '{frame_id}' tag to read from '{filepath}'"
@@ -202,27 +205,27 @@ def write_id3_tag(
         # Handle custom TXXX frame explicitly
         if frame_id.startswith("TXXX:"):
             desc = frame_id.replace("TXXX:", "")
-            audio.tags.add(
+            audio.tags.add(  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
                 TXXX(encoding=3, desc=desc, text=text_data)
-            )  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
+            )
         else:
-            frame_class = Frames.get(
+            frame_class = Frames.get(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                 frame_id
-            )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            )
 
             if frame_class is None:
                 logger.warning(
                     f"[Write Tag] Frame '{frame_id}' not found. Using 'TXXX' custom frame"
                 )
                 text_data = ["; ".join(text_data)]  # collapse to single string
-                audio.tags.add(
+                audio.tags.add(  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
                     TXXX(encoding=3, desc=frame_id, text=text_data)
-                )  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
+                )
             else:
                 # Standard frame
-                audio.tags.add(
+                audio.tags.add(  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
                     frame_class(encoding=3, text=text_data)
-                )  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
+                )
 
         if not test_run:
             audio.save()  # pyright: ignore[reportUnknownMemberType]

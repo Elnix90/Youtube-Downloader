@@ -11,7 +11,7 @@ from dataclasses import asdict
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (
     VideoInfo,
@@ -61,9 +61,7 @@ def add_new_ids_to_database(
     )
 
     try:
-        playlist_entries: list[PlaylistVideoEntry] = handler.load(
-            video_id_file
-        )
+        playlist_entries: list[PlaylistVideoEntry] = load(video_id_file)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Adding IDs] Error loading '{video_id_file}': {e}")
@@ -150,8 +148,8 @@ def add_new_ids_to_database(
         conn.commit()
 
     summary = (
-        f"[Adding IDs] Added {added_ids},"
-        + "Updated {updated_ids}, {correct_ids} already OK"
+        f"[Adding IDs] Added {added_ids}," +
+        f"Updated {updated_ids}, {correct_ids} already OK"
     )
     logger.info(summary)
     if info:

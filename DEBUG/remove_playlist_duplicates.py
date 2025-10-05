@@ -4,7 +4,7 @@ from googleapiclient.errors import HttpError
 from CONSTANTS import PLAYLIST_VIDEOS_FILE
 from FUNCTIONS.get_creditentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
@@ -34,9 +34,7 @@ def remove_duplicate_videos_from_playlist(
     )
 
     # 2. Load playlist entries with the typed JSONFileHandler
-    playlist_entries: list[PlaylistVideoEntry] = handler.load(
-        playlist_video_file
-    )
+    playlist_entries: list[PlaylistVideoEntry] = load(playlist_video_file)
 
     # 3. Build mapping video_id -> list[item_id]
     video_id_to_items: dict[str, list[str]] = {}
@@ -90,9 +88,9 @@ def remove_duplicate_videos_from_playlist(
                     continue
 
                 # Perform actual deletion
-                youtube.playlistItems().delete(
+                youtube.playlistItems().delete(  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
                     id=item_id
-                ).execute()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                ).execute()  # pyright: ignorereportUnknownMemberType
                 removed_count += 1
                 msg = f"Removed duplicate {idx} of video {video_id}: item_id={item_id}"
                 logger.info(msg)

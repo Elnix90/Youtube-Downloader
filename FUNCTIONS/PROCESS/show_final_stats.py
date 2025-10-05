@@ -4,7 +4,7 @@ from typing import Literal, cast
 
 from CONSTANTS import CORRECT_NOT_IN_DIR_FILE, UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import dump
 from FUNCTIONS.HELPERS.helpers import VideoInfoMap
 from FUNCTIONS.HELPERS.logger import setup_logger
 
@@ -83,9 +83,7 @@ def show_final_stats(
                     final_stats.append(f"   • {vid}")
                 final_stats.append("")
             else:
-                handler.dump(
-                    data=list(not_in_dir), file=UNAVAILABLE_VIDEOS_FILE
-                )  # pyright: ignore[reportArgumentType]
+                dump(list(not_in_dir), UNAVAILABLE_VIDEOS_FILE)
                 final_stats.append(
                     f"   • List written in {UNAVAILABLE_VIDEOS_FILE}"
                 )
@@ -103,9 +101,7 @@ def show_final_stats(
                     final_stats.append(f"   • {vid}")
                 final_stats.append("\n")
             else:
-                handler.dump(
-                    data=list(not_in_list), file=CORRECT_NOT_IN_DIR_FILE
-                )  # pyright: ignore[reportArgumentType]
+                dump(list(not_in_list), CORRECT_NOT_IN_DIR_FILE)
                 final_stats.append(
                     f"   • List written in {CORRECT_NOT_IN_DIR_FILE}"
                 )

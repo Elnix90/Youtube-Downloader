@@ -6,7 +6,7 @@ from googleapiclient.errors import HttpError
 from yt_dlp.utils import DownloadError  # type: ignore[attr-defined]
 
 from FUNCTIONS.get_creditentials import get_authenticated_service
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import load, dump
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
@@ -19,8 +19,8 @@ def get_playlist_ids_with_ytdlp(url: str) -> tuple[int, list[str] | None]:
     ydl_opts: dict[str, object] = {"extract_flat": True, "quiet": True}
     try:
         with yt_dlp.YoutubeDL(
-            ydl_opts
-        ) as ydl:  # pyright: ignore[reportArgumentType]
+            ydl_opts  # pyright: ignore[reportArgumentType]
+        ) as ydl:
             info: dict[str, object] = ydl.extract_info(
                 url, download=False
             )  # pyright: ignore[reportAssignmentType]
@@ -34,8 +34,11 @@ def get_playlist_ids_with_ytdlp(url: str) -> tuple[int, list[str] | None]:
                 for entry in entries  # pyright: ignore[reportUnknownVariableType]
                 if isinstance(entry, dict)
                 and isinstance(
-                    entry.get("id"), str
-                )  # pyright: ignore[reportUnknownMemberType]
+                    entry.get(  # pyright: ignore[reportUnknownMemberType]
+                        "id"
+                    ),
+                    str,
+                )
             ]
             return 0, ids
 
@@ -98,7 +101,7 @@ def fetch_playlist_videos(
                     )
                     for vid_id in ids
                 ]
-                handler.dump(all_videos, file)
+                dump(all_videos, file)
                 logger.info(
                     f"[Fetching videos] {len(all_videos)} videos found in playlist '{playlist_id}'"
                 )
@@ -114,18 +117,20 @@ def fetch_playlist_videos(
 
         while True:
             try:
-                request = youtube.playlistItems().list(  # type: ignore[attr-defined]  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+                request = youtube.playlistItems().list(  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
                     part="snippet,contentDetails,status",
                     playlistId=playlist_id,
                     maxResults=50,
                     pageToken=next_page_token,
                 )
-                response: dict[str, object] = (
-                    request.execute()
-                )  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-                items = response.get(
+                response: dict[  # pyright: ignore[reportUnknownVariableType]
+                    str, object
+                ] = (
+                    request.execute()  # pyright: ignore[reportUnknownMemberType]
+                )
+                items = response.get(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     "items"
-                )  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                )
 
                 if not isinstance(items, list):
                     break
@@ -135,17 +140,19 @@ def fetch_playlist_videos(
                 ) in items:  # pyright: ignore[reportUnknownVariableType]
                     if isinstance(item, dict):
                         all_videos.append(
-                            PlaylistVideoEntry.from_api_response(item)
-                        )  # pyright: ignore[reportUnknownArgumentType]
+                            PlaylistVideoEntry.from_api_response(
+                                item  # pyright: ignore[reportArgumentType]
+                            )
+                        )
                         if info:
                             fprint(
                                 "",
                                 f"[Fetching videos] {len(all_videos)} videos fetched...",
                             )
 
-                token = response.get(
+                token = response.get(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                     "nextPageToken"
-                )  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                )
                 next_page_token = (
                     str(token) if isinstance(token, str) else None
                 )
@@ -164,13 +171,13 @@ def fetch_playlist_videos(
                 raise
 
         if not test_run:
-            handler.dump(all_videos, file)
+            dump(all_videos, file)
         logger.info(
             f"[Fetching videos] {len(all_videos)} videos written to '{file}'"
         )
 
     else:
-        videos = handler.load(file)
+        videos = load(file)
         logger.info(
             f"[Fetching videos] {len(videos)} cached videos loaded from '{file}'"
         )

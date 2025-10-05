@@ -1,3 +1,7 @@
+"""
+Module to add all liked videos in the playlist given, if not already present
+"""
+
 import time
 from pathlib import Path
 
@@ -6,7 +10,7 @@ from googleapiclient.errors import HttpError
 from CONSTANTS import JSON_DIR
 from FUNCTIONS.get_creditentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
-from FUNCTIONS.HELPERS.fileops import handler
+from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
 
@@ -16,6 +20,9 @@ logger = setup_logger(__name__)
 def add_videos(
     playlist_id: str, clean: bool, test_run: bool, info: bool, error: bool
 ):
+    """
+    Add the videos to the playlist given in entry
+    """
 
     liked_video_file = Path(
         JSON_DIR / f"liked_videos_{round(time.time(),2)}.json"
@@ -43,12 +50,12 @@ def add_videos(
             error=error,
         )
 
-    playlist_items = handler.load(playlist_video_file)
+    playlist_items = load(playlist_video_file)
     playlist_videos = set(
         entry.video_id for entry in playlist_items if entry.video_id
     )
 
-    liked_items = handler.load(liked_video_file)
+    liked_items = load(liked_video_file)
     liked_videos = set(
         entry.video_id for entry in liked_items if entry.video_id
     )
@@ -95,9 +102,11 @@ def add_videos(
                 )
 
         except HttpError as e:
-            error_json = (
-                e.content.decode() if hasattr(e, 'content') else str(e)
-            )  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+            error_json = (  # pyright: ignore[reportUnknownVariableType]
+                e.content.decode()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                if hasattr(e, 'content')
+                else str(e)
+            )
             if 'failedPrecondition' in error_json:
                 logger.warning(
                     f"Video {video_id} is likely private or unavailable, skipping..."

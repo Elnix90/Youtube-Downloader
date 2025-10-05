@@ -40,8 +40,9 @@ def remove_sponsorblock_segments_for_video(
     )
 
     skips = [
-        (row["segment_start"], row["segment_end"]) for row in cur.fetchall()
-    ]  # pyright: ignore[reportAny]
+        (row["segment_start"], row["segment_end"])
+        for row in cur.fetchall()  # pyright: ignore[reportAny]
+    ]
 
     # --- If values are defined (not None) ---
 

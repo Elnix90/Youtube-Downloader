@@ -130,9 +130,15 @@ def remove_image_from_mp3(
             return True
 
         # Collect APIC keys
-        apic_keys = [
-            key for key in list(audio.tags.keys()) if key.startswith("APIC")
-        ]  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportUnknownVariableType]
+        apic_keys = [  # pyright: ignore[reportUnknownVariableType]
+            key
+            for key in list(  # pyright: ignore[reportUnknownVariableType]
+                audio.tags.keys()  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+            )
+            if key.startswith(  # pyright: ignore[reportUnknownMemberType]
+                "APIC"
+            )
+        ]
         if not apic_keys:
             logger.debug(
                 f"[Remove Cover] No APIC frames found in '{mp3_path}'"
@@ -148,15 +154,15 @@ def remove_image_from_mp3(
                 del audio.tags[key]  # pyright: ignore[reportUnknownMemberType]
 
         if not test_run:
-            audio.save(
+            audio.save(  # pyright: ignore[reportUnknownMemberType]
                 v2_version=3
-            )  # force save as ID3v2.3 for max compatibility  # pyright: ignore[reportUnknownMemberType]
+            )  # force save as ID3v2.3 for max compatibility
             if image_path.exists():
                 image_path.unlink(missing_ok=True)
 
         logger.info(
-            f"[Remove Cover] Successfully removed {len(apic_keys)} cover(s) from '{mp3_path.name}'"
-        )  # pyright: ignore[reportUnknownArgumentType]
+            f"[Remove Cover] Successfully removed {len(apic_keys)} cover(s) from '{mp3_path.name}'"  # pyright: ignore[reportUnknownArgumentType]
+        )
         return True
 
     except Exception as e:
@@ -180,23 +186,27 @@ def has_embedded_cover(mp3_path: Path) -> bytes | None:
             logger.debug(f"[Cover Check] No ID3 tags in '{mp3_path.name}'")
             return None
 
-        for (
+        for (  # pyright: ignore[reportUnknownVariableType]
             tag
-        ) in (
-            audio.tags.values()
-        ):  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        ) in audio.tags.values():  # pyright: ignore[reportUnknownMemberType]
             if (
-                isinstance(tag, APIC) and tag.type == 3
-            ):  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                isinstance(tag, APIC)
+                and tag.type  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                == 3
+            ):
                 if (
-                    tag.data and len(tag.data) > 0
-                ):  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+                    tag.data  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+                    and len(
+                        tag.data  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+                    )
+                    > 0
+                ):
                     logger.debug(
                         f"[Cover Check] Embedded cover image found in '{mp3_path.name}'"
                     )
-                    return (
-                        tag.data
-                    )  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
+                    return (  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                        tag.data  # pyright: ignore[reportAttributeAccessIssue]
+                    )
                 else:
                     logger.debug(
                         f"[Cover Check] Found APIC tag but it has no data in '{mp3_path.name}'"
