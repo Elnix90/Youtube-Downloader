@@ -69,7 +69,7 @@ def add_new_ids_to_database(
         return
 
     # Extract video IDs from the playlist
-    file_video_ids: list[str] = [entry.video_id for entry in playlist_entries]
+    file_video_ids = list(playlist_entries.keys())
 
     # Determine which videos to add/update
     if add_folder_files_not_in_list:

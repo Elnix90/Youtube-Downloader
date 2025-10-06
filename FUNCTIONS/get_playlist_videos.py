@@ -42,7 +42,7 @@ def get_playlist_ids_with_ytdlp(url: str) -> tuple[int, VideoInfoMap | None]:
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
-            info = ydl.extract_info(  # pyright: ignore[reportAssignmentType]
+            info = ydl.extract_info(
                 url, download=False
             )
             entries = info.get("entries")

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import TypeVar, cast
 
-from FUNCTIONS.HELPERS.helpers import VideoInfo
+from FUNCTIONS.HELPERS.helpers import VideoInfoMap
 from FUNCTIONS.HELPERS.logger import setup_logger
 
 
@@ -15,7 +15,7 @@ logger = setup_logger(__name__)
 T = TypeVar("T")
 
 
-def load(file_path: Path) -> list[VideoInfo]:
+def load(file_path: Path) -> VideoInfoMap:
     """
     Load a JSON file containing playlist video entries and
     return a list of VideoInfo instances.
@@ -27,7 +27,7 @@ def load(file_path: Path) -> list[VideoInfo]:
 
     try:
         with file_path.open("r", encoding="utf-8") as f:
-            raw_data = cast(list[VideoInfo], json.load(f))
+            raw_data = cast(VideoInfoMap, json.load(f))
     except json.JSONDecodeError as exc:
         msg = f"Error decoding JSON in '{file_path}': {exc}"
         logger.error(msg)
@@ -59,7 +59,7 @@ def loadlist(file_path: Path) -> list[str]:
     return raw_data
 
 
-def dump(entries: list[VideoInfo] | list[str], file_path: Path) -> None:
+def dump(entries: VideoInfoMap | list[str], file_path: Path) -> None:
     """
     Dump a list of JSON-serializable objects into a JSON file.
     Automatically creates a backup before overwriting.
