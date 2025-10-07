@@ -9,7 +9,6 @@ from typing import TypeVar, cast
 from FUNCTIONS.HELPERS.helpers import VideoInfoMap
 from FUNCTIONS.HELPERS.logger import setup_logger
 
-
 logger = setup_logger(__name__)
 
 T = TypeVar("T")
@@ -82,7 +81,8 @@ def dump(entries: VideoInfoMap | list[str], file_path: Path) -> None:
             backup_path.unlink()
 
         logger.debug(
-            f"[Dump] Successfully dumped {len(entries)} entries to '{file_path}'"
+            f"[Dump] Successfully dumped {len(entries)}"
+            + f"entries to '{file_path}'"
         )
 
     except OSError as exc:

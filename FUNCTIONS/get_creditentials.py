@@ -1,3 +1,12 @@
+"""
+Module to authenticate with the YouTube Data API (v3).
+Provides a typed YouTube service resource.
+"""
+
+from __future__ import annotations
+
+from typing import cast
+
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -19,22 +28,25 @@ API_VERSION: str = "v3"
 
 def get_authenticated_service(info: bool = True) -> Resource:
     """
-    Authenticate with the YouTube API and return a service resource.
+    Authenticate with the YouTube Data API and return a typed service object.
+
     Handles refreshing and saving tokens automatically.
+    Returns:
+        YouTubeResource: a type-safe YouTube API client.
     """
     creds: Credentials | None = None
 
     if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(  # pyright: ignore[reportUnknownMemberType]
+        creds = (Credentials.from_authorized_user_file(  # pyright: ignore[reportUnknownMemberType]
             filename=TOKEN_FILE, scopes=SCOPES
-        )
+        ))
 
+    # Refresh or re-authenticate if needed
     if not creds or not creds.valid:
         if (
-            creds is not None
+            creds
             and creds.expired
             and creds.refresh_token  # pyright: ignore[reportUnknownMemberType]
-            is not None
         ):
             try:
                 creds.refresh(  # pyright: ignore[reportUnknownMemberType]
@@ -50,25 +62,33 @@ def get_authenticated_service(info: bool = True) -> Resource:
                 flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     CLIENT_SECRETS_FILE, SCOPES
                 )
-                creds = flow.run_local_server(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+                creds = flow.run_local_server(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     port=0
                 )
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 CLIENT_SECRETS_FILE, SCOPES
             )
-            creds = flow.run_local_server(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            creds = flow.run_local_server(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 port=0
             )
 
-        if creds is not None:
-            with open(TOKEN_FILE, "w", encoding="utf-8") as token:
-                token.write(
-                    creds.to_json()  # pyright: ignore[reportUnusedCallResult, reportUnknownMemberType, reportUnknownArgumentType]
-                )
-    print("[Get Credentials] Sucessfully logged")
-    logger.info("[Get Credentials] Successfully logged")
+        # Save refreshed credentials
+        if creds:
+            _ = TOKEN_FILE.write_text(
+                creds.to_json(),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+                encoding="utf-8",
+            )
 
-    return build(
-        serviceName=API_SERVICE_NAME, version=API_VERSION, credentials=creds
-    )  # pyright: ignore[reportUnknownVariableType]
+    print("[Get Credentials] Successfully logged in")
+    logger.info("[Get Credentials] Successfully logged in")
+
+    # Return fully typed YouTube service
+    return cast(
+        Resource,
+        build(
+            serviceName=API_SERVICE_NAME,
+            version=API_VERSION,
+            credentials=creds,
+        ),
+    )  # type: ignore[reportUnknownMemberType]

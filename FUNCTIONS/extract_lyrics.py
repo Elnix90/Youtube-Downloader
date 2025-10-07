@@ -3,6 +3,10 @@ Extracts lyrics either using ytmusicapi or syncedlyrics if no
 manual subtitles provided
 """
 
+from __future__ import annotations
+
+from typing import TypedDict, cast
+
 import logging
 import syncedlyrics
 from ytmusicapi import YTMusic
@@ -81,19 +85,23 @@ def get_lyrics_from_syncedlyrics(
     return lyrics, query
 
 
+class LyricLine(TypedDict, total=False):
+    """
+    Type safe definition of the syncronised lyrics returned by ytmusicapi
+    """
+
+    text: str
 
 
+class LyricsResponse(TypedDict, total=False):
+    """
+    Type safe definition of the lyrics returned by ytmusicapi
+    """
+
+    lyrics: str | list[LyricLine]
 
 
-
-from typing import Optional
-from ytmusicapi import YTMusic
-from FUNCTIONS.HELPERS.logger import setup_logger
-
-logger = setup_logger(__name__)
-
-
-def extract_lyrics_from_ytmusicapi(video_id: str) -> Optional[str]:
+def extract_lyrics_from_ytmusicapi(video_id: str) -> str | None:
     """
     Fetch and return the lyrics for a YouTube Music video if available.
 
@@ -103,39 +111,39 @@ def extract_lyrics_from_ytmusicapi(video_id: str) -> Optional[str]:
     Returns:
         The lyrics text if found, otherwise None.
     """
+    ytmusic = YTMusic()  # unauthenticated for public access
+
     try:
-        # Initialize the YTMusic client (unauthenticated for public songs)
-        ytmusic = YTMusic()
 
-        # Step 1: Get song metadata (contains menuItems with lyrics endpoint)
-        song_data: dict[str, object] = ytmusic.get_song(video_id)
-
-        # Step 2: Extract the "browseId" for lyrics if it exists
-        lyrics_browse_id = (
-            song_data.get("microformat", {})
-            .get("microformatDataRenderer", {})
-            .get("urlCanonical")
-        )
-
-        # In reality, ytmusicapi provides a cleaner helper:
-        lyrics_data = ytmusic.get_lyrics(song_data.get("videoId", video_id))
-        if not lyrics_data:
+        # Get lyrics metadata using get_lyrics (expects a string browseId)
+        # YTMusic.get_lyrics() typically accepts the same video_id
+        lyrics_raw = ytmusic.get_lyrics(video_id)
+        if not isinstance(lyrics_raw, dict):
+            logger.warning(
+                f"No lyrics found or invalid response for {video_id}"
+            )
             return None
 
-        # Step 3: Extract text safely
-        lyrics_field = lyrics_data.get("lyrics") if isinstance(lyrics_data, dict) else None
+        lyrics_data = cast(LyricsResponse, cast(object, lyrics_raw))
+        lyrics_field = lyrics_data.get("lyrics")
 
         if isinstance(lyrics_field, str):
-            return lyrics_field
+            return lyrics_field.strip()
 
-        # Sometimes it's a list of lyric lines → join them
         if isinstance(lyrics_field, list):
-            return "\n".join(
-                line.get("text", "") for line in lyrics_field if isinstance(line, dict)
+            return (
+                "\n".join(
+                    line.get("text", "")
+                    for line in lyrics_field
+                    if isinstance(
+                        line, dict
+                    )  # pyright: ignore[reportUnnecessaryIsInstance]
+                ).strip()
+                or None
             )
 
         return None
 
-    except Exception as exc:
+    except (KeyError, TypeError, ValueError) as exc:
         logger.warning(f"Failed to extract lyrics for {video_id}: {exc}")
         return None

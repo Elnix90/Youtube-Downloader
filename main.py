@@ -1,3 +1,7 @@
+"""
+Main module, launches the downloading programm
+"""
+
 import time
 from datetime import timedelta
 

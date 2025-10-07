@@ -1,5 +1,16 @@
 [tool.black]
-
 line-length = 79
 target-version = ["py38"]
 skip-string-normalization = true
+
+[tool.ruff]
+line-length = 79
+extend-ignore = ["E203", "E501"]
+select = ["E", "F", "W", "I"]
+
+[tool.flake8]
+max-line-length = 79
+extend-ignore = ["E203", "W503", "E501"]
+
+[tool.pylint.format]
+max-line-length = 79
