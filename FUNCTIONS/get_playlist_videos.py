@@ -6,62 +6,81 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yt_dlp
-from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 from yt_dlp.utils import DownloadError
 
-from FUNCTIONS.HELPERS.helpers import ExtractedInfo, VideoInfoMap, YdlOpt
 from FUNCTIONS.get_creditentials import get_authenticated_service
-from FUNCTIONS.HELPERS.fileops import load, dump
+from FUNCTIONS.HELPERS.fileops import dump, load
 from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import (
+    ExtractedPlaylistInfo,
+    PlaylistVideoEntry,
+    VideoInfoMap,
+    YdlOpt,
+)
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 
 logger = setup_logger(__name__)
-
 
 # ---------------------------------------------------------------------------
 # yt-dlp helpers
 # ---------------------------------------------------------------------------
 
 
-def get_playlist_ids_with_ytdlp(url: str) -> tuple[int, VideoInfoMap | None]:
+def get_playlist_with_ytdlp(
+    url: str,
+) -> tuple[int, VideoInfoMap | None]:
     """
-    Fetch video IDs from a YouTube playlist using yt_dlp.
+    Fetch video IDs and titles from a public YouTube playlist using yt_dlp.
 
     Returns:
-        tuple[int, VideoInfoMap] | None]: (status_code, video_list)
-            - 0 → success
-            - 1 → playlist private
-            - 2 → other error
+        (status_code, videos)
+        - 0 → success
+        - 1 → playlist private
+        - 2 → other error
     """
-    ydl_opts: YdlOpt = {"extract_flat": True, "quiet": True}
+    ydl_opts: YdlOpt = {
+        "extract_flat": True,  # fetch only metadata, not full videos
+        "quiet": True,
+        "ignoreerrors": True,
+        "skip_download": True,
+    }
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
-            info = ydl.extract_info(
-                url, download=False
+        with yt_dlp.YoutubeDL(
+            ydl_opts  # pyright: ignore[reportArgumentType]
+        ) as ydl:
+            info: ExtractedPlaylistInfo = cast(
+                ExtractedPlaylistInfo,
+                cast(object, ydl.extract_info(url, download=False)),
             )
-            entries = info.get("entries")
+            entries = info["entries"]
 
-            if not isinstance(entries, list):
-                return 2, None
-
-            ids: VideoInfoMap = {}
+            results: VideoInfoMap = {}
             for entry in entries:
-                if isinstance(entry, dict) and isinstance(entry.get("id"), str):
-                    ids[entry["id"]] = {"video_id": entry["id"]})
 
-            return 0, ids
+                video_id = entry.get("id")
+                title = entry.get("title")
+
+                if not isinstance(video_id, str):
+                    continue
+
+                results[video_id] = {
+                    "video_id": video_id,
+                    "title": str(title or ""),
+                }
+
+            return 0, results
 
     except DownloadError as exc:
         if "This playlist is private" in str(exc):
             return 1, None
         return 2, None
-    except Exception:
+    except Exception as exc:
+        logger.exception(f"yt-dlp failed: {exc}")
         return 2, None
 
 
@@ -72,7 +91,9 @@ def get_playlist_ids_with_ytdlp(url: str) -> tuple[int, VideoInfoMap | None]:
 
 def is_special_playlist(playlist_id: str) -> bool:
     """Detect if a playlist is a YouTube special/system playlist."""
-    return playlist_id.startswith(("LL", "WL", "HL", "LM", "RD", "FEmusic_liked"))
+    return playlist_id.startswith(
+        ("LL", "WL", "HL", "LM", "RD", "FEmusic_liked")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -86,116 +107,110 @@ def fetch_playlist_videos(
     test_run: bool,
     clean: bool = False,
     info: bool = True,
-    error: bool = True,
 ) -> None:
     """
-    Fetch playlist videos using yt_dlp, fallback to YouTube API if necessary.
-
-    Args:
-        playlist_id (str): Playlist identifier.
-        file_path (Path): Path where playlist data will be saved.
-        test_run (bool): If True, skip writing to disk.
-        clean (bool): Force refetching even if cache exists.
-        info (bool): Show progress with fprint().
-        error (bool): Show API errors.
+    Fetch playlist videos using yt_dlp for public playlists,
+    fallback to YouTube Data API for restricted ones.
     """
     if info:
         fprint("", f"[Fetching videos] Fetching playlist '{playlist_id}'")
     logger.info(f"[Fetching videos] Fetching playlist '{playlist_id}'")
 
     # -----------------------------------------------------------------------
-    # 1️⃣ Try using yt_dlp (fastest)
+    # 1️⃣ Try yt_dlp
     # -----------------------------------------------------------------------
     if clean or not file_path.exists():
-        all_videos: list[PlaylistVideoEntry | VideoInfo] = []
+        all_videos: VideoInfoMap = {}
 
         if not is_special_playlist(playlist_id):
-            status, videos = get_playlist_ids_with_ytdlp(
+            playlist_url = (
                 f"https://www.youtube.com/playlist?list={playlist_id}"
             )
+            status, videos = get_playlist_with_ytdlp(playlist_url)
 
             if status == 0 and videos:
-                dump(videos, file_path)
-                logger.info(
-                    f"[Fetching videos] {len(videos)} videos found in playlist '{playlist_id}'"
-                )
+                if not test_run:
+                    dump(videos, file_path)
+
+                msg = f"[Fetching videos] {len(videos)} videos saved (yt_dlp)"
                 if info:
-                    fprint(
-                        "",
-                        f"[Fetching videos] {len(videos)} videos saved (yt_dlp)",
-                    )
+                    fprint("", msg)
+                logger.info(msg)
                 return
 
             if info:
                 fprint(
                     "",
-                    f"[Fetching videos] yt_dlp failed (status {status}), falling back to OAuth",
+                    f"[Fetching videos] yt_dlp failed (status {status}), "
+                    + "falling back to YouTube API.",
                 )
 
         # -------------------------------------------------------------------
-        # 2️⃣ Fallback: YouTube API (OAuth)
+        # 2️⃣ Fallback: YouTube Data API
         # -------------------------------------------------------------------
-        youtube: Resource = get_authenticated_service(info=info)
+        youtube = get_authenticated_service(info=info)
         next_page_token: str | None = None
 
         while True:
             try:
-                request = youtube.playlistItems().list(  # type: ignore[call-arg, attr-defined]
+                request = youtube.playlistItems().list(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType, reportAttributeAccessIssue]
                     part="snippet,contentDetails,status",
                     playlistId=playlist_id,
                     maxResults=50,
                     pageToken=next_page_token,
                 )
 
-                response: dict[str, Any] = request.execute()  # type: ignore[attr-defined]
-                items = response.get("items")
-
-                if not isinstance(items, list):
-                    break
+                # Explicitly cast API response
+                response = cast(
+                    dict[str, Any], request.execute()  # pyright: ignore[reportExplicitAny, reportUnknownMemberType]
+                )
+                items = cast(
+                    list[dict[str, Any]], response.get("items", [])  # pyright: ignore[reportExplicitAny]
+                )
 
                 for item in items:
-                    if isinstance(item, dict):
-                        entry = PlaylistVideoEntry.from_api_response(item)  # type: ignore[arg-type]
-                        all_videos.append(entry)
+                    entry = PlaylistVideoEntry.from_api_response(item)
+                    all_videos[entry.video_id] = entry.to_json()
 
-                        if info:
-                            fprint(
-                                "",
-                                f"[Fetching videos] {len(all_videos)} videos fetched...",
-                            )
+                    if info:
+                        fprint(
+                            "",
+                            f"[Fetching videos] {len(all_videos)} videos fetched...",
+                        )
 
-                token = response.get("nextPageToken")
-                next_page_token = str(token) if isinstance(token, str) else None
-
-                if not next_page_token:
+                next_page_token = cast(
+                    str | None, response.get("nextPageToken")
+                )
+                if not isinstance(next_page_token, str):
                     break
 
-                time.sleep(0.1)  # avoid hitting rate limits
+                time.sleep(0.1)
 
             except HttpError as exc:
                 logger.error(f"[Fetching videos] HTTP Error: {exc}")
-                if error:
-                    fprint("", f"[Fetching videos] Error: {exc}")
-
                 if "quotaExceeded" in str(exc):
-                    raise RuntimeError("Quota exceeded, please retry later.") from exc
+                    raise RuntimeError(
+                        "Quota exceeded, please retry later."
+                    ) from exc
                 raise
 
         if not test_run:
             dump(all_videos, file_path)
 
         logger.info(
-            f"[Fetching videos] {len(all_videos)} videos written to '{file_path}'"
+            f"[Fetching videos] {len(all_videos)}"
+            + f"videos written to '{file_path}'",
         )
 
     # -----------------------------------------------------------------------
-    # 3️⃣ Load from cache if exists
+    # 3️⃣ Use cached file if exists
     # -----------------------------------------------------------------------
     else:
         cached_videos = load(file_path)
-        logger.info(
-            f"[Fetching videos] Loaded {len(cached_videos)} cached videos from '{file_path}'"
+        msg = (
+            f"[Fetching videos] Loaded {len(cached_videos)}"
+            + f"cached videos from '{file_path}'"
         )
-
         if info:
-            fprint("", f"[Fetching videos] Loaded {len(cached_videos)} cached videos.")
+            fprint("", msg)
+        logger.info(msg)

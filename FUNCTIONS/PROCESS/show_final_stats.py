@@ -3,7 +3,6 @@ modules that recaives the differnents processing times for the
 operations and show them cleanly
 """
 
-
 from pathlib import Path
 from sqlite3 import Cursor
 from typing import Literal, cast
