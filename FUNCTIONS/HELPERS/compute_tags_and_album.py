@@ -25,10 +25,7 @@ def compute_tags(title: str, uploader: str) -> set[str]:
     tags: set[str] = set()
 
     if not TAGS_DIR.exists() or not TAGS_DIR.is_dir():
-        logger.warning(
-            f"[Compute Tags] Tags directory '{TAGS_DIR}'"
-            + "doesn't exist or is a file"
-        )
+        logger.warning(f"[Compute Tags] Tags directory '{TAGS_DIR}'" + "doesn't exist or is a file")
         return tags
 
     # Normalize inputs
@@ -36,9 +33,7 @@ def compute_tags(title: str, uploader: str) -> set[str]:
     uploader_norm = sanitize_text(uploader).lower()
 
     for tag_file in TAGS_DIR.glob("*.txt"):
-        tag_name, should_add = compute_tag_set_from_file(
-            (title_norm, uploader_norm), tag_file
-        )
+        tag_name, should_add = compute_tag_set_from_file((title_norm, uploader_norm), tag_file)
 
         if tag_name and should_add:
             tags.add(tag_name)
@@ -62,26 +57,15 @@ def compute_album(title: str, uploader: str) -> str:
 
     album: Literal["Private", "Public"] = "Private"
 
-    if matches_patterns(title_norm, public_patterns) or matches_patterns(
-        uploader_norm, public_patterns
-    ):
+    if matches_patterns(title_norm, public_patterns) or matches_patterns(uploader_norm, public_patterns):
         album = "Public"
-        logger.verbose(
-            f"[Compute Album] Matched public pattern for '{title} {uploader}'"
-        )
+        logger.verbose(f"[Compute Album] Matched public pattern for '{title} {uploader}'")
 
-    if matches_patterns(title_norm, private_patterns) or matches_patterns(
-        uploader_norm, private_patterns
-    ):
-        logger.verbose(
-            f"[Compute Album] Matched private pattern for '{title} {uploader}'"
-        )
+    if matches_patterns(title_norm, private_patterns) or matches_patterns(uploader_norm, private_patterns):
+        logger.verbose(f"[Compute Album] Matched private pattern for '{title} {uploader}'")
         return "Private"
 
     if album == "Private":
-        logger.verbose(
-            "[Compute Album] No public match, defaulted to 'Private' for"
-            + f"'{title} {uploader}'"
-        )
+        logger.verbose("[Compute Album] No public match, defaulted to 'Private' for" + f"'{title} {uploader}'")
 
     return album

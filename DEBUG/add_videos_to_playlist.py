@@ -17,21 +17,15 @@ from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def add_videos(
-    playlist_id: str, clean: bool, test_run: bool, info: bool, error: bool
-):
+def add_videos(playlist_id: str, clean: bool, test_run: bool, info: bool, error: bool):
     """
     Add the videos to the playlist given in entry
     """
 
-    liked_video_file = Path(
-        JSON_DIR / f"liked_videos_{round(time.time(),2)}.json"
-    )
+    liked_video_file = Path(JSON_DIR / f"liked_videos_{round(time.time(),2)}.json")
     playlist_video_file = Path(JSON_DIR / f"videos_{playlist_id}.json")
 
-    if clean or not (
-        playlist_video_file.exists() and liked_video_file.exists()
-    ):
+    if clean or not (playlist_video_file.exists() and liked_video_file.exists()):
         fetch_playlist_videos(
             playlist_id=playlist_id,
             file=playlist_video_file,
@@ -51,14 +45,10 @@ def add_videos(
         )
 
     playlist_items = load(playlist_video_file)
-    playlist_videos = set(
-        entry.video_id for entry in playlist_items if entry.video_id
-    )
+    playlist_videos = set(entry.video_id for entry in playlist_items if entry.video_id)
 
     liked_items = load(liked_video_file)
-    liked_videos = set(
-        entry.video_id for entry in liked_items if entry.video_id
-    )
+    liked_videos = set(entry.video_id for entry in liked_items if entry.video_id)
 
     videos_to_add = liked_videos - playlist_videos
 
@@ -93,13 +83,9 @@ def add_videos(
                 },
             ).execute()
 
-            logger.info(
-                "f{progress_prefix} video {video_id} added to {playlist_id}"
-            )
+            logger.info("f{progress_prefix} video {video_id} added to {playlist_id}")
             if info:
-                fprint(
-                    progress_prefix, f"video {video_id} added to {playlist_id}"
-                )
+                fprint(progress_prefix, f"video {video_id} added to {playlist_id}")
 
         except HttpError as e:
             error_json = (  # pyright: ignore[reportUnknownVariableType]
@@ -108,13 +94,9 @@ def add_videos(
                 else str(e)
             )
             if 'failedPrecondition' in error_json:
-                logger.warning(
-                    f"Video {video_id} is likely private or unavailable, skipping..."
-                )
+                logger.warning(f"Video {video_id} is likely private or unavailable, skipping...")
                 if error:
-                    print(
-                        f"\nVideo {video_id} is likely private or unavailable, skipping..."
-                    )
+                    print(f"\nVideo {video_id} is likely private or unavailable, skipping...")
             else:
                 logger.error(f"Error adding {video_id} to playlist: {e}")
                 print(f"\nError adding {video_id} to playlist: {e}")

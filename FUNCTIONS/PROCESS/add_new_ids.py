@@ -55,9 +55,7 @@ def add_new_ids_to_database(
         conn: SQLite connection object.
     """
     # Fetch current video IDs from DB
-    existing_video_ids: list[str] = get_videos_in_list(
-        include_not_status0=True, cur=cur
-    )
+    existing_video_ids: list[str] = get_videos_in_list(include_not_status0=True, cur=cur)
 
     try:
         playlist_entries = load(video_id_file)
@@ -78,9 +76,7 @@ def add_new_ids_to_database(
             if video_id not in to_add:
                 to_add.insert(0, video_id)
     else:
-        to_add = [
-            vid for vid in file_video_ids if vid not in existing_video_ids
-        ]
+        to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
 
     correct_ids = added_ids = updated_ids = 0
 
@@ -91,9 +87,7 @@ def add_new_ids_to_database(
             status: int = video_data.get("status", 3)
 
             # Find matching playlist entry
-            entry = next(
-                (e for e in playlist_entries if e.video_id == video_id), None
-            )
+            entry = next((e for e in playlist_entries if e.video_id == video_id), None)
 
             if entry:
                 # Merge JSON dataclass info
@@ -102,9 +96,7 @@ def add_new_ids_to_database(
                     if key in VideoInfo.__annotations__:
                         video_data[key] = entry_dict[key]
 
-                logger.debug(
-                    f"[Merge] Updated video_data for {video_id} from playlist"
-                )
+                logger.debug(f"[Merge] Updated video_data for {video_id} from playlist")
 
             # Insert new video
             if video_id not in existing_video_ids:
@@ -115,17 +107,9 @@ def add_new_ids_to_database(
             else:
                 # Update incomplete DB info
                 db_data = get_video_info_from_db(video_id=video_id, cur=cur)
-                if not all(
-                    key in db_data and db_data[key] is not None
-                    for key in youtube_required_info
-                ):
-                    if all(
-                        key in video_data and video_data[key] is not None
-                        for key in youtube_required_info
-                    ):
-                        update_video_db(
-                            video_id, video_data, cur, conn, test_run
-                        )
+                if not all(key in db_data and db_data[key] is not None for key in youtube_required_info):
+                    if all(key in video_data and video_data[key] is not None for key in youtube_required_info):
+                        update_video_db(video_id, video_data, cur, conn, test_run)
                         updated_ids += 1
                 else:
                     correct_ids += 1
@@ -134,8 +118,7 @@ def add_new_ids_to_database(
             if info:
                 fprint(
                     "",
-                    f"[Adding IDs] Added {added_ids} | "
-                    + f"Updated {updated_ids} | {correct_ids} OK",
+                    f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | {correct_ids} OK",
                 )
 
         except Exception as e:  # pylint: disable=broad-exception-caught
@@ -146,10 +129,7 @@ def add_new_ids_to_database(
     if not test_run:
         conn.commit()
 
-    summary = (
-        f"[Adding IDs] Added {added_ids},"
-        + f"Updated {updated_ids}, {correct_ids} already OK"
-    )
+    summary = f"[Adding IDs] Added {added_ids}," + f"Updated {updated_ids}, {correct_ids} already OK"
     logger.info(summary)
     if info:
         print(summary)

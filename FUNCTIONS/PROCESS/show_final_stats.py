@@ -61,29 +61,21 @@ def show_final_stats(
             list_without_unavailable[video_id] = {}  # type: ignore
 
     # Compute differences
-    not_in_dir: set[str] = set(list_without_unavailable.keys()) - set(
-        ids_present_in_down_dir.keys()
-    )
-    not_in_list: set[str] = set(ids_present_in_down_dir.keys()) - set(
-        list_without_unavailable.keys()
-    )
+    not_in_dir: set[str] = set(list_without_unavailable.keys()) - set(ids_present_in_down_dir.keys())
+    not_in_list: set[str] = set(ids_present_in_down_dir.keys()) - set(list_without_unavailable.keys())
 
     final_stats: list[str] = []
 
     if not not_in_dir and not not_in_list:
-        final_stats.append(
-            " ✅ The database and the download dir have been successfully synchronized"
-        )
+        final_stats.append(" ✅ The database and the download dir have been successfully synchronized")
     else:
         if not not_in_dir:
             final_stats.append(
-                f" - {len(list_without_unavailable)}"
-                + "ids are in the database and correctly downloaded"
+                f" - {len(list_without_unavailable)}" + "ids are in the database and correctly downloaded"
             )
         else:
             final_stats.append(
-                f" - {len(infos) - len(not_in_dir)}"
-                + "ids have not been downloaded, marked as unavailable"
+                f" - {len(infos) - len(not_in_dir)}" + "ids have not been downloaded, marked as unavailable"
             )
             if len(not_in_dir) < 10:
                 for vid in not_in_dir:
@@ -91,14 +83,10 @@ def show_final_stats(
                 final_stats.append("")
             else:
                 dump(list(not_in_dir), UNAVAILABLE_VIDEOS_FILE)
-                final_stats.append(
-                    f"   • List written in {UNAVAILABLE_VIDEOS_FILE}"
-                )
+                final_stats.append(f"   • List written in {UNAVAILABLE_VIDEOS_FILE}")
 
         if not not_in_list:
-            final_stats.append(
-                " - All downloaded files are in the database and correctly formatted"
-            )
+            final_stats.append(" - All downloaded files are in the database and correctly formatted")
         else:
             final_stats.append(
                 f" - {len(not_in_list)}"
@@ -112,17 +100,13 @@ def show_final_stats(
                 final_stats.append("\n")
             else:
                 dump(list(not_in_list), CORRECT_NOT_IN_DIR_FILE)
-                final_stats.append(
-                    f"   • List written in {CORRECT_NOT_IN_DIR_FILE}"
-                )
+                final_stats.append(f"   • List written in {CORRECT_NOT_IN_DIR_FILE}")
 
     # Print summary
     print(
-        f"\n[TOTAL]:\n - {len(infos)} total videos in the database "
-        + '(contains privates and unavailable)'
+        f"\n[TOTAL]:\n - {len(infos)} total videos in the database " + '(contains privates and unavailable)'
         if len(list_without_unavailable) < len(infos)
-        else '\n'
-        + f" - {len(ids_present_in_down_dir)} total videos in download directory"
+        else '\n' + f" - {len(ids_present_in_down_dir)} total videos in download directory"
     )
     print("\n".join(final_stats))
 

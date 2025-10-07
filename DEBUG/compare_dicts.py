@@ -27,7 +27,4 @@ def compare_dicts(
     # Keys present in both, but with different values
     for key in keys1 & keys2:
         if dict1[key] != dict2[key]:
-            print(
-                f"Different value for key '{key}': dict1 = {dict1[key]} | "
-                + f"dict2 = {dict2[key]}"
-            )
+            print(f"Different value for key '{key}': dict1 = {dict1[key]} | " + f"dict2 = {dict2[key]}")

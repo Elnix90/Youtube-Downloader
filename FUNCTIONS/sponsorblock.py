@@ -11,9 +11,7 @@ logger = setup_logger(__name__)
 SPONSORBLOCK_API: str = "https://sponsor.ajay.app/api/skipSegments"
 
 
-def get_skip_segments(
-    video_id: str, categories: list[str]
-) -> list[tuple[float, float]]:
+def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float, float]]:
 
     # Properly encode categories list for URL parameter
     params = {
@@ -26,21 +24,16 @@ def get_skip_segments(
         response.raise_for_status()
         segments = response.json()  # pyright: ignore[reportAny]
         skips: list[tuple[float, float]] = [
-            (seg["segment"][0], seg["segment"][1])
-            for seg in segments  # pyright: ignore[reportAny]
+            (seg["segment"][0], seg["segment"][1]) for seg in segments  # pyright: ignore[reportAny]
         ]
-        logger.info(
-            f"[Get skips] Sucessfully got {len(skips)} skips for '{video_id}'"
-        )
+        logger.info(f"[Get skips] Sucessfully got {len(skips)} skips for '{video_id}'")
         return skips
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
             # No segments found for this video, treat as empty list
             logger.info(f"[Get skips] Got no skips for '{video_id}'")
             return []
-        logger.error(
-            f"[Get skips] Unknown error from sponsoblock api for '{video_id}': {e}"
-        )
+        logger.error(f"[Get skips] Unknown error from sponsoblock api for '{video_id}': {e}")
         return []
     except Exception as e:
         logger.error(f"[Get skips] Got http error for '{video_id}': {e}")
@@ -69,9 +62,7 @@ def cut_segments_ffmpeg(
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        logger.warning(
-            f"[Cut Segments] No segments provided for '{input_file}'"
-        )
+        logger.warning(f"[Cut Segments] No segments provided for '{input_file}'")
         return 0.0
 
     segments = sorted(segments)
@@ -108,14 +99,9 @@ def cut_segments_ffmpeg(
 
         filter_parts: list[str] = []
         for i, (start, end) in enumerate(keep_segments):
-            filter_parts.append(
-                f"[0:a]atrim=start={start}:end={end},asetpts=PTS-STARTPTS[a{i}]"
-            )
+            filter_parts.append(f"[0:a]atrim=start={start}:end={end},asetpts=PTS-STARTPTS[a{i}]")
         concat_inputs = "".join(f"[a{i}]" for i in range(len(keep_segments)))
-        filter_complex = (
-            ";".join(filter_parts)
-            + f";{concat_inputs}concat=n={len(keep_segments)}:v=0:a=1[outa]"
-        )
+        filter_complex = ";".join(filter_parts) + f";{concat_inputs}concat=n={len(keep_segments)}:v=0:a=1[outa]"
 
         cmd = [
             "ffmpeg",
@@ -136,12 +122,8 @@ def cut_segments_ffmpeg(
             stderr=subprocess.DEVNULL,
         )
 
-        logger.info(
-            f"[Cut Segments] Sucessfully cutted {total_removed} seconds from '{input_file}"
-        )
+        logger.info(f"[Cut Segments] Sucessfully cutted {total_removed} seconds from '{input_file}")
         return total_removed
     else:
-        logger.debug(
-            "[Cut Segments] test_run was enabled, didn't cutted anything"
-        )
+        logger.debug("[Cut Segments] test_run was enabled, didn't cutted anything")
         return 0.0

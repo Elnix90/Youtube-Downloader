@@ -75,12 +75,8 @@ def process_tags_for_video(
     # Logging results
     if success and all_tags:
         if info:
-            fprint(
-                progress_prefix, f"Embedded {len(all_tags)} tags into ?", title
-            )
-        logger.info(
-            f"[Tags] Embedded {len(all_tags)} tags into '{filepath.name}'"
-        )
+            fprint(progress_prefix, f"Embedded {len(all_tags)} tags into ?", title)
+        logger.info(f"[Tags] Embedded {len(all_tags)} tags into '{filepath.name}'")
 
     elif not success:
         if error:

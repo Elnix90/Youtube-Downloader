@@ -45,9 +45,7 @@ def remove_duplicate_videos_from_playlist(
             video_id_to_items.setdefault(video_id, []).append(item_id)
 
     # 4. Detect duplicates (more than one item_id per video_id)
-    duplicates: dict[str, list[str]] = {
-        vid: ids for vid, ids in video_id_to_items.items() if len(ids) > 1
-    }
+    duplicates: dict[str, list[str]] = {vid: ids for vid, ids in video_id_to_items.items() if len(ids) > 1}
 
     if not duplicates:
         msg = "[Remove Duplicates] No duplicate videos found in playlist"
@@ -58,9 +56,7 @@ def remove_duplicate_videos_from_playlist(
 
     # 5. Authenticate and prepare deletion
     youtube: Resource = get_authenticated_service(info)
-    logger.info(
-        "[Remove Duplicates] Removing duplicate videos from playlist..."
-    )
+    logger.info("[Remove Duplicates] Removing duplicate videos from playlist...")
     if info:
         print("[Remove Duplicates] Removing duplicate videos from playlist...")
 
@@ -72,9 +68,7 @@ def remove_duplicate_videos_from_playlist(
         # Skip the first item, keep it in the playlist
         for idx, item_id in enumerate(item_ids[1:], start=2):
             if not item_id:
-                logger.warning(
-                    f"Cannot remove duplicate: missing item_id for video {video_id}"
-                )
+                logger.warning(f"Cannot remove duplicate: missing item_id for video {video_id}")
                 continue
 
             progress_prefix = f"{progress_counter}/{total_duplicates} | "
@@ -104,10 +98,6 @@ def remove_duplicate_videos_from_playlist(
                 if error:
                     print(msg)
 
-    logger.info(
-        f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist"
-    )
+    logger.info(f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist")
     if info:
-        print(
-            f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist"
-        )
+        print(f"[Remove Duplicates] Removed {removed_count} duplicate videos from playlist")

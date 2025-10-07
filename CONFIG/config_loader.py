@@ -104,14 +104,10 @@ def load_config(config_file: Path) -> Config:
     """Load configuration from config.toml"""
 
     if not config_file.exists():
-        raise FileNotFoundError(
-            f"Configuration file '{config_file}' does not exist."
-        )
+        raise FileNotFoundError(f"Configuration file '{config_file}' does not exist.")
     try:
         with open(config_file, "rb") as f:
-            _config_cache: Config = tomli.load(
-                f
-            )  # pyright: ignore[reportAssignmentType]
+            _config_cache: Config = tomli.load(f)  # pyright: ignore[reportAssignmentType]
         return _config_cache
     except tomli.TOMLDecodeError as e:
         raise ValueError(f"Syntax error in config.toml: {e}")

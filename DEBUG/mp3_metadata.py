@@ -25,51 +25,33 @@ def write_metadata_to_json(
     try:
         audio: MP3 | None = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            comments = audio.tags.getall(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-                'TXXX'
-            )
-            for (
-                comment
-            ) in comments:  # pyright: ignore[reportUnknownVariableType]
+            comments = audio.tags.getall('TXXX')  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            for comment in comments:  # pyright: ignore[reportUnknownVariableType]
                 if (
                     isinstance(comment, TXXX)
                     and comment.desc.lower()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
                     == tag.lower()
                 ):
                     try:
-                        data: VideoInfo = (  # pyright: ignore[reportAny]
-                            json.loads(
-                                comment.text[  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-                                    0
-                                ]
-                            )
+                        data: VideoInfo = json.loads(  # pyright: ignore[reportAny]
+                            comment.text[  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
+                                0
+                            ]
                         )
                     except Exception as e:
-                        logger.warning(
-                            f"[Get Metadata Tag] Exception during converting to python dict: {e}"
-                        )
+                        logger.warning(f"[Get Metadata Tag] Exception during converting to python dict: {e}")
                         return None, 2
                     if data:
                         with open(file, "w") as f:
                             _ = f.write(json.dumps(data, indent=4))
-                        logger.info(
-                            f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'"
-                        )
+                        logger.info(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
                         return data, 0
                     else:
-                        logger.warning(
-                            f"[Get Metadata Tag] Empty data in file '{filepath}'"
-                        )
-            logger.warning(
-                f"[Get Metadata Tag] No TXXX:{tag} tag field in '{filepath}'"
-            )
+                        logger.warning(f"[Get Metadata Tag] Empty data in file '{filepath}'")
+            logger.warning(f"[Get Metadata Tag] No TXXX:{tag} tag field in '{filepath}'")
             return None, 2
-        logger.warning(
-            f"[Get Metadata Tag] No audio.tags tags in '{filepath}'"
-        )
+        logger.warning(f"[Get Metadata Tag] No audio.tags tags in '{filepath}'")
         return None, 2
     except Exception as e:
-        logger.warning(
-            f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}"
-        )
+        logger.warning(f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}")
         return None, 3

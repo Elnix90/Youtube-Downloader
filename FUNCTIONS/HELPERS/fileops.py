@@ -80,10 +80,7 @@ def dump(entries: VideoInfoMap | list[str], file_path: Path) -> None:
         if backup_path.exists():
             backup_path.unlink()
 
-        logger.debug(
-            f"[Dump] Successfully dumped {len(entries)}"
-            + f"entries to '{file_path}'"
-        )
+        logger.debug(f"[Dump] Successfully dumped {len(entries)}" + f"entries to '{file_path}'")
 
     except OSError as exc:
         if backup_path.exists():

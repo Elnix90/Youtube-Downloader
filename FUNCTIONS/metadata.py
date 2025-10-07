@@ -16,9 +16,7 @@ from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def get_metadata_tag(
-    filepath: Path, tag: str = 'metadata'
-) -> tuple[VideoInfo | None, Literal[0, 1, 2, 3]]:
+def get_metadata_tag(filepath: Path, tag: str = 'metadata') -> tuple[VideoInfo | None, Literal[0, 1, 2, 3]]:
     """Return metadata from an MP3 file, and a state code
     Returns:
         0 -> ok
@@ -29,12 +27,8 @@ def get_metadata_tag(
     try:
         audio: MP3 | None = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            comments = audio.tags.getall(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-                'TXXX'
-            )
-            for (
-                comment
-            ) in comments:  # pyright: ignore[reportUnknownVariableType]
+            comments = audio.tags.getall('TXXX')  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            for comment in comments:  # pyright: ignore[reportUnknownVariableType]
                 if (
                     isinstance(comment, TXXX)
                     and comment.desc.lower()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
@@ -47,34 +41,22 @@ def get_metadata_tag(
                             ]
                         )
                     except Exception as e:
-                        logger.warning(
-                            f"[Get Metadata Tag] Exception during converting to python dict: {e}"
-                        )
+                        logger.warning(f"[Get Metadata Tag] Exception during converting to python dict: {e}")
                         return None, 2
                     if data:
-                        logger.verbose(
-                            f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'"
-                        )
+                        logger.verbose(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
                         return data, 0
                     else:
-                        logger.info(
-                            f"[Get Metadata Tag] Empty data in file '{filepath}'"
-                        )
+                        logger.info(f"[Get Metadata Tag] Empty data in file '{filepath}'")
 
-            logger.info(
-                f"[Get Metadata Tag] No TXXX:{tag} tag field in '{filepath}'"
-            )
+            logger.info(f"[Get Metadata Tag] No TXXX:{tag} tag field in '{filepath}'")
             return None, 2
 
-        logger.warning(
-            f"[Get Metadata Tag] No audio.tags tags in '{filepath}'"
-        )
+        logger.warning(f"[Get Metadata Tag] No audio.tags tags in '{filepath}'")
         return None, 2
 
     except Exception as e:
-        logger.warning(
-            f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}"
-        )
+        logger.warning(f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}")
         return None, 3
 
 
@@ -90,31 +72,23 @@ def repair_mp3_file(filepath: Path, test_run: bool) -> bool:
     try:
         audio = MP3(str(filepath), ID3=ID3)
         # Attempt to access tags to trigger loading/validation
-        _ = (  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            audio.tags
-        )
+        _ = audio.tags  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
         # Try saving tags to fix minor corruptions or header problems
         if not test_run:
             audio.save()  # pyright: ignore[reportUnknownMemberType]
-        logger.verbose(
-            f"[Repair MP3] File '{filepath}' is healthy or repaired successfully"
-        )
+        logger.verbose(f"[Repair MP3] File '{filepath}' is healthy or repaired successfully")
         return True
 
     except MutagenError as e:
         logger.error(f"[Repair MP3] Mutagen error on file '{filepath}': {e}")
         return False
     except Exception as e:
-        logger.error(
-            f"[Repair MP3] Unexpected error on file '{filepath}': {e}"
-        )
+        logger.error(f"[Repair MP3] Unexpected error on file '{filepath}': {e}")
         return False
 
 
-def read_id3_tag(
-    filepath: Path, frame_id: str
-) -> tuple[list[str] | str, Literal[0, 1, 2]]:
+def read_id3_tag(filepath: Path, frame_id: str) -> tuple[list[str] | str, Literal[0, 1, 2]]:
     """
     Read ID3 tag frame text from the MP3 file.
 
@@ -129,48 +103,30 @@ def read_id3_tag(
     try:
         audio = MP3(str(filepath), ID3=ID3)
         if audio.tags is not None:  # pyright: ignore[reportUnknownMemberType]
-            frame = audio.tags.get(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-                frame_id
-            )
+            frame = audio.tags.get(frame_id)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
             if frame:
-                if hasattr(
-                    frame, 'text'  # pyright: ignore[reportUnknownArgumentType]
-                ):
-                    text = (  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-                        frame.text
-                    )
+                if hasattr(frame, 'text'):  # pyright: ignore[reportUnknownArgumentType]
+                    text = frame.text  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
                     if isinstance(text, list):
-                        logger.verbose(
-                            f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'"
-                        )
+                        logger.verbose(f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'")
                         return (
                             text,
                             0,
                         )  # pyright: ignore[reportUnknownVariableType]
                     else:
-                        logger.verbose(
-                            f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'"
-                        )
+                        logger.verbose(f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'")
                         return [text], 0
-                elif hasattr(
-                    frame, 'data'  # pyright: ignore[reportUnknownArgumentType]
-                ):
-                    logger.verbose(
-                        f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'"
-                    )
+                elif hasattr(frame, 'data'):  # pyright: ignore[reportUnknownArgumentType]
+                    logger.verbose(f"[Read Tag] Sucessfuly readed tag '{frame_id}' from '{filepath}'")
                     return (
                         frame.data,  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                         0,
                     )
 
-        logger.info(
-            f"[Read Tag] No '{frame_id}' tag to read from '{filepath}'"
-        )
+        logger.info(f"[Read Tag] No '{frame_id}' tag to read from '{filepath}'")
         return [], 1
     except Exception as e:
-        logger.error(
-            f"[Read Tag] Failed to read tag '{frame_id}' from '{filepath}': {e}"
-        )
+        logger.error(f"[Read Tag] Failed to read tag '{frame_id}' from '{filepath}': {e}")
         return [], 2
 
 
@@ -209,14 +165,10 @@ def write_id3_tag(
                 TXXX(encoding=3, desc=desc, text=text_data)
             )
         else:
-            frame_class = Frames.get(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-                frame_id
-            )
+            frame_class = Frames.get(frame_id)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 
             if frame_class is None:
-                logger.warning(
-                    f"[Write Tag] Frame '{frame_id}' not found. Using 'TXXX' custom frame"
-                )
+                logger.warning(f"[Write Tag] Frame '{frame_id}' not found. Using 'TXXX' custom frame")
                 text_data = ["; ".join(text_data)]  # collapse to single string
                 audio.tags.add(  # pyright: ignore[reportUnknownMemberType, reportOptionalMemberAccess]
                     TXXX(encoding=3, desc=frame_id, text=text_data)
@@ -230,13 +182,9 @@ def write_id3_tag(
         if not test_run:
             audio.save()  # pyright: ignore[reportUnknownMemberType]
 
-        logger.verbose(
-            f"[Write Tag] Successfully written tag '{frame_id}' into '{filepath.name}'"
-        )
+        logger.verbose(f"[Write Tag] Successfully written tag '{frame_id}' into '{filepath.name}'")
         return True
 
     except Exception as e:
-        logger.error(
-            f"[Write Tag] Failed to write tag '{frame_id}' into '{filepath.name}': {e}"
-        )
+        logger.error(f"[Write Tag] Failed to write tag '{frame_id}' into '{filepath.name}': {e}")
         return False

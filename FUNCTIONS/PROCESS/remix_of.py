@@ -45,9 +45,7 @@ def process_remix_of_for_video(
             cleaned_other = clean_song_query(other_title)
 
             # Compute similarity ratio
-            similarity = SequenceMatcher(
-                None, cleaned_remix_title, cleaned_other
-            ).ratio()
+            similarity = SequenceMatcher(None, cleaned_remix_title, cleaned_other).ratio()
 
             if best_match is None or similarity > best_match[1]:
                 best_match = (other_id, similarity)
@@ -74,9 +72,7 @@ def process_remix_of_for_video(
                 f"[Remix Of] '{remix_of}' matched '{match_id}' with confidence {confidence:.2f}, updated remix_of",
             )
         else:
-            logger.info(
-                f"[Remix Of] No confident match for '{remix_of}' (best={best_match})"
-            )
+            logger.info(f"[Remix Of] No confident match for '{remix_of}' (best={best_match})")
             fprint(
                 progress_prefix,
                 f"[Remix Of] No confident match for '{remix_of}' (best={best_match})",

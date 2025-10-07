@@ -42,9 +42,7 @@ class CustomLogger(logging.Logger):
         but have a priority of 5
         """
         if self.isEnabledFor(VERBOSE):
-            self._log(
-                VERBOSE, msg, args, **kwargs  # pyright: ignore[reportAny]
-            )
+            self._log(VERBOSE, msg, args, **kwargs)  # pyright: ignore[reportAny]
 
 
 logging.setLoggerClass(CustomLogger)

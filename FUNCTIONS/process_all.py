@@ -188,20 +188,14 @@ def process_all(
                     progress_prefix,
                     f"Sucessfully fetched and updated new data from Youtube for '{video_id}'",
                 )
-                logger.info(
-                    f"[Process] Sucessfully fetched and updated  new data from Youtube for '{video_id}'"
-                )
+                logger.info(f"[Process] Sucessfully fetched and updated  new data from Youtube for '{video_id}'")
             else:
-                logger.warning(
-                    f"[Process] Error while re-fetching data from yt for '{video_id}', no new data"
-                )
+                logger.warning(f"[Process] Error while re-fetching data from yt for '{video_id}', no new data")
 
         filename: str | None = data.get("filename")
         filepath: Path | None = download_path / filename if filename else None
         removed_segments_int: int = data.get("removed_segments_int", 0)
-        removed_segments_duration: float = data.get(
-            "removed_segments_duration", 0.0
-        )
+        removed_segments_duration: float = data.get("removed_segments_duration", 0.0)
 
         if filepath is None or not filepath.exists():
             if info:
@@ -236,9 +230,7 @@ def process_all(
         recompute_tags = data.get("recompute_tags") or force_recompute_tags
         recompute_album = data.get("recompute_tags") or force_recompute_album
 
-        recompute_remix_of: bool = (
-            data.get("recompute_remix_of") or force_recompute_remix_of
-        )
+        recompute_remix_of: bool = data.get("recompute_remix_of") or force_recompute_remix_of
 
         if use_sponsorblock:
             cut_duration += remove_sponsorblock_segments_for_video(
@@ -361,10 +353,7 @@ def process_all(
         if len(avg_times) > 5:
             _ = avg_times.pop(0)
 
-        eta_seconds: int = round(
-            (sum(avg_times) / len(avg_times))
-            * (total_videos - progress_count + 1)
-        )
+        eta_seconds: int = round((sum(avg_times) / len(avg_times)) * (total_videos - progress_count + 1))
         eta_str = str(timedelta(seconds=eta_seconds))
 
     if info:

@@ -39,10 +39,7 @@ def remove_sponsorblock_segments_for_video(
         (video_id,),
     )
 
-    skips = [
-        (row["segment_start"], row["segment_end"])
-        for row in cur.fetchall()  # pyright: ignore[reportAny]
-    ]
+    skips = [(row["segment_start"], row["segment_end"]) for row in cur.fetchall()]  # pyright: ignore[reportAny]
 
     # --- If values are defined (not None) ---
 
@@ -56,9 +53,7 @@ def remove_sponsorblock_segments_for_video(
 
     # --- If no skips in DB and the values of segments skipped are None, query SponsorBlock ---
     elif not skips:
-        logger.debug(
-            f"[Sponsorblock] No skips in DB, querying API for '{title}'"
-        )
+        logger.debug(f"[Sponsorblock] No skips in DB, querying API for '{title}'")
         skips = get_skip_segments(video_id, categories=categories)
 
     # --- If no skips even after SponsorBlock query, means that the video has not, so update the fields to not retry later---
@@ -85,9 +80,7 @@ def remove_sponsorblock_segments_for_video(
 
     temp_output = filepath.with_suffix(".tmp.mp3")
     try:
-        total_removed = cut_segments_ffmpeg(
-            filepath, temp_output, skips, test_run
-        )
+        total_removed = cut_segments_ffmpeg(filepath, temp_output, skips, test_run)
         successful_segments = len(skips)
         update_video_db(
             video_id,
@@ -113,9 +106,7 @@ def remove_sponsorblock_segments_for_video(
                 f"Sucessfully cutted {len(skips)} segments from ?",
                 title,
             )
-        logger.info(
-            f"[Sponsorblock] Sucessfully cutted {len(skips)} segments from '{title}'"
-        )
+        logger.info(f"[Sponsorblock] Sucessfully cutted {len(skips)} segments from '{title}'")
 
     except subprocess.CalledProcessError:
         logger.error(f"[Sponsorblock] Error cutting segments for '{title}'")
