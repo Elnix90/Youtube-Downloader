@@ -46,19 +46,14 @@ def check_file_integrity_for_video(
     if video_id in ids_present_in_down_dir.keys():
         metadata: VideoInfo = ids_present_in_down_dir.get(video_id, {})
         # print(metadata)
-        filename: str = video_data.get(
-            "filename", metadata.get("filename", "")
-        )
+        filename: str = video_data.get("filename", metadata.get("filename", ""))
         # print(filename)
         filepath: Path | None = download_path / filename if filename else None
         # print(filepath)
 
         if not filepath or not filepath.exists():
             # logger.warning(filepath)
-            logger.debug(
-                "[File Checking] Missing filename or file not found"
-                + f"for '{video_id}'"
-            )
+            logger.debug("[File Checking] Missing filename or file not found" + f"for '{video_id}'")
             return True, time.time() - start_processing
 
         title: str = metadata.get("title", "")
@@ -66,29 +61,18 @@ def check_file_integrity_for_video(
         # Merge DB data with extracted metadata
         fusion: VideoInfo = metadata | video_data
 
-        if all(
-            key in fusion and fusion[key] is not None
-            for key in youtube_required_info
-        ):
+        if all(key in fusion and fusion[key] is not None for key in youtube_required_info):
             if repair_mp3_file(filepath, test_run):
                 fusion["status"] = 0  # downloaded
                 update_video_db(video_id, fusion, cur, conn, test_run)
-                logger.debug(
-                    f"[File Checking] File valid and repaired: '{title}'"
-                )
+                logger.debug(f"[File Checking] File valid and repaired: '{title}'")
                 return False, time.time() - start_processing
-            logger.warning(
-                f"[File Checking] Corrupted file, re-downloading: '{title}'"
-            )
+            logger.warning(f"[File Checking] Corrupted file, re-downloading: '{title}'")
             return True, time.time() - start_processing
         else:
-            missings: set[str] = set(youtube_required_info) - set(
-                fusion.keys()
-            )
+            missings: set[str] = set(youtube_required_info) - set(fusion.keys())
 
-            logger.warning(
-                f"[File Checking] Metadata incomplete missing {missings} keys, re-downloading: '{title}'"
-            )
+            logger.warning(f"[File Checking] Metadata incomplete missing {missings} keys, re-downloading: '{title}'")
             return True, time.time() - start_processing
 
     # --- Case: video not present in download dir ---
@@ -111,7 +95,5 @@ def check_file_integrity_for_video(
             conn,
             test_run,
         )
-        logger.info(
-            f"[File Checking] Missing in download dir, will be downloaded: {video_id}"
-        )
+        logger.info(f"[File Checking] Missing in download dir, will be downloaded: {video_id}")
         return True, time.time() - start_processing

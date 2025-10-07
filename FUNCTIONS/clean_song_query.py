@@ -26,9 +26,7 @@ def clean_song_query(query: str) -> str:
             query = re.sub(regex, '', query, flags=re.IGNORECASE)
         else:
             # Handle plain word/phrase pattern
-            query = re.sub(
-                rf"\b{re.escape(pattern)}\b", '', query, flags=re.IGNORECASE
-            )
+            query = re.sub(rf"\b{re.escape(pattern)}\b", '', query, flags=re.IGNORECASE)
 
     # Remove "feat ..." or "ft ..." with the artist name
     query = re.sub(r'\b(feat|ft)\.? [\w\s]+', '', query, flags=re.IGNORECASE)

@@ -14,3 +14,4 @@ music.db
 music.db-journal
 typings
 config.toml
+.ruff_cache

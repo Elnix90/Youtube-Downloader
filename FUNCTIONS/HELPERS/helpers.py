@@ -170,8 +170,10 @@ VideoInfoMap: TypeAlias = dict[str, VideoInfo]
 # Base info type for a single flat video item
 # ---------------------------------------------------------------------------
 
+
 class ExtractedInfo(TypedDict, total=False):
     """Type-safe representation of one video entry from yt-dlp."""
+
     id: str | None
     fulltitle: str | None
     title: str | None
@@ -199,8 +201,10 @@ class ExtractedInfo(TypedDict, total=False):
 # Playlist extraction result (the dict returned by yt_dlp.extract_info)
 # ---------------------------------------------------------------------------
 
+
 class ExtractedPlaylistInfo(TypedDict):
     """Type-safe structure for yt-dlp playlist extraction result."""
+
     _type: NotRequired[str]
     id: NotRequired[str]
     title: NotRequired[str]
@@ -261,9 +265,7 @@ class PlaylistVideoEntry:
             title=str(snippet.get("title", "")),
             description=str(snippet.get("description", "")),
             thumbnails=thumbnails,
-            video_owner_channel_title=str(
-                snippet.get("videoOwnerChannelTitle", "")
-            ),
+            video_owner_channel_title=str(snippet.get("videoOwnerChannelTitle", "")),
             video_owner_channel_id=str(snippet.get("videoOwnerChannelId", "")),
             privacy_status=str(status.get("privacyStatus", "")),
             video_published_at=str(content.get("videoPublishedAt", "")),
@@ -377,9 +379,7 @@ def thumbnail_png_path_for_mp3(mp3_path: Path) -> Path:
     return mp3_path.with_suffix(".png")
 
 
-def remove_data_from_video_info(
-    data: VideoInfo, to_remove: list[str]
-) -> VideoInfo:
+def remove_data_from_video_info(data: VideoInfo, to_remove: list[str]) -> VideoInfo:
     """
     Removes data passed in to_remove from a VideoInfo dict,
     returns the nex dict
@@ -390,9 +390,7 @@ def remove_data_from_video_info(
     return data
 
 
-def timestamp_to_id3_unique(
-    ts: float | int, include_time: bool = False
-) -> str:
+def timestamp_to_id3_unique(ts: float | int, include_time: bool = False) -> str:
     """
     Convert a Unix timestamp to a unique, sortable string
     compatible with ID3-style date formats.

@@ -40,9 +40,7 @@ def extract_and_clean_video_ids(
     lrc_or_png: int = 0
 
     if not download_directory.exists():
-        message = (
-            f"[Clean & Extract] Directory does not exist: {download_directory}"
-        )
+        message = f"[Clean & Extract] Directory does not exist: {download_directory}"
         if info:
             print(message)
         logger.warning(message)
@@ -52,18 +50,13 @@ def extract_and_clean_video_ids(
         checked_files += 1
 
         if not filepath.is_file():
-            logger.warning(
-                f"[Clean & Extract] Not a file, skipping: '{filepath.name}'"
-            )
+            logger.warning(f"[Clean & Extract] Not a file, skipping: '{filepath.name}'")
             continue
 
         # Case 1: Not an MP3 (but allow .lrc or .png)
         if filepath.suffix != ".mp3":
             if filepath.suffix in (".lrc", ".png"):
-                if (
-                    not force_mp3_presence
-                    or filepath.with_suffix(".mp3").exists()
-                ):
+                if not force_mp3_presence or filepath.with_suffix(".mp3").exists():
                     logger.verbose(
                         f"[Clean & Extract] Keeping '{filepath.name}' "
                         + "(.lrc or .png)"
@@ -77,44 +70,32 @@ def extract_and_clean_video_ids(
             removed_files[filepath.name] = "Not MP3"
             if not test_run and remove:
                 filepath.unlink(missing_ok=True)
-            logger.warning(
-                f"[Clean & Extract] Removed '{filepath.name}': Not an MP3"
-            )
+            logger.warning(f"[Clean & Extract] Removed '{filepath.name}': Not an MP3")
             continue
 
         # Case 2: MP3 file — check metadata
         data, state = get_metadata_tag(filepath)
         if state == 0 and data is not None:
-            logger.verbose(
-                f"[Clean & Extract] state is 0 for file: {filepath.name}"
-            )
+            logger.verbose(f"[Clean & Extract] state is 0 for file: {filepath.name}")
             video_id = data.get("video_id")
 
             if "id" in data:
                 del data["id"]
                 data["video_id"] = video_id
-                logger.verbose(
-                    f"[Clean & Extract] sucessfully renamed id to video_id from data for : {filepath.name}"
-                )
+                logger.verbose(f"[Clean & Extract] sucessfully renamed id to video_id from data for : {filepath.name}")
 
             if video_id:
                 data_filename = data.get("filename")
                 if isinstance(data_filename, str):
                     valid_files[video_id] = data
-                    logger.verbose(
-                        f"[Clean & Extract] Valid MP3: '{data_filename}' with ID '{video_id}'"
-                    )
+                    logger.verbose(f"[Clean & Extract] Valid MP3: '{data_filename}' with ID '{video_id}'")
                 else:
-                    logger.error(
-                        f"[Clean & Extract] data_filename isn't str for: {filepath.name}"
-                    )
+                    logger.error(f"[Clean & Extract] data_filename isn't str for: {filepath.name}")
             else:
                 removed_files[filepath.name] = "Missing video ID in metadata"
                 if not test_run and remove:
                     filepath.unlink(missing_ok=True)
-                logger.info(
-                    f"[Clean & Extract] Removed '{filepath.name}': Missing video ID in metadata"
-                )
+                logger.info(f"[Clean & Extract] Removed '{filepath.name}': Missing video ID in metadata")
         else:
             if state == 1:
                 reason = "Missing or malformed metadata"
@@ -126,9 +107,7 @@ def extract_and_clean_video_ids(
             removed_files[filepath.name] = reason
             if not test_run and remove:
                 filepath.unlink(missing_ok=True)
-            logger.info(
-                f"[Clean & Extract] Removed '{filepath.name}': {reason}"
-            )
+            logger.info(f"[Clean & Extract] Removed '{filepath.name}': {reason}")
 
         if info:
             fprint(
@@ -151,8 +130,6 @@ def extract_and_clean_video_ids(
             for file_name, reason in removed_files.items():
                 print(f" - Removed {file_name}: {reason}")
         else:
-            print(
-                f"\r\033[K[Clean & Extract] All {checked_files} files are valid"
-            )
+            print(f"\r\033[K[Clean & Extract] All {checked_files} files are valid")
 
     return valid_files

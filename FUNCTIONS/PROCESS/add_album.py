@@ -67,9 +67,7 @@ def process_album_for_video(
                     f"Embedded album '{computed_album}' into ?",
                     title,
                 )
-            logger.info(
-                f"[Album] Embedded album '{computed_album}' into '{title}'"
-            )
+            logger.info(f"[Album] Embedded album '{computed_album}' into '{title}'")
 
         else:
             logger.error(f"[Album] Error embedding album into '{title}'")

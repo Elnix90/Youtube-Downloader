@@ -43,17 +43,14 @@ def main_list_process() -> None:
     # Step 1: Fetch playlist videos
     fetch_playlist_videos(
         playlist_id=CONFIG["processing"]["playlist_id"],
-        file=PLAYLIST_VIDEOS_FILE,
+        file_path=PLAYLIST_VIDEOS_FILE,
         test_run=CONFIG["processing"]["test_run"],
         clean=CONFIG["processing"]["clean"],
         info=CONFIG["processing"]["info"],
-        error=CONFIG["processing"]["error"],
     )
 
     # Step 2: Process database and files
-    with get_db_connection(
-        create_if_not=CONFIG["processing"]["create_db_if_not"]
-    ) as conn:
+    with get_db_connection(create_if_not=CONFIG["processing"]["create_db_if_not"]) as conn:
         cur = conn.cursor()
 
         processing_time: dict[str, float | None] = process_all(
@@ -61,29 +58,21 @@ def main_list_process() -> None:
             playlist_video_file=PLAYLIST_VIDEOS_FILE,
             # SponsorBlock
             use_sponsorblock=CONFIG["processing"]["use_sponsorblock"],
-            sponsorblock_categories=CONFIG["processing"][
-                "sponsorblock_categories"
-            ],
+            sponsorblock_categories=CONFIG["processing"]["sponsorblock_categories"],
             # Lyrics
             get_lyrics=CONFIG["processing"]["get_lyrics"],
-            force_recompute_lyrics=CONFIG["processing"][
-                "force_recompute_lyrics"
-            ],
+            force_recompute_lyrics=CONFIG["processing"]["force_recompute_lyrics"],
             # Thumbnails
             get_thumbnail=CONFIG["processing"]["get_thumbnail"],
             thumbnail_format=CONFIG["processing"]["thumbnail_format"],
-            force_recompute_thumbnails=CONFIG["processing"][
-                "force_recompute_thumbnails"
-            ],
+            force_recompute_thumbnails=CONFIG["processing"]["force_recompute_thumbnails"],
             # Metadata
             embed_metadata=CONFIG["processing"]["embed_metadata"],
             add_tags=CONFIG["processing"]["add_tags"],
             force_recompute_tags=CONFIG["processing"]["force_recompute_tags"],
             # Album
             add_album=CONFIG["processing"]["add_album"],
-            force_recompute_album=CONFIG["processing"][
-                "force_recompute_album"
-            ],
+            force_recompute_album=CONFIG["processing"]["force_recompute_album"],
             # Tags formatting
             sep=CONFIG["processing"]["tag_separator"],
             start_def=CONFIG["processing"]["tag_start_delimiter"],
@@ -94,26 +83,18 @@ def main_list_process() -> None:
             retry_private=CONFIG["processing"]["retry_private"],
             # Recompute things
             force_mp3_presence=CONFIG["processing"]["force_mp3_presence"],
-            force_recompute_yt_info=CONFIG["processing"][
-                "force_recompute_yt_info"
-            ],
+            force_recompute_yt_info=CONFIG["processing"]["force_recompute_yt_info"],
             # Remix
             get_remix_of=CONFIG["processing"]["get_remix_of"],
-            force_recompute_remix_of=CONFIG["processing"][
-                "force_recompute_remix_of"
-            ],
+            force_recompute_remix_of=CONFIG["processing"]["force_recompute_remix_of"],
             # Behavior
             info=CONFIG["processing"]["info"],
             error=CONFIG["processing"]["error"],
             test_run=CONFIG["processing"]["test_run"],
             # Clean up
             remove_malformatted=CONFIG["processing"]["remove_malformatted"],
-            remove_no_longer_in_playlist=CONFIG["processing"][
-                "remove_no_longer_in_playlist"
-            ],
-            add_folder_files_not_in_list=CONFIG["processing"][
-                "add_folder_files_not_in_list"
-            ],
+            remove_no_longer_in_playlist=CONFIG["processing"]["remove_no_longer_in_playlist"],
+            add_folder_files_not_in_list=CONFIG["processing"]["add_folder_files_not_in_list"],
             # DB cursor
             cur=cur,
             conn=conn,
@@ -121,29 +102,17 @@ def main_list_process() -> None:
 
         # Step 3: Calculate durations
         all_processing_end: float = time.time()
-        total_processing_time: float = (
-            all_processing_end - all_processing_start
-        )
-        total_processing_duration = str(
-            timedelta(milliseconds=int(round(total_processing_time, 3) * 1000))
-        )
+        total_processing_time: float = all_processing_end - all_processing_start
+        total_processing_duration = str(timedelta(milliseconds=int(round(total_processing_time, 3) * 1000)))
 
         def ms_to_str(ms: float | None) -> str | None:
-            return (
-                str(timedelta(milliseconds=int(round(ms, 3) * 1000)))
-                if ms is not None
-                else None
-            )
+            return str(timedelta(milliseconds=int(round(ms, 3) * 1000))) if ms is not None else None
 
-        calculating_duration = ms_to_str(
-            processing_time.get("calculating_duration")
-        )
+        calculating_duration = ms_to_str(processing_time.get("calculating_duration"))
         download_duration = ms_to_str(processing_time.get("download_duration"))
         cut_duration = ms_to_str(processing_time.get("cut_duration"))
         lyrics_duration = ms_to_str(processing_time.get("lyrics_duration"))
-        thumbnail_duration = ms_to_str(
-            processing_time.get("thumbnail_duration")
-        )
+        thumbnail_duration = ms_to_str(processing_time.get("thumbnail_duration"))
         tag_duration = ms_to_str(processing_time.get("tag_duration"))
         album_duration = ms_to_str(processing_time.get("album_duration"))
         metadata_duration = ms_to_str(processing_time.get("metadata_duration"))
@@ -163,9 +132,7 @@ def main_list_process() -> None:
                 metadata_duration=metadata_duration,
                 cur=cur,
                 test_run=CONFIG["processing"]["test_run"],
-                remove_malformatted=CONFIG["processing"][
-                    "remove_malformatted"
-                ],
+                remove_malformatted=CONFIG["processing"]["remove_malformatted"],
                 force_mp3_presence=CONFIG["processing"]["force_mp3_presence"],
             )
 

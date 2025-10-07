@@ -70,10 +70,8 @@ def update_date_added(
     total_duration = str(timedelta(seconds=int(time.time() - start_time)))
     fprint(
         "[DONE]",
-        f"Updated {updated_ids}/{total_videos} videos "
-        + f"(failed: {errored_ids}) in {total_duration}",
+        f"Updated {updated_ids}/{total_videos} videos " + f"(failed: {errored_ids}) in {total_duration}",
     )
     logger.info(
-        f"Finished updating {updated_ids}/{total_videos} videos "
-        + f"(failed: {errored_ids}) in {total_duration}"
+        f"Finished updating {updated_ids}/{total_videos} videos " + f"(failed: {errored_ids}) in {total_duration}"
     )

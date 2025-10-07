@@ -95,18 +95,11 @@ def process_thumbnail_for_video(
             )
             fprint(
                 progress_prefix,
-                "[Remove thumbnail] Successfully removed thumbnail and "
-                + f"file for '{filepath}'",
+                "[Remove thumbnail] Successfully removed thumbnail and " + f"file for '{filepath}'",
             )
-            logger.info(
-                "[Remove thumbnail] Successfully removed thumbnail and "
-                + f"file for '{filepath}'"
-            )
+            logger.info("[Remove thumbnail] Successfully removed thumbnail and " + f"file for '{filepath}'")
         else:
-            logger.error(
-                "[Remove thumbnail] Error removing thumbnail and file for "
-                + f"'{filepath}'"
-            )
+            logger.error("[Remove thumbnail] Error removing thumbnail and file for " + f"'{filepath}'")
         return time.time() - start_processing
 
     # File exists
@@ -123,28 +116,19 @@ def process_thumbnail_for_video(
                 if not test_run:
                     with open(this_thumbnail_path, "wb") as f:
                         _ = f.write(embedded_bytes)
-                logger.info(
-                    "[Thumbnail] Extracted embedded cover to '{title}'"
-                )
+                logger.info("[Thumbnail] Extracted embedded cover to '{title}'")
             except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.warning(
-                    f"[Thumbnail] Failed to extract embedded cover: {e}"
-                )
+                logger.warning(f"[Thumbnail] Failed to extract embedded cover: {e}")
 
         # Case 1: No cover at all
         if embedded_bytes is None and not this_thumbnail_path.exists():
-            logger.debug(
-                f"[Thumbnail] No embedded or local cover for '{title}'"
-            )
+            logger.debug(f"[Thumbnail] No embedded or local cover for '{title}'")
 
             download_thumbnail = True
 
         # Case 2: Local file exists and update requested
         elif this_thumbnail_path.exists() and update_thumbnail:
-            logger.debug(
-                "[Thumbnail] Update requested: embedding thumbnail "
-                + f"for '{title}'"
-            )
+            logger.debug("[Thumbnail] Update requested: embedding thumbnail " + f"for '{title}'")
             embed_from_local_file = True
 
         # Case 3: Embedded image exists and no update needed
@@ -152,28 +136,18 @@ def process_thumbnail_for_video(
             if info:
                 fprint(
                     progress_prefix,
-                    "Embedded cover already exists - skipping update for "
-                    + f"'{title}'",
+                    "Embedded cover already exists - skipping update for " + f"'{title}'",
                 )
-            logger.debug(
-                "[Thumbnail] Embedded cover already exists - skipping "
-                + f"update for '{title}'"
-            )
+            logger.debug("[Thumbnail] Embedded cover already exists - skipping " + f"update for '{title}'")
 
         # Case 4: Local file exists but no embedded cover
         elif this_thumbnail_path.exists() and embedded_bytes is None:
-            logger.debug(
-                "[Thumbnail] Local file exists but no embedded cover - "
-                + "embedding now"
-            )
+            logger.debug("[Thumbnail] Local file exists but no embedded cover - " + "embedding now")
             embed_from_local_file = True
 
     # File missing
     else:
-        logger.error(
-            "[Thumbnail] Filepath doesn't exist -> cannot embed thumbnail: "
-            + f"'{filepath}'"
-        )
+        logger.error("[Thumbnail] Filepath doesn't exist -> cannot embed thumbnail: " + f"'{filepath}'")
 
     # Downloads or embed if requested
     if download_thumbnail or embed_from_local_file:
@@ -186,9 +160,7 @@ def process_thumbnail_for_video(
                         save_path=this_thumbnail_path,
                         thumbnail_format=thumbnail_format,
                     )
-                    logger.debug(
-                        f"[Thumbnail] Downloaded cover at '{thumbnail_url}'"
-                    )
+                    logger.debug(f"[Thumbnail] Downloaded cover at '{thumbnail_url}'")
                 if success:
                     embed_success: bool = embed_image_in_mp3(
                         mp3_path=filepath,
@@ -213,23 +185,13 @@ def process_thumbnail_for_video(
                                     }"
                                 + f"mbedded cover for '{title}'",
                             )
-                        logger.info(
-                            f"[Thumbnail] Embedded cover for '{title}'"
-                        )
+                        logger.info(f"[Thumbnail] Embedded cover for '{title}'")
 
                 else:
-                    logger.warning(
-                        "[Thumbnail] Failed to download from URL: "
-                        + f"'{thumbnail_url}'"
-                    )
+                    logger.warning("[Thumbnail] Failed to download from URL: " + f"'{thumbnail_url}'")
             except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error(
-                    "[Thumbnail] Exception during thumbnail download/embed: "
-                    + f"{e}"
-                )
+                logger.error("[Thumbnail] Exception during thumbnail download/embed: " + f"{e}")
         else:
-            logger.warning(
-                f"[Thumbnail] No thumbnail URL provided for '{title}'"
-            )
+            logger.warning(f"[Thumbnail] No thumbnail URL provided for '{title}'")
 
     return time.time() - start_processing

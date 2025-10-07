@@ -62,22 +62,14 @@ def embed_metadata_for_video(
     if update_date:
         success_date: bool = True
         if date:
-            success_date = write_id3_tag(
-                filepath=filepath, frame_id="TDRC", data=tm, test_run=test_run
-            )
+            success_date = write_id3_tag(filepath=filepath, frame_id="TDRC", data=tm, test_run=test_run)
             if not success_date:
                 if error:
-                    print(
-                        f"\n[Metadata] Failed to embed date '{tm}' for '{title}'"
-                    )
-                logger.warning(
-                    f"[Metadata] Failed to embed date '{tm}' for '{title}'"
-                )
+                    print(f"\n[Metadata] Failed to embed date '{tm}' for '{title}'")
+                logger.warning(f"[Metadata] Failed to embed date '{tm}' for '{title}'")
             else:
                 if info:
-                    fprint(
-                        progress_prefix, f"Embedded date '{tm}' for ?", title
-                    )
+                    fprint(progress_prefix, f"Embedded date '{tm}' for ?", title)
                 logger.info(f"[Metadata] Embedded date '{tm}' for '{title}'")
     else:
         fprint(progress_prefix, "No need to change date, skipping")
@@ -116,9 +108,7 @@ def embed_metadata_for_video(
         if not success_meta:
             if error:
                 print(f"\n[Metadata] Failed to embed metadata for '{title}'")
-            logger.warning(
-                f"[Metadata] Failed to embed metadata for '{title}'"
-            )
+            logger.warning(f"[Metadata] Failed to embed metadata for '{title}'")
         else:
             if info:
                 fprint(progress_prefix, "Embedded metadata for ?", title)

@@ -78,14 +78,10 @@ def compute_tag_set_from_file(
             match_found: bool
             if pattern_line.startswith("re:"):
                 regex: str = pattern_line[3:].strip()
-                match_found = bool(
-                    re.search(regex, title_norm)
-                    or re.search(regex, uploader_norm)
-                )
+                match_found = bool(re.search(regex, title_norm) or re.search(regex, uploader_norm))
             else:
                 match_found = bool(
-                    contains_whole_word(title_norm, pattern_line)
-                    or contains_whole_word(uploader_norm, pattern_line)
+                    contains_whole_word(title_norm, pattern_line) or contains_whole_word(uploader_norm, pattern_line)
                 )
 
             if match_found:
@@ -97,8 +93,7 @@ def compute_tag_set_from_file(
     if filename.startswith("notag_"):
         tag_name = filename[len("notag_") :]
         present: bool = bool(
-            matches_patterns(title_norm, set(patterns))
-            or matches_patterns(uploader_norm, set(patterns))
+            matches_patterns(title_norm, set(patterns)) or matches_patterns(uploader_norm, set(patterns))
         )
         return tag_name, not present  # add if not present
 

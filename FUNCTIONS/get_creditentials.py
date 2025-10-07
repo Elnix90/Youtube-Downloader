@@ -37,27 +37,19 @@ def get_authenticated_service(info: bool = True) -> Resource:
     creds: Credentials | None = None
 
     if TOKEN_FILE.exists():
-        creds = (Credentials.from_authorized_user_file(  # pyright: ignore[reportUnknownMemberType]
+        creds = Credentials.from_authorized_user_file(  # pyright: ignore[reportUnknownMemberType]
             filename=TOKEN_FILE, scopes=SCOPES
-        ))
+        )
 
     # Refresh or re-authenticate if needed
     if not creds or not creds.valid:
-        if (
-            creds
-            and creds.expired
-            and creds.refresh_token  # pyright: ignore[reportUnknownMemberType]
-        ):
+        if creds and creds.expired and creds.refresh_token:  # pyright: ignore[reportUnknownMemberType]
             try:
-                creds.refresh(  # pyright: ignore[reportUnknownMemberType]
-                    Request()
-                )
+                creds.refresh(Request())  # pyright: ignore[reportUnknownMemberType]
             except RefreshError:
                 if info:
                     print("[Get Credentials] Token expired, please reconnect")
-                logger.warning(
-                    "[Get Credentials] Token expired, please reconnect"
-                )
+                logger.warning("[Get Credentials] Token expired, please reconnect")
                 TOKEN_FILE.unlink(missing_ok=True)
                 flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                     CLIENT_SECRETS_FILE, SCOPES
@@ -69,9 +61,7 @@ def get_authenticated_service(info: bool = True) -> Resource:
             flow = InstalledAppFlow.from_client_secrets_file(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 CLIENT_SECRETS_FILE, SCOPES
             )
-            creds = flow.run_local_server(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-                port=0
-            )
+            creds = flow.run_local_server(port=0)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
         # Save refreshed credentials
         if creds:

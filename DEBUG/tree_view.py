@@ -47,9 +47,7 @@ def print_tree(root_dir: Path, prefix: str = ""):
         print(line)
 
         if path.is_dir():
-            print_tree(
-                path, prefix + ("│   " if i < len(entries) - 1 else "    ")
-            )
+            print_tree(path, prefix + ("│   " if i < len(entries) - 1 else "    "))
 
 
 # Run from current directory

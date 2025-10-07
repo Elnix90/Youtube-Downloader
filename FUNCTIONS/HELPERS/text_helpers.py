@@ -78,17 +78,10 @@ def load_patterns(file: Path) -> set[str]:
         patterns: set[str] = {
             sanitize_text(line.strip())
             for line in lines
-            if (
-                line.strip()
-                and not line.startswith("#")
-                and not line.startswith("re:")
-            )
+            if (line.strip() and not line.startswith("#") and not line.startswith("re:"))
         }
 
-        logger.verbose(
-            f"[Load Patterns] Loaded {len(patterns)} "
-            + f"patterns from '{file}'"
-        )
+        logger.verbose(f"[Load Patterns] Loaded {len(patterns)} " + f"patterns from '{file}'")
         return patterns
 
     except (OSError, UnicodeDecodeError, ValueError) as exc:

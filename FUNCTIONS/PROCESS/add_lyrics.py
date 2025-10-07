@@ -81,11 +81,7 @@ def process_lyrics_for_video(
     if remix_of:
         logger.info(f"[Lyrics] '{video_id}' is a remix of '{remix_of}'")
         remix_info = get_video_info_from_db(video_id=remix_of, cur=cur)
-        remix_lyrics = (
-            remix_info.get("subtitles")
-            or remix_info.get("syncedlyrics")
-            or remix_info.get("auto_subs")
-        )
+        remix_lyrics = remix_info.get("subtitles") or remix_info.get("syncedlyrics") or remix_info.get("auto_subs")
         orig_duration = remix_info.get("duration")
 
     # ---------------------------------------------------------------
@@ -124,9 +120,7 @@ def process_lyrics_for_video(
             lyrics = file_lyrics
             if info:
                 fprint(progress_prefix, "OK, no update needed for ?", title)
-            logger.info(
-                f"[Lyrics] OK, no update needed for '{lyrics_path.name}'"
-            )
+            logger.info(f"[Lyrics] OK, no update needed for '{lyrics_path.name}'")
 
         # --- Attempt to fetch lyrics ---
         elif try_lyrics_if_not or recompute_lyrics:
@@ -232,14 +226,9 @@ def _embed_remix_lyrics(
                     f"Lyrics from remix '{remix_of}' for ?",
                     title,
                 )
-            logger.info(
-                f"[Lyrics] Embedded remix lyrics from '{remix_of}' "
-                + f"into '{title}'"
-            )
+            logger.info(f"[Lyrics] Embedded remix lyrics from '{remix_of}' " + f"into '{title}'")
         else:
-            _log_error(
-                f"Failed to write remix lyrics for '{title}'", error=error
-            )
+            _log_error(f"Failed to write remix lyrics for '{title}'", error=error)
     except OSError as exc:
         _log_error(f"OS error embedding remix lyrics: {exc}", error=error)
 
@@ -342,9 +331,7 @@ def _remove_lyrics_from_file(
         else:
             _log_error(f"Failed to remove lyrics for '{title}'", error=error)
     except OSError as exc:
-        _log_error(
-            f"OS error removing lyrics from '{video_id}': {exc}", error=error
-        )
+        _log_error(f"OS error removing lyrics from '{video_id}': {exc}", error=error)
 
 
 def _log_error(msg: str, *, error: bool) -> None:

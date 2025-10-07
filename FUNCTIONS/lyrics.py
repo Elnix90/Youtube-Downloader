@@ -31,15 +31,11 @@ def embed_lyrics_into_mp3(
                 lyrics=lyrics,
                 skips=skips,
                 file_duration=float(file_duration) if file_duration else 0.0,
-                original_duration=(
-                    float(original_duration) if original_duration else None
-                ),
+                original_duration=(float(original_duration) if original_duration else None),
             )
 
         except Exception as e:
-            logger.error(
-                f"[Embed lyrics] Failed to sanitize/adjust lyrics: {e}"
-            )
+            logger.error(f"[Embed lyrics] Failed to sanitize/adjust lyrics: {e}")
             # fallback to raw lyrics
             lrc_text = lyrics
 
@@ -50,38 +46,28 @@ def embed_lyrics_into_mp3(
             lrc_path.parent.mkdir(parents=True, exist_ok=True)
             with open(lrc_path, "w", encoding="utf-8") as f:
                 _ = f.write(lrc_text)
-        logger.info(
-            f"[Embed lyrics] Wrote lyrics file '{lrc_path.name}' for '{filepath.name}'"
-        )
+        logger.info(f"[Embed lyrics] Wrote lyrics file '{lrc_path.name}' for '{filepath.name}'")
         return True, lrc_text
     except Exception as e:
-        logger.error(
-            f"[Embed lyrics] Failed to write LRC file for '{filepath}': {e}"
-        )
+        logger.error(f"[Embed lyrics] Failed to write LRC file for '{filepath}': {e}")
         return False, ""
 
 
-def remove_lyrics_from_mp3(
-    filepath: Path, error: bool, test_run: bool
-) -> bool:
+def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
     """
     Remove the corresponding .lrc file (if present). Keep the same signature for compatibility.
     """
     try:
         lrc_path = lyrics_lrc_path_for_mp3(filepath)
         if not lrc_path.exists():
-            logger.debug(
-                f"[Remove lyrics] No .lrc file to remove at '{lrc_path}'"
-            )
+            logger.debug(f"[Remove lyrics] No .lrc file to remove at '{lrc_path}'")
             return True
         if not test_run:
             lrc_path.unlink()
         logger.info(f"[Remove lyrics] Removed lyrics file '{lrc_path}'")
         return True
     except Exception as e:
-        logger.error(
-            f"[Remove lyrics] Failed to remove .lrc for '{filepath}': {e}"
-        )
+        logger.error(f"[Remove lyrics] Failed to remove .lrc for '{filepath}': {e}")
         if error:
             print(f"\nError removing lyrics file for {filepath}: {e}")
         return False
@@ -99,35 +85,23 @@ def has_lyrics(mp3_path: Path) -> str | None:
         try:
             txt = lrc_path.read_text(encoding="utf-8")
             if txt and txt.strip():
-                logger.debug(
-                    f"[Lyrics Check] .lrc lyrics found for '{mp3_path.name}'"
-                )
+                logger.debug(f"[Lyrics Check] .lrc lyrics found for '{mp3_path.name}'")
                 return txt
-            logger.warning(
-                f"[Lyrics Check] .lrc file empty for '{mp3_path.name}'"
-            )
+            logger.warning(f"[Lyrics Check] .lrc file empty for '{mp3_path.name}'")
             return None
         except Exception as e:
-            logger.error(
-                f"[Lyrics Check] Error reading .lrc file for '{mp3_path.name}': {e}"
-            )
+            logger.error(f"[Lyrics Check] Error reading .lrc file for '{mp3_path.name}': {e}")
             return None
     except Exception as e:
-        logger.error(
-            f"[Lyrics Check] Error checking lyrics for '{mp3_path.name}': {e}"
-        )
+        logger.error(f"[Lyrics Check] Error checking lyrics for '{mp3_path.name}': {e}")
         return None
 
 
 logger = setup_logger(__name__)
 
 # ---------- Helpers for timestamps ----------
-_ts_lrc_re = re.compile(
-    r'\[(\d{1,2}:\d{2}(?:\.\d{1,3})?)\]'
-)  # [mm:ss.xx] or [h:mm:ss.xx]
-_srt_time_re = re.compile(
-    r'\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[.,]\d{3}'
-)
+_ts_lrc_re = re.compile(r'\[(\d{1,2}:\d{2}(?:\.\d{1,3})?)\]')  # [mm:ss.xx] or [h:mm:ss.xx]
+_srt_time_re = re.compile(r'\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[.,]\d{3}')
 _vtt_re = re.compile(r'^\s*WEBVTT', re.IGNORECASE | re.MULTILINE)
 
 
@@ -171,11 +145,7 @@ def is_synchronized_lyrics(text: str) -> bool:
         return False
 
     # Case 1: LRC, SRT, VTT
-    if (
-        _ts_lrc_re.search(text)
-        or _srt_time_re.search(text)
-        or _vtt_re.search(text)
-    ):
+    if _ts_lrc_re.search(text) or _srt_time_re.search(text) or _vtt_re.search(text):
         logger.debug("[Lyrics Detection] Text is synchronized (LRC/SRT/VTT)")
         return True
 
@@ -183,14 +153,10 @@ def is_synchronized_lyrics(text: str) -> bool:
     try:
         maybe = json.loads(text)  # pyright: ignore[reportAny]
         if isinstance(maybe, list) and all(
-            isinstance(item, (list, tuple))
-            and len(item)  # pyright: ignore[reportUnknownArgumentType]
-            in (2, 3)
+            isinstance(item, (list, tuple)) and len(item) in (2, 3)  # pyright: ignore[reportUnknownArgumentType]
             for item in maybe  # pyright: ignore[reportUnknownVariableType]
         ):
-            logger.debug(
-                "[Lyrics Detection] Text is synchronized (JSON triplets)"
-            )
+            logger.debug("[Lyrics Detection] Text is synchronized (JSON triplets)")
             return True
     except Exception:
         pass
@@ -225,9 +191,7 @@ def compose_lrc(entries: list[tuple[float, str]], centis: int = 2) -> str:
 
 
 # ---------- 4. Shift timestamps ----------
-def shift_lrc_timestamps(
-    lyrics: str, offset_seconds: float, drop_before_zero: bool = True
-) -> str:
+def shift_lrc_timestamps(lyrics: str, offset_seconds: float, drop_before_zero: bool = True) -> str:
     entries = parse_lrc(lyrics)
     shifted: list[tuple[float, str]] = []
     for t, txt in entries:
@@ -235,16 +199,12 @@ def shift_lrc_timestamps(
         if new_t < 0 and drop_before_zero:
             continue
         shifted.append((max(0.0, new_t), txt))
-    logger.debug(
-        f"[Shift LRC] Shifted {len(shifted)} lines by {offset_seconds}s"
-    )
+    logger.debug(f"[Shift LRC] Shifted {len(shifted)} lines by {offset_seconds}s")
     return compose_lrc(shifted)
 
 
 # ---------- 5. Apply removed segments (shift timestamps) ----------
-def apply_removed_segments_to_lrc(
-    lyrics: str, removed_segments: list[tuple[float, float]]
-) -> str:
+def apply_removed_segments_to_lrc(lyrics: str, removed_segments: list[tuple[float, float]]) -> str:
     if not removed_segments:
         logger.debug("[Apply Skips] No segments to apply")
         return lyrics
@@ -266,9 +226,7 @@ def apply_removed_segments_to_lrc(
             continue
         mapped.append((t - shift, txt))
 
-    logger.debug(
-        f"[Apply Skips] Shifted {len(mapped)} lines after applying {len(segments)} segments"
-    )
+    logger.debug(f"[Apply Skips] Shifted {len(mapped)} lines after applying {len(segments)} segments")
     return compose_lrc(mapped)
 
 
@@ -291,9 +249,7 @@ def sanitize_lyrics_to_lrc(
         return ""
 
     if not is_synchronized_lyrics(lyrics):
-        logger.info(
-            "[Sanitize Lyrics] Lyrics are not synchronized, returning original"
-        )
+        logger.info("[Sanitize Lyrics] Lyrics are not synchronized, returning original")
         return lyrics
 
     # Parse JSON, LRC, or SRT/VTT
@@ -303,42 +259,20 @@ def sanitize_lyrics_to_lrc(
         maybe = json.loads(lyrics)  # pyright: ignore[reportAny]
         if isinstance(maybe, list):
             for item in maybe:  # pyright: ignore[reportUnknownVariableType]
-                if isinstance(item, (list, tuple)) and len(
-                    item  # pyright: ignore[reportUnknownArgumentType]
-                ) in (
+                if isinstance(item, (list, tuple)) and len(item) in (  # pyright: ignore[reportUnknownArgumentType]
                     2,
                     3,
                 ):
-                    s = float(
-                        item[0]  # pyright: ignore[reportUnknownArgumentType]
-                    )
+                    s = float(item[0])  # pyright: ignore[reportUnknownArgumentType]
                     e = (
-                        float(
-                            item[
-                                1
-                            ]  # pyright: ignore[reportUnknownArgumentType]
-                        )
-                        if len(
-                            item  # pyright: ignore[reportUnknownArgumentType]
-                        )
-                        == 3
+                        float(item[1])  # pyright: ignore[reportUnknownArgumentType]
+                        if len(item) == 3  # pyright: ignore[reportUnknownArgumentType]
                         else file_duration
                     )
                     t = (
-                        str(
-                            item[
-                                2
-                            ]  # pyright: ignore[reportUnknownArgumentType]
-                        )
-                        if len(
-                            item  # pyright: ignore[reportUnknownArgumentType]
-                        )
-                        == 3
-                        else str(
-                            item[
-                                1
-                            ]  # pyright: ignore[reportUnknownArgumentType]
-                        )
+                        str(item[2])  # pyright: ignore[reportUnknownArgumentType]
+                        if len(item) == 3  # pyright: ignore[reportUnknownArgumentType]
+                        else str(item[1])  # pyright: ignore[reportUnknownArgumentType]
                     )
                     parsed_triplets.append((s, e, t))
     except Exception:
@@ -348,11 +282,7 @@ def sanitize_lyrics_to_lrc(
         # Fallback: LRC parsing
         pairs = parse_lrc(lyrics)
         for i, (start, txt) in enumerate(pairs):
-            end = (
-                pairs[i + 1][0]
-                if i + 1 < len(pairs)
-                else file_duration or start + 5.0
-            )
+            end = pairs[i + 1][0] if i + 1 < len(pairs) else file_duration or start + 5.0
             parsed_triplets.append((start, end, txt))
 
     parsed_triplets.sort(key=lambda x: x[0])
@@ -374,31 +304,20 @@ def sanitize_lyrics_to_lrc(
                 continue
             mapped.append((s - shift, e - shift, txt))
         parsed_triplets = mapped
-        logger.debug(
-            f"[Sanitize Lyrics] Applied skips, {len(parsed_triplets)} lines remain"
-        )
+        logger.debug(f"[Sanitize Lyrics] Applied skips, {len(parsed_triplets)} lines remain")
 
     # Apply tempo scaling
     if original_duration and original_duration > 0:
-        total_removed = (
-            sum(max(0.0, e - s) for s, e in skips) if skips else 0.0
-        )
+        total_removed = sum(max(0.0, e - s) for s, e in skips) if skips else 0.0
         expected_after = original_duration - total_removed
         if expected_after > 0:
             scale = file_duration / expected_after
             if abs(scale - 1.0) > 0.001:
-                parsed_triplets = [
-                    (s * scale, e * scale, txt)
-                    for s, e, txt in parsed_triplets
-                ]
-                logger.debug(
-                    f"[Sanitize Lyrics] Applied tempo scaling factor {scale}"
-                )
+                parsed_triplets = [(s * scale, e * scale, txt) for s, e, txt in parsed_triplets]
+                logger.debug(f"[Sanitize Lyrics] Applied tempo scaling factor {scale}")
 
     # Final LRC lines (start time + text)
-    final_entries: list[tuple[float, str]] = [
-        (max(0.0, s), txt) for s, _, txt in parsed_triplets
-    ]
+    final_entries: list[tuple[float, str]] = [(max(0.0, s), txt) for s, _, txt in parsed_triplets]
     final_entries.sort(key=lambda x: x[0])
 
     # Deduplicate
@@ -411,7 +330,5 @@ def sanitize_lyrics_to_lrc(
         last = item
 
     lrc_text = compose_lrc(cleaned, centis=2)
-    logger.info(
-        f"[Sanitize Lyrics] Final LRC composed with {len(cleaned)} lines"
-    )
+    logger.info(f"[Sanitize Lyrics] Final LRC composed with {len(cleaned)} lines")
     return lrc_text

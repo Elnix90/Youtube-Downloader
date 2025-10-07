@@ -10,9 +10,7 @@ from FUNCTIONS.metadata import read_id3_tag, write_id3_tag
 logger = setup_logger(__name__)
 
 
-def extract_tags_from_str(
-    text: str, sep: str, start_def: str, end_def: str, tag_sep: str
-) -> tuple[str, set[str]]:
+def extract_tags_from_str(text: str, sep: str, start_def: str, end_def: str, tag_sep: str) -> tuple[str, set[str]]:
     """
     Extract tags and base text from a given string if they are embedded in the
     form (with default parameters, if you change them the form changes too):
@@ -34,11 +32,7 @@ def extract_tags_from_str(
         start = sep_pos + len(sep + start_def)
         end = len(text) - len(end_def)
         tags_part = text[start:end]
-        tags = {
-            tag.strip().lower()
-            for tag in tags_part.split(tag_sep)
-            if tag.strip()
-        }
+        tags = {tag.strip().lower() for tag in tags_part.split(tag_sep) if tag.strip()}
         return base_text, tags
 
     return text, set()
@@ -74,12 +68,8 @@ def put_tags_in_str(
 
     if tags:
         # Ensure tags are lowercase, unique, and sorted for consistency
-        clean_tags = sorted(
-            {tag.lower().strip() for tag in tags if tag.strip()}
-        )
-        return (
-            f"{base_text}{sep}{start_def}{tag_sep.join(clean_tags)}{end_def}"
-        )
+        clean_tags = sorted({tag.lower().strip() for tag in tags if tag.strip()})
+        return f"{base_text}{sep}{start_def}{tag_sep.join(clean_tags)}{end_def}"
 
     return base_text
 
@@ -129,28 +119,18 @@ def set_tags(
                     test_run=test_run,
                 )
                 if sucess:
-                    logger.info(
-                        f"[Set Tags] Sucessfully set {len(tags)} tags into '{filepath}'"
-                    )
+                    logger.info(f"[Set Tags] Sucessfully set {len(tags)} tags into '{filepath}'")
                     return True
-                logger.error(
-                    f"[Set Tags] Error writing {len(tags)} tags into '{filepath}'"
-                )
+                logger.error(f"[Set Tags] Error writing {len(tags)} tags into '{filepath}'")
                 return False
             else:
-                logger.info(
-                    f"[Set Tags] Tags already present are the same, did nothing in '{filepath}'"
-                )
+                logger.info(f"[Set Tags] Tags already present are the same, did nothing in '{filepath}'")
                 return True
         else:
-            logger.error(
-                f"[Set Tags] Exeption during getting tags, did not try to set them in '{filepath}'"
-            )
+            logger.error(f"[Set Tags] Exeption during getting tags, did not try to set them in '{filepath}'")
             return False
     else:
-        logger.error(
-            f"[Set Tags] Filepath provided doesn't exists: '{filepath}'"
-        )
+        logger.error(f"[Set Tags] Filepath provided doesn't exists: '{filepath}'")
         return False
 
 
@@ -163,14 +143,10 @@ def set_album(filepath: Path, album: str, test_run: bool = False) -> bool:
         logger.error(f"[set Album] Filepath doesn't exist: '{filepath}'")
         return False
 
-    success = write_id3_tag(
-        filepath=filepath, frame_id="TALB", data=album, test_run=test_run
-    )
+    success = write_id3_tag(filepath=filepath, frame_id="TALB", data=album, test_run=test_run)
     if success:
         logger.verbose(f"[set Album] Album set to '{album}' for '{filepath}'")
         return True
     else:
-        logger.error(
-            f"[set Album] Failed to set album '{album}' for '{filepath}'"
-        )
+        logger.error(f"[set Album] Failed to set album '{album}' for '{filepath}'")
         return False

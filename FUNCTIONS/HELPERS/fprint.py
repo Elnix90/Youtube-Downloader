@@ -39,10 +39,7 @@ def fprint(
 
             sanitized_title = sanitized_title.replace("?", s_text, 1)
         else:
-            logger.warning(
-                "[fprint] '?' wasn't found in sanitised title "
-                + f"'{sanitized_title}' for value '{value}'"
-            )
+            logger.warning("[fprint] '?' wasn't found in sanitised title " + f"'{sanitized_title}' for value '{value}'")
 
     if len(sanitized_title) > max_len:
         sanitized_title = sanitized_title[: max_len - 1] + "…"
@@ -51,10 +48,7 @@ def fprint(
         space_nb = max_len - len(sanitized_title)
 
     print(
-        f"{'\r\033[K' if overwrite else ''}"
-        + f"{prefix}"
-        + f"{sanitized_title}"
-        + f"{' ' * space_nb}",
+        f"{'\r\033[K' if overwrite else ''}" + f"{prefix}" + f"{sanitized_title}" + f"{' ' * space_nb}",
         end="" if overwrite or OVERLAP_FPRINT else "\n",
         flush=flush,
     )
