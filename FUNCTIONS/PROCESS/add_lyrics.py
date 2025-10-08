@@ -12,7 +12,7 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from CONSTANTS import MAX_LYRICS_RETRIES
-from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
+from FUNCTIONS.extract_lyrics import extract_lyrics_from_ytmusicapi, get_lyrics_from_syncedlyrics
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import VideoInfo
 from FUNCTIONS.HELPERS.logger import setup_logger
@@ -125,6 +125,7 @@ def process_lyrics_for_video(
         # --- Attempt to fetch lyrics ---
         elif try_lyrics_if_not or recompute_lyrics:
             lyrics = _try_fetch_lyrics(
+                video_id=video_id,
                 title=title,
                 uploader=uploader,
                 subtitles=subtitles,
@@ -235,6 +236,7 @@ def _embed_remix_lyrics(
 
 def _try_fetch_lyrics(
     *,
+    video_id: str,
     title: str,
     uploader: str,
     subtitles: str | None,
@@ -244,11 +246,19 @@ def _try_fetch_lyrics(
     info: bool,
     progress_prefix: str,
     update_fields: VideoInfo,
+
 ) -> str | None:
     """Fetch lyrics from available sources."""
     lyrics = file_lyrics if file_lyrics and not recompute else None
     if lyrics:
         return lyrics
+
+    # Still in dev, to find a way to provide synced lyrics
+    # yt_lyrics = extract_lyrics_from_ytmusicapi(video_id)
+    # if yt_lyrics:
+    #     logger.info(f"[Lyrics] Found lyrics via YTMusic for '{title}'")
+    #     update_fields["lyrics"] = yt_lyrics
+    #     return yt_lyrics
 
     if subtitles:
         return subtitles

@@ -76,18 +76,12 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> tuple[str
 
 
 class LyricLine(TypedDict, total=False):
-    """
-    Type safe definition of the syncronised lyrics returned by ytmusicapi
-    """
-
+    """Type safe definition of a single synchronised lyric line."""
     text: str
 
 
 class LyricsResponse(TypedDict, total=False):
-    """
-    Type safe definition of the lyrics returned by ytmusicapi
-    """
-
+    """Type safe definition of the lyrics returned by ytmusicapi."""
     lyrics: str | list[LyricLine]
 
 
@@ -104,32 +98,38 @@ def extract_lyrics_from_ytmusicapi(video_id: str) -> str | None:
     ytmusic = YTMusic()  # unauthenticated for public access
 
     try:
+        # Step 1: get watch playlist metadata
+        watch_data = ytmusic.get_watch_playlist(video_id)
 
-        # Get lyrics metadata using get_lyrics (expects a string browseId)
-        # YTMusic.get_lyrics() typically accepts the same video_id
-        lyrics_raw = ytmusic.get_lyrics(video_id)
-        if not isinstance(lyrics_raw, dict):
-            logger.warning(f"No lyrics found or invalid response for {video_id}")
+        # Step 2: extract lyrics browseId (ensure it's a string)
+        raw_browse = watch_data.get("lyrics") or watch_data.get("lyricsBrowseId")
+        lyrics_browse_id = raw_browse if isinstance(raw_browse, str) else None
+
+        if not lyrics_browse_id:
+            logger.info(f"[Lyrics] No lyrics browseId found for {video_id}")
             return None
 
+        # Step 3: fetch lyrics via browseId
+        lyrics_raw = ytmusic.get_lyrics(lyrics_browse_id)
+
+        # Safely cast
         lyrics_data = cast(LyricsResponse, cast(object, lyrics_raw))
         lyrics_field = lyrics_data.get("lyrics")
 
+        # Handle both string and list forms
         if isinstance(lyrics_field, str):
-            return lyrics_field.strip()
+            return lyrics_field.strip() or None
 
         if isinstance(lyrics_field, list):
-            return (
-                "\n".join(
-                    line.get("text", "")
-                    for line in lyrics_field
-                    if isinstance(line, dict)  # pyright: ignore[reportUnnecessaryIsInstance]
-                ).strip()
-                or None
-            )
+            text = "\n".join(
+                line.get("text", "")
+                for line in lyrics_field
+                if isinstance(line, dict)  # pyright: ignore[reportUnnecessaryIsInstance]
+            ).strip()
+            return text or None
 
         return None
 
-    except (KeyError, TypeError, ValueError) as exc:
-        logger.warning(f"Failed to extract lyrics for {video_id}: {exc}")
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning(f"[Lyrics] Failed to extract lyrics for {video_id}: {exc}")
         return None
