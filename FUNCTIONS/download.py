@@ -447,8 +447,8 @@ def download_video(
 
     # Extracts youtube video's infos if the already present isn't enough
 
-    data: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)
-    state: Literal[0, 1, 2, 3] = data.get("status", 0)
+    data = get_video_info_from_db(video_id=video_id, cur=cur)
+    state = data.get("status", 0)
 
     if state == 1 and not retry_unavailable:
         fprint(

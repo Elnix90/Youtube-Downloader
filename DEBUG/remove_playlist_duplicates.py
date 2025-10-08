@@ -1,3 +1,6 @@
+"""
+Take a playlist and compare it to your liked music, removes the duplicates videos
+"""
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
@@ -7,7 +10,6 @@ from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.HELPERS.types_playlist import PlaylistVideoEntry
 
 logger = setup_logger(__name__)
 
@@ -26,11 +28,10 @@ def remove_duplicate_videos_from_playlist(
     # 1. Ensure we have up-to-date playlist data
     fetch_playlist_videos(
         playlist_id=playlist_id,
-        file=playlist_video_file,
+        file_path=playlist_video_file,
         test_run=test_run,
         clean=clean,
-        info=info,
-        error=error,
+        info=info
     )
 
     # 2. Load playlist entries
@@ -38,11 +39,10 @@ def remove_duplicate_videos_from_playlist(
 
     # 3. Build mapping video_id -> list[item_id]
     video_id_to_items: dict[str, list[str]] = {}
-    for entry in playlist_entries:
-        video_id = entry.video_id
-        item_id = entry.playlist_item_id
-        if video_id and item_id:  # skip entries missing essential data
-            video_id_to_items.setdefault(video_id, []).append(item_id)
+    for video_id, data in playlist_entries.items():
+        item_id = data.get("playlist_item_id")
+        if item_id:  # skip entries missing essential data
+            video_id_to_items[video_id].append(item_id)
 
     # 4. Detect duplicates (more than one item_id per video_id)
     duplicates: dict[str, list[str]] = {vid: ids for vid, ids in video_id_to_items.items() if len(ids) > 1}

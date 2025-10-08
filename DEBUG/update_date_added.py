@@ -36,7 +36,7 @@ def update_date_added(
 
     start_time = time.time()
 
-    for index, video_id in enumerate(video_ids, start=1):
+    for index, video_id in enumerate(video_ids.keys()):
         try:
             _ = cur.execute(
                 """
@@ -44,7 +44,7 @@ def update_date_added(
                 SET date_added = ?
                 WHERE video_id = ?
                 """,
-                (time.time(), video_id.video_id),
+                (time.time(), video_id),
             )
             updated_ids += 1
         except sqlite3.OperationalError:

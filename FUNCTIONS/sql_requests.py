@@ -59,6 +59,9 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
         duration INTEGER CHECK(duration >= 0),
         duration_string TEXT,
 
+        playlist_id TEXT,
+        playlist_item_id TEXT,
+
         removed_segments_int INT,
         removed_segments_duration REAL,
 
@@ -105,6 +108,27 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
     """
     )
     logger.debug("[Init DB] Initialized removed_segments")
+
+    # _ = cur.execute(
+    #     """
+    # CREATE TABLE IF NOT EXISTS playlists (
+    #     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    #     playlist_id TEXT
+    # )
+    # """
+    # )
+    # logger.debug("[Init DB] Initialized playlists")
+
+    # _ = cur.execute(
+    #     """
+    # CREATE TABLE IF NOT EXISTS playlists_videos (
+    #     video_id TEXT NOT NULL,
+    #     playlist_id INTEGER,
+    #     FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
+    # )
+    # """
+    # )
+    # logger.debug("[Init DB] Initialized playlists_videos")
 
     _ = cur.execute(
         """
@@ -244,7 +268,7 @@ def remove_video(
         logger.info("[Remove DB] Test_run wan enabled, didn't removed anything")
 
 
-def get_videos_in_list(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str]:
+def get_videos_in_db(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str]:
     if include_not_status0:
         _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
     else:

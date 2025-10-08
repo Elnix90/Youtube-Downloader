@@ -119,8 +119,11 @@ class VideoInfo(TypedDict, total=False):
 
 VideoInfoKey = Literal[
     "position",
+    "playlist_item_id",
+    "playlist_id",
     "video_id",
     "title",
+    "thumbnails",
     "thumbnail_url",
     "description",
     "channel_id",
@@ -135,6 +138,7 @@ VideoInfoKey = Literal[
     "upload_date",
     "duration",
     "duration_string",
+    "privacy_status",
     "removed_segments_int",
     "removed_segments_duration",
     "skips",
