@@ -5,6 +5,7 @@ used all across the project
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -422,3 +423,8 @@ def normalize_skips(info: VideoInfo) -> VideoInfo:
         info["skips"] = list(info["skips"])
         # info["skips"] = [(x, y) for x, y in info["skips"]]
     return info
+
+
+def now_unix() -> float:
+    """Return current Unix timestamp as float for SQLite."""
+    return time.time()

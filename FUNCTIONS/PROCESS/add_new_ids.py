@@ -1,23 +1,11 @@
-"""
-Module to load new video IDs from a JSON file and add or update entries in
-the SQLite database. Handles merging playlist info with existing database
-entries, optionally adding files not in the playlist, and updating incomplete
-database records.
-"""
-
 from __future__ import annotations
 
-from dataclasses import asdict
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
-from FUNCTIONS.HELPERS.helpers import (
-    VideoInfo,
-    VideoInfoMap,
-    youtube_required_info,
-)
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap, youtube_required_info
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.sql_requests import (
     get_video_info_from_db,
@@ -42,94 +30,85 @@ def add_new_ids_to_database(
 ) -> None:
     """
     Load video data from a JSON file and add or update entries in the database.
-
-    Args:
-        video_id_file: Path to JSON file containing video IDs.
-        ids_present_in_down_dir: videoInfoMap already present in download dir.
-        add_folder_files_not_in_list: Include files not in playlist when True.
-        include_not_status0: Include videos not having status=0 when True.
-        test_run: If True, do not commit DB changes.
-        info: Print info messages if True.
-        errors: Print error messages if True.
-        cur: SQLite cursor object.
-        conn: SQLite connection object.
     """
-    # Fetch current video IDs from DB
-    existing_video_ids: list[str] = get_videos_in_db(include_not_status0=True, cur=cur)
 
     try:
         playlist_entries = load(video_id_file)
-
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error(f"[Adding IDs] Error loading '{video_id_file}': {e}")
+        msg = f"[Adding IDs] Error loading '{video_id_file}': {e}"
+        logger.error(msg)
         if errors:
-            print(f"[Adding IDs] Error loading '{video_id_file}': {e}")
+            print(msg)
         return
 
-    # Extract video IDs from the playlist
+    existing_video_ids = get_videos_in_db(include_not_status0=True, cur=cur)
     file_video_ids = list(playlist_entries.keys())
 
-    # Determine which videos to add/update
+    # Determine which video IDs to process
     if add_folder_files_not_in_list:
         to_add = file_video_ids.copy()
-        for video_id in existing_video_ids:
-            if video_id not in to_add:
-                to_add.insert(0, video_id)
+        for vid in existing_video_ids:
+            if vid not in to_add:
+                to_add.insert(0, vid)
     else:
         to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
 
-    correct_ids = added_ids = updated_ids = 0
+    added_ids = updated_ids = correct_ids = 0
 
     for video_id in to_add:
         try:
-            # Fetch info from download directory
+            # Video data from local directory (downloaded files)
             video_data = ids_present_in_down_dir.get(video_id, {})
-            status: int = video_data.get("status", 3)
+            status = video_data.get("status", 3)
 
-            # Find matching playlist entry
-            entry = next((e for e in playlist_entries if e.video_id == video_id), None)
+            # Playlist info from the JSON file (fresh metadata)
+            playlist_info: VideoInfo | None = playlist_entries.get(video_id)
 
-            if entry:
-                # Merge JSON dataclass info
-                entry_dict = asdict(entry)
-                for key in entry_dict:
-                    if key in VideoInfo.__annotations__:
-                        video_data[key] = entry_dict[key]
+            # Merge if both exist
+            if playlist_info:
+                for key, value in playlist_info.items():
+                    if key in VideoInfo.__annotations__ and value is not None:
+                        video_data[key] = value
+                logger.debug(f"[Merge] Merged playlist info into {video_id}")
 
-                logger.debug(f"[Merge] Updated video_data for {video_id} from playlist")
-
-            # Insert new video
+            # Insert new entry if not already in DB
             if video_id not in existing_video_ids:
                 if include_not_status0 or status != 3:
                     video_data["video_id"] = video_id
                     insert_video_db(video_data, cur, conn, test_run)
                     added_ids += 1
             else:
-                # Update incomplete DB info
+                # Possibly update existing DB entry if missing info
                 db_data = get_video_info_from_db(video_id=video_id, cur=cur)
-                if not all(key in db_data and db_data[key] is not None for key in youtube_required_info):
-                    if all(key in video_data and video_data[key] is not None for key in youtube_required_info):
+                db_missing_fields = [k for k in youtube_required_info if not db_data.get(k)]
+
+                if db_missing_fields:
+                    has_enough_data = all(
+                        key in video_data and video_data[key] is not None for key in youtube_required_info
+                    )
+                    if has_enough_data:
                         update_video_db(video_id, video_data, cur, conn, test_run)
                         updated_ids += 1
                 else:
                     correct_ids += 1
 
-            # Print progress
+            # Progress display
             if info:
                 fprint(
                     "",
-                    f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | {correct_ids} OK",
+                    f"[Adding IDs] Added {added_ids} | Updated {updated_ids} | {correct_ids} OK",
                 )
 
         except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.error(f"[Adding IDs] Failed for '{video_id}': {e}")
+            msg = f"[Adding IDs] Failed for '{video_id}': {e}"
+            logger.error(msg)
             if errors:
-                print(f"[Adding IDs] Failed for '{video_id}': {e}")
+                print(msg)
 
     if not test_run:
         conn.commit()
 
-    summary = f"[Adding IDs] Added {added_ids}," + f"Updated {updated_ids}, {correct_ids} already OK"
+    summary = f"[Adding IDs] Added {added_ids}" + f"Updated {updated_ids}" + f"{correct_ids} already OK"
     logger.info(summary)
     if info:
         print(summary)
