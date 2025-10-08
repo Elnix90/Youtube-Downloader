@@ -21,7 +21,7 @@ from FUNCTIONS.HELPERS.helpers import (
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.sql_requests import (
     get_video_info_from_db,
-    get_videos_in_list,
+    get_videos_in_db,
     insert_video_db,
     update_video_db,
 )
@@ -55,7 +55,7 @@ def add_new_ids_to_database(
         conn: SQLite connection object.
     """
     # Fetch current video IDs from DB
-    existing_video_ids: list[str] = get_videos_in_list(include_not_status0=True, cur=cur)
+    existing_video_ids: list[str] = get_videos_in_db(include_not_status0=True, cur=cur)
 
     try:
         playlist_entries = load(video_id_file)

@@ -22,33 +22,31 @@ def add_videos(playlist_id: str, clean: bool, test_run: bool, info: bool, error:
     Add the videos to the playlist given in entry
     """
 
-    liked_video_file = Path(JSON_DIR / f"liked_videos_{round(time.time(),2)}.json")
+    liked_video_file = Path(JSON_DIR / f"liked_videos_{round(time.time(), 2)}.json")
     playlist_video_file = Path(JSON_DIR / f"videos_{playlist_id}.json")
 
     if clean or not (playlist_video_file.exists() and liked_video_file.exists()):
         fetch_playlist_videos(
             playlist_id=playlist_id,
-            file=playlist_video_file,
+            file_path=playlist_video_file,
             test_run=test_run,
             clean=clean,
             info=info,
-            error=error,
         )
 
         fetch_playlist_videos(
             playlist_id="LL",
-            file=liked_video_file,
+            file_path=liked_video_file,
             test_run=test_run,
             clean=clean,
             info=info,
-            error=error,
         )
 
     playlist_items = load(playlist_video_file)
-    playlist_videos = set(entry.video_id for entry in playlist_items if entry.video_id)
+    playlist_videos = set(playlist_items.keys())
 
     liked_items = load(liked_video_file)
-    liked_videos = set(entry.video_id for entry in liked_items if entry.video_id)
+    liked_videos = set(liked_items.keys())
 
     videos_to_add = liked_videos - playlist_videos
 

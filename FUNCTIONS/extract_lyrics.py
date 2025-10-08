@@ -5,16 +5,16 @@ manual subtitles provided
 
 from __future__ import annotations
 
+import logging
 from typing import TypedDict, cast
 
-import logging
 import syncedlyrics
 from ytmusicapi import YTMusic
 
 from CONSTANTS import REMIX_PATTERNS_FILE, TRUSTED_ARTISTS_FILE
-from FUNCTIONS.clean_song_query import clean_song_query
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import (
+    clean_song_query,
     contains_whole_word,
     load_patterns,
     sanitize_text,

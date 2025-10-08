@@ -9,7 +9,7 @@ from sqlite3 import Connection, Cursor
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_list
+from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_db
 
 logger = setup_logger(__name__)
 
@@ -39,7 +39,7 @@ def remove_ids_not_in_list(
         test_run: If True, do not actually delete files or commit DB.
     """
     # Fetch current video IDs from DB
-    existing_video_ids = set(get_videos_in_list(include_not_status0=include_not_status0, cur=cur))
+    existing_video_ids = set(get_videos_in_db(include_not_status0=include_not_status0, cur=cur))
 
     try:
         playlist_entries = load(video_id_file)

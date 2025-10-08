@@ -26,7 +26,7 @@ from FUNCTIONS.PROCESS.remove_sponsorblock_segments import (
 )
 from FUNCTIONS.sql_requests import (
     get_video_info_from_db,
-    get_videos_in_list,
+    get_videos_in_db,
     init_db,
     update_video_db,
 )
@@ -110,7 +110,7 @@ def process_all(
             test_run=test_run,
         )
 
-    video_ids: list[str] = get_videos_in_list(include_not_status0, cur)
+    video_ids: list[str] = get_videos_in_db(include_not_status0, cur)
 
     avg_times: list[float] = []
     eta_str: str = 'N/A'
