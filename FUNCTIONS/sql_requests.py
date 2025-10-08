@@ -1,14 +1,9 @@
 import json
 import sqlite3
-import time
 from typing import Literal
 
 from CONSTANTS import DB_PATH
-from FUNCTIONS.HELPERS.helpers import (
-    VideoInfo,
-    VideoInfoKey,
-    remove_data_from_video_info,
-)
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, now_unix
 from FUNCTIONS.HELPERS.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -37,123 +32,185 @@ def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
     return conn
 
 
-def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection):
+def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
+    """
+    Initialize the SQLite database with all required tables and constraints.
+    Includes videos, playlists, many-to-many relationships, and tag support.
+    """
 
+    # ============================================================
+    #                       VIDEOS TABLE
+    # ============================================================
     _ = cur.execute(
         """
         CREATE TABLE IF NOT EXISTS videos (
-        video_id TEXT UNIQUE PRIMARY KEY,
-        title TEXT,
-        thumbnail_url TEXT,
-        description TEXT,
-        channel_id TEXT,
-        channel_url TEXT,
-        view_count INTEGER CHECK(view_count >= 0),
-        comment_count INTEGER CHECK(comment_count >= 0),
-        like_count INTEGER CHECK(like_count >= 0),
-        uploader TEXT,
-        channel_follower_count INTEGER CHECK (channel_follower_count >= 0),
-        uploader_id TEXT,
-        uploader_url TEXT,
-        upload_date TEXT,
-        duration INTEGER CHECK(duration >= 0),
-        duration_string TEXT,
+            -- Core identifiers
+            video_id TEXT PRIMARY KEY,
+            title TEXT,
+            description TEXT,
+            thumbnail_url TEXT,
 
-        playlist_id TEXT,
-        playlist_item_id TEXT,
+            -- Channel / uploader info
+            channel_id TEXT,
+            channel_url TEXT,
+            uploader TEXT,
+            uploader_id TEXT,
+            uploader_url TEXT,
+            channel_follower_count INTEGER CHECK(channel_follower_count >= 0),
 
-        removed_segments_int INT,
-        removed_segments_duration REAL,
+            -- YouTube statistics
+            view_count INTEGER CHECK(view_count >= 0),
+            comment_count INTEGER CHECK(comment_count >= 0),
+            like_count INTEGER CHECK(like_count >= 0),
 
-        lyrics TEXT,
-        subtitles TEXT,
-        syncedlyrics TEXT,
-        syncedlyrics_query TEXT,
-        auto_subs TEXT,
-        try_lyrics_if_not BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)) DEFAULT (1),
-        lyrics_retries INTEGER CHECK (lyrics_retries >= 0) DEFAULT (0),
+            -- Publication details
+            upload_date TEXT,
+            duration INTEGER CHECK(duration >= 0),
+            duration_string TEXT,
+            privacy_status TEXT,
 
-        update_thumbnail BOOLEAN NOT NULL CHECK (update_thumbnail IN (0,1)) DEFAULT (0),
-        remove_thumbnail BOOLEAN NOT NULL CHECK (remove_thumbnail IN (0,1)) DEFAULT (0),
-        remove_lyrics BOOLEAN NOT NULL CHECK (remove_lyrics IN (0,1)) DEFAULT (0),
+            -- SponsorBlock / skip summary
+            removed_segments_int INTEGER DEFAULT 0,
+            removed_segments_duration REAL DEFAULT 0.0,
 
-        recompute_tags BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)) DEFAULT (1),
-        recompute_album BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)) DEFAULT (1),
-        recompute_yt_info BOOLEAN NOT NULL CHECK (recompute_yt_info IN (0,1)) DEFAULT (0),
+            -- Lyrics / subtitle information
+            lyrics TEXT,
+            subtitles TEXT,
+            syncedlyrics TEXT,
+            syncedlyrics_query TEXT,
+            auto_subs TEXT,
+            try_lyrics_if_not BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)) DEFAULT 1,
+            lyrics_retries INTEGER CHECK (lyrics_retries >= 0) DEFAULT 0,
 
-        remix_of TEXT,
-        recompute_remix_of BOOLEAN NOT NULL CHECK (recompute_remix_of IN (0,1)) DEFAULT (1),
-        confidence REAL CHECK (confidence > 0 AND confidence < 1),
+            -- Maintenance / recomputation flags
+            update_thumbnail BOOLEAN NOT NULL CHECK (update_thumbnail IN (0,1)) DEFAULT 0,
+            remove_thumbnail BOOLEAN NOT NULL CHECK (remove_thumbnail IN (0,1)) DEFAULT 0,
+            remove_lyrics BOOLEAN NOT NULL CHECK (remove_lyrics IN (0,1)) DEFAULT 0,
+            recompute_tags BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)) DEFAULT 1,
+            recompute_album BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)) DEFAULT 1,
+            recompute_yt_info BOOLEAN NOT NULL CHECK (recompute_yt_info IN (0,1)) DEFAULT 0,
 
-        filename TEXT,
-        status INTEGER NOT NULL CHECK (status in (0,1,2,3)) DEFAULT (3),
-        reason TEXT,
+            -- Remix tracking
+            remix_of TEXT,
+            recompute_remix_of BOOLEAN NOT NULL CHECK (recompute_remix_of IN (0,1)) DEFAULT 1,
+            confidence REAL CHECK (confidence >= 0 AND confidence <= 1),
 
-        date_added REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0),
-        date_modified REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
+            -- Local file info
+            filename TEXT,
+            status INTEGER NOT NULL CHECK (status IN (0,1,2,3)) DEFAULT 3,
+            reason TEXT,
+
+            -- Timestamps
+            date_added REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0),
+            date_modified REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
+        );
+        """
     )
-    """
-    )
-    logger.debug("[Init DB] Initialized videos")
+    logger.debug("[Init DB] Initialized 'videos' table")
 
+    # ============================================================
+    #                       PLAYLISTS TABLE
+    # ============================================================
     _ = cur.execute(
         """
-    CREATE TABLE IF NOT EXISTS removed_segments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        video_id TEXT NOT NULL,
-        segment_start REAL NOT NULL,
-        segment_end REAL NOT NULL,
-        FOREIGN KEY(video_id) REFERENCES videos(video_id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS playlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            playlist_id TEXT UNIQUE NOT NULL,
+            title TEXT,
+            description TEXT,
+            channel_id TEXT,
+            date_added REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
+        );
+        """
     )
-    """
-    )
-    logger.debug("[Init DB] Initialized removed_segments")
+    logger.debug("[Init DB] Initialized 'playlists' table")
 
-    # _ = cur.execute(
-    #     """
-    # CREATE TABLE IF NOT EXISTS playlists (
-    #     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    #     playlist_id TEXT
-    # )
-    # """
-    # )
-    # logger.debug("[Init DB] Initialized playlists")
-
-    # _ = cur.execute(
-    #     """
-    # CREATE TABLE IF NOT EXISTS playlists_videos (
-    #     video_id TEXT NOT NULL,
-    #     playlist_id INTEGER,
-    #     FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
-    # )
-    # """
-    # )
-    # logger.debug("[Init DB] Initialized playlists_videos")
-
+    # ============================================================
+    #               PLAYLISTS - VIDEOS (RELATION)
+    # ============================================================
     _ = cur.execute(
         """
-    CREATE TABLE IF NOT EXISTS tags (
-        tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tag TEXT UNIQUE NOT NULL
-    )
-    """
-    )
-    logger.debug("[Init DB] Initialized tags")
+        CREATE TABLE IF NOT EXISTS playlist_videos (
+            playlist_id TEXT NOT NULL,
+            video_id TEXT NOT NULL,
+            playlist_item_id TEXT,
+            position INTEGER CHECK(position >= 0),
 
+            PRIMARY KEY (playlist_id, video_id),
+
+            FOREIGN KEY(playlist_id) REFERENCES playlists(playlist_id)
+                ON DELETE CASCADE,
+
+            FOREIGN KEY(video_id) REFERENCES videos(video_id)
+                ON DELETE CASCADE
+        );
+        """
+    )
+    logger.debug("[Init DB] Initialized 'playlist_videos' table")
+
+    # ============================================================
+    #                       REMOVED SEGMENTS
+    # ============================================================
     _ = cur.execute(
         """
-    CREATE TABLE IF NOT EXISTS video_tags (
-        video_id TEXT NOT NULL,
-        tag_id INTEGER NOT NULL,
-        PRIMARY KEY (video_id, tag_id),
-        FOREIGN KEY(video_id) REFERENCES videos(video_id) ON DELETE CASCADE,
-        FOREIGN KEY(tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS removed_segments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id TEXT NOT NULL,
+            segment_start REAL NOT NULL CHECK (segment_start >= 0),
+            segment_end REAL NOT NULL CHECK (segment_end > segment_start),
+            FOREIGN KEY(video_id) REFERENCES videos(video_id)
+                ON DELETE CASCADE
+        );
+        """
     )
-    """
-    )
-    logger.debug("[Init DB] Initialized video_tags")
+    logger.debug("[Init DB] Initialized 'removed_segments' table")
 
+    # ============================================================
+    #                           TAGS
+    # ============================================================
+    _ = cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tags (
+            tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag TEXT UNIQUE NOT NULL
+        );
+        """
+    )
+    logger.debug("[Init DB] Initialized 'tags' table")
+
+    # ============================================================
+    #                       VIDEO ↔ TAGS (RELATION)
+    # ============================================================
+    _ = cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS video_tags (
+            video_id TEXT NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (video_id, tag_id),
+
+            FOREIGN KEY(video_id) REFERENCES videos(video_id)
+                ON DELETE CASCADE,
+
+            FOREIGN KEY(tag_id) REFERENCES tags(tag_id)
+                ON DELETE CASCADE
+        );
+        """
+    )
+    logger.debug("[Init DB] Initialized 'video_tags' table")
+
+    # ============================================================
+    #                           INDEXES
+    # ============================================================
+    _ = cur.execute("CREATE INDEX IF NOT EXISTS idx_video_status ON videos(status);")
+    _ = cur.execute("CREATE INDEX IF NOT EXISTS idx_video_uploader ON videos(uploader_id);")
+    _ = cur.execute("CREATE INDEX IF NOT EXISTS idx_playlist_channel ON playlists(channel_id);")
+    _ = cur.execute("CREATE INDEX IF NOT EXISTS idx_playlist_video_item ON playlist_videos(playlist_item_id);")
+
+    # ============================================================
+    #                           COMMIT
+    # ============================================================
     conn.commit()
+    logger.info("[Init DB] Database fully initialized successfully")
 
 
 def _apply_skips_and_tags(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -> None:
@@ -181,6 +238,42 @@ def _apply_skips_and_tags(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -
         logger.debug(f"[DB] Applied {len(data['tags'])} tags for '{video_id}'")
 
 
+def _apply_playlists(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -> None:
+    """
+    Insert or update playlist and playlist_videos relations for a given video.
+    """
+    playlist_id = data.get("playlist_id")
+    playlist_item_id = data.get("playlist_item_id")
+    position = data.get("position")
+
+    # Nothing to do if no playlist info
+    if not playlist_id:
+        return
+
+    # --- Ensure playlist exists ---
+    _ = cur.execute(
+        """
+        INSERT OR IGNORE INTO playlists (playlist_id)
+        VALUES (?)
+        """,
+        (playlist_id,),
+    )
+
+    # --- Link video to playlist ---
+    _ = cur.execute(
+        """
+        INSERT INTO playlist_videos (playlist_id, video_id, playlist_item_id, position)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(playlist_id, video_id) DO UPDATE SET
+            playlist_item_id = excluded.playlist_item_id,
+            position = excluded.position
+        """,
+        (playlist_id, video_id, playlist_item_id, position),
+    )
+
+    logger.debug(f"[DB] Linked video '{video_id}' to playlist '{playlist_id}'")
+
+
 def insert_video_db(
     video_data: VideoInfo,
     cur: sqlite3.Cursor,
@@ -190,8 +283,10 @@ def insert_video_db(
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
-    # Extract valid fields
-    video_row = {k: v for k, v in video_data.items() if k in video_columns and k not in {"skips", "tags"}}
+    # Extract valid video fields
+    EXCLUDE_FOR_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position"}
+    video_row = {k: v for k, v in video_data.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
+
     if "video_id" not in video_row:
         logger.error("[Insert Video] Missing 'video_id'")
         return
@@ -201,16 +296,17 @@ def insert_video_db(
     sql = f"INSERT OR IGNORE INTO videos ({columns}) VALUES ({placeholders})"
     _ = cur.execute(sql, tuple(video_row.values()))
 
-    _apply_skips_and_tags(
-        video_id=video_row["video_id"],  # pyright: ignore[reportArgumentType]
-        data=video_data,
-        cur=cur,
-    )
+    # --- Skips & Tags ---
+    _apply_skips_and_tags(video_row["video_id"], video_data, cur)  # pyright: ignore[reportArgumentType]
+
+    # --- Playlists ---
+    _apply_playlists(video_row["video_id"], video_data, cur)  # pyright: ignore[reportArgumentType]
+
     if not test_run:
         conn.commit()
         logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
     else:
-        logger.info("[Insert Video] Test_run wan enabled, didn't inserted anything")
+        logger.info("[Insert Video] Test_run enabled, no insert committed.")
 
 
 def update_video_db(
@@ -223,27 +319,29 @@ def update_video_db(
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
-    # Secutity to avoid rewriting date added
-    update_fields = remove_data_from_video_info(update_fields, ["date_added", "date_updated"])
-
-    # Update only valid DB fields
-    EXCLUDE_FOR_MAIN = {"skips", "tags"}
+    # Security: prevent rewriting creation timestamps
+    EXCLUDE_FOR_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
     video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
 
-    video_update_data["date_modified"] = time.time()
+    # Update modification time
+    video_update_data["date_modified"] = now_unix()
 
+    # --- Update main video record ---
     if video_update_data:
         set_clause = ", ".join(f"{k} = ?" for k in video_update_data.keys())
         values = list(video_update_data.values()) + [video_id]
         sql = f"UPDATE videos SET {set_clause} WHERE video_id = ?"
         _ = cur.execute(sql, values)
 
-    _apply_skips_and_tags(video_id=video_id, data=update_fields, cur=cur)
+    # --- Apply dependent data ---
+    _apply_skips_and_tags(video_id, update_fields, cur)
+    _apply_playlists(video_id, update_fields, cur)
+
     if not test_run:
         conn.commit()
         logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
     else:
-        logger.info("[Update Video] Test_run wan enabled, didn't updated anything")
+        logger.info("[Update Video] Test_run enabled, no update committed.")
 
 
 def remove_video(
@@ -253,19 +351,22 @@ def remove_video(
     test_run: bool,
 ) -> None:
     """
-    Remove a video and all its related data from the database.
-    Cascades take care of related rows in removed_segments and video_tags.
+    Remove a video and all related data (tags, skips, playlists) from the database.
+    CASCADE will clean related rows automatically.
     """
     _ = cur.execute("DELETE FROM videos WHERE video_id = ?", (video_id,))
+    _ = cur.execute("DELETE FROM playlist_videos WHERE video_id = ?", (video_id,))  # safety
+
     if cur.rowcount > 0:
-        logger.info(f"[Remove Video] Successfully removed video_id '{video_id}' and related data")
+        logger.info(f"[Remove Video] Successfully removed '{video_id}' and related data")
     else:
-        logger.warning(f"[Remove Video] No video found with video_id '{video_id}'")
+        logger.warning(f"[Remove Video] No video found with id '{video_id}'")
+
     if not test_run:
         conn.commit()
-        logger.debug(f"[Remove Video] Removed '{video_id}' form database")
+        logger.debug(f"[Remove Video] Removed '{video_id}' from database")
     else:
-        logger.info("[Remove DB] Test_run wan enabled, didn't removed anything")
+        logger.info("[Remove Video] Test_run enabled, no removal committed.")
 
 
 def get_videos_in_db(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str]:
@@ -332,10 +433,7 @@ def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
 # Row -> VideoInfo converter
 # -----------------------------
 def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
-    """
-    Convert a sqlite3.Row from the `videos` table into a VideoInfo dict.
-    """
-
+    """Convert a sqlite3.Row from the `videos` table into a VideoInfo dict."""
     return {
         "video_id": safe_str(row, "video_id"),
         "title": safe_str(row, "title"),
@@ -380,57 +478,47 @@ def row_to_video_info(row: sqlite3.Row) -> VideoInfo:
 
 
 def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
-    """
-    Fetch a video's metadata (including tags and removed_segments)
-    from the database and return it as a VideoInfo dict.
-    Only non-null fields are included in the result.
-    """
-    # --- Fetch main video row ---
+    """Retrieve a full VideoInfo (with skips, tags, playlists)."""
     _ = cur.execute("SELECT * FROM videos WHERE video_id = ?", (video_id,))
     row: sqlite3.Row = cur.fetchone()  # pyright: ignore[reportAny]
     if not row:
-        logger.verbose(f"[Get Video Info] No entry found for video_id '{video_id}'")
+        logger.verbose(f"[Get Video Info] No entry for '{video_id}'")
         return {}
 
-    # Only add keys with non-null values
-    video_info: VideoInfo = row_to_video_info(row=row)
+    video_info = row_to_video_info(row)
 
-    # --- Fetch tags ---
+    # --- Tags ---
     _ = cur.execute(
-        """
-        SELECT t.tag
-        FROM tags t
-        JOIN video_tags vt ON t.tag_id = vt.tag_id
-        WHERE vt.video_id = ?
-    """,
+        "SELECT t.tag FROM tags t JOIN video_tags vt ON t.tag_id = vt.tag_id WHERE vt.video_id = ?",
         (video_id,),
     )
-    tags = [tag_row["tag"] for tag_row in cur.fetchall()]  # pyright: ignore[reportAny]
+    tags = [t["tag"] for t in cur.fetchall()]  # pyright: ignore[reportAny]
     if tags:
         video_info["tags"] = tags
 
-    # --- Fetch removed segments ---
+    # --- Skips ---
     _ = cur.execute(
-        """
-        SELECT segment_start, segment_end
-        FROM removed_segments
-        WHERE video_id = ?
-        ORDER BY segment_start
-    """,
+        "SELECT segment_start, segment_end FROM removed_segments WHERE video_id = ? ORDER BY segment_start",
         (video_id,),
     )
-    skips: list[tuple[float, float]] = [
-        (seg_row["segment_start"], seg_row["segment_end"]) for seg_row in cur.fetchall()  # pyright: ignore[reportAny]
-    ]
+    skips = [(s["segment_start"], s["segment_end"]) for s in cur.fetchall()]  # pyright: ignore[reportAny]
     if skips:
         video_info["skips"] = skips
 
-    logger.verbose(f"[Get Video Info] Retrieved info for video_id '{video_id}'")
-
-    video_info_copy = video_info.copy()
-
-    for key, value in video_info_copy.items():
-        if value is None or (isinstance(value, str) and value == ""):
-            del video_info[key]
+    # --- Playlist association ---
+    _ = cur.execute(
+        """
+        SELECT p.playlist_id, pv.playlist_item_id, pv.position
+        FROM playlists p
+        JOIN playlist_videos pv ON pv.playlist_id = p.playlist_id
+        WHERE pv.video_id = ?
+        """,
+        (video_id,),
+    )
+    pl_row = cur.fetchone()  # pyright: ignore[reportAny]
+    if pl_row:
+        video_info["playlist_id"] = pl_row["playlist_id"]
+        video_info["playlist_item_id"] = pl_row["playlist_item_id"]
+        video_info["position"] = pl_row["position"]
 
     return video_info

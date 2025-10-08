@@ -1,6 +1,7 @@
 """
 Take a playlist and compare it to your liked music, removes the duplicates videos
 """
+
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
@@ -27,11 +28,7 @@ def remove_duplicate_videos_from_playlist(
 
     # 1. Ensure we have up-to-date playlist data
     fetch_playlist_videos(
-        playlist_id=playlist_id,
-        file_path=playlist_video_file,
-        test_run=test_run,
-        clean=clean,
-        info=info
+        playlist_id=playlist_id, file_path=playlist_video_file, test_run=test_run, clean=clean, info=info
     )
 
     # 2. Load playlist entries

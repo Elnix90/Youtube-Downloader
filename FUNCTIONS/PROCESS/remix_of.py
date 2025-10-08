@@ -3,9 +3,9 @@ from difflib import SequenceMatcher
 from sqlite3 import Connection, Cursor
 
 from CONSTANTS import REMIX_CONFIDENCE_THRESHOLD
-from FUNCTIONS.clean_song_query import clean_song_query
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.HELPERS.text_helpers import clean_song_query
 from FUNCTIONS.sql_requests import update_video_db
 
 logger = setup_logger(__name__)
