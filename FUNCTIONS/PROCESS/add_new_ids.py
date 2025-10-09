@@ -46,12 +46,20 @@ def add_new_ids_to_database(
 
     # Determine which video IDs to process
     if add_folder_files_not_in_list:
+        print("adding files")
         to_add = file_video_ids.copy()
         for vid in existing_video_ids:
             if vid not in to_add:
                 to_add.insert(0, vid)
     else:
         to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
+
+    print(
+        "ids_presents size:", len(ids_present_in_down_dir),
+        "\nplaylist_entries size:", len(playlist_entries),
+        "\nexisting size:", len(existing_video_ids),
+        "\nto_add size:", len(to_add)
+    )
 
     added_ids = updated_ids = correct_ids = 0
 
@@ -96,7 +104,7 @@ def add_new_ids_to_database(
             if info:
                 fprint(
                     "",
-                    f"[Adding IDs] Added {added_ids} | Updated {updated_ids} | {correct_ids} OK",
+                    f"[Adding IDs] Added {added_ids} | Updated {updated_ids} | {correct_ids} already OK",
                 )
 
         except Exception as e:  # pylint: disable=broad-exception-caught
@@ -108,7 +116,7 @@ def add_new_ids_to_database(
     if not test_run:
         conn.commit()
 
-    summary = f"[Adding IDs] Added {added_ids}" + f"Updated {updated_ids}" + f"{correct_ids} already OK"
+    summary = f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | " + f"{correct_ids} already OK"
     logger.info(summary)
     if info:
         print(summary)

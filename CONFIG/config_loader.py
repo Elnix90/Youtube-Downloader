@@ -104,7 +104,12 @@ def load_config(config_file: Path) -> Config:
     """Load configuration from config.toml"""
 
     if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file '{config_file}' does not exist.")
+        print(
+            f"Error: Configuration file '{config_file}' does not exist, using default config."
+            + "Please create this file or use config.toml.example as a template."
+        )
+        config_file = Path("default_config.toml")
+
     try:
         with open(config_file, "rb") as f:
             _config_cache: Config = tomli.load(f)  # pyright: ignore[reportAssignmentType]
