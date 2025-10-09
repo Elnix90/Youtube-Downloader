@@ -4,7 +4,6 @@ Loads config.toml (validated) and exposes constants.
 """
 
 import logging
-import sys
 from pathlib import Path
 
 from CONFIG.config_loader import load_config
@@ -13,10 +12,6 @@ from CONFIG.config_loader import load_config
 
 CONFIG_FILE = Path("CONFIG/config.toml")
 
-if not CONFIG_FILE.exists():
-    print(f"Error: Configuration file '{CONFIG_FILE}' does not exist.")
-    print("Please create this file or use config.toml.example as a template.")
-    sys.exit(1)
 
 config = load_config(CONFIG_FILE)
 
