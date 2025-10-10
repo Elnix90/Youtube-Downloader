@@ -134,8 +134,6 @@ def process_all(
         print(f"[PROCESSING] Processing {total_videos} videos...")
     logger.info(f"[PROCESSING] Processing {total_videos} videos...")
 
-    raise
-
     for video_id in video_ids:
 
         start_processing: float = time.time()
