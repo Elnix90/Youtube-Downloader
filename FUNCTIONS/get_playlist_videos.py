@@ -58,8 +58,10 @@ def get_playlist_with_ytdlp(
             )
             entries = info["entries"]
 
+            entries_sorted = sorted(entries, key=lambda e: e.get("playlist_index", 0))
+
             results: VideoInfoMap = {}
-            for entry in entries:
+            for entry in entries_sorted:
 
                 video_id = entry.get("id")
                 title = entry.get("title")

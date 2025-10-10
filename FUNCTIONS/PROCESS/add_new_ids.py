@@ -1,19 +1,13 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
-from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap, youtube_required_info
+from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.sql_requests import (
-    get_video_info_from_db,
-    get_videos_in_db,
-    insert_video_db,
-    update_video_db,
-)
+from FUNCTIONS.sql_requests import get_videos_in_db, insert_video_db
 
 logger = setup_logger(__name__)
 
@@ -42,30 +36,34 @@ def add_new_ids_to_database(
             print(msg)
         return
 
-    existing_video_ids = get_videos_in_db(include_not_status0=True, cur=cur)
+    existing_video_ids = get_videos_in_db(True, cur)
     file_video_ids = list(playlist_entries.keys())
 
-    # Determine which video IDs to process
+    # First; determine which video IDs to process
+
+    # 1. Only add the videos that are in the file got by the fetch
+    to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
+
+    # 2. If asked to use also the videos that are in the download dir but not in the list fetched
     if add_folder_files_not_in_list:
-        print("adding files")
-        to_add = file_video_ids.copy()
-        for vid in existing_video_ids:
-            if vid not in to_add:
+        for vid in ids_present_in_down_dir.keys():
+            if vid not in to_add and vid not in existing_video_ids:
                 to_add.insert(0, vid)
-    else:
-        to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
 
-    print(json.dumps(ids_present_in_down_dir, indent=4))
+    # print(
+    #     "ids_presents size:",
+    #     len(ids_present_in_down_dir),
+    #     "\nplaylist_entries size:",
+    #     len(playlist_entries),
+    #     "\nexisting size:",
+    #     len(existing_video_ids),
+    #     "\nto_add size:",
+    #     len(to_add),
+    #     "\nto_add not in existing:",
+    #     len([i for i in to_add if i not in existing_video_ids]),
+    # )
 
-    print(
-        "ids_presents size:", len(ids_present_in_down_dir),
-        "\nplaylist_entries size:", len(playlist_entries),
-        "\nexisting size:", len(existing_video_ids),
-        "\nto_add size:", len(to_add),
-        "\nto_add not in existing:", len([i for i in to_add if i not in existing_video_ids])
-    )
-
-    added_ids = updated_ids = correct_ids = 0
+    added_ids = 0
 
     for video_id in to_add:
         try:
@@ -83,32 +81,20 @@ def add_new_ids_to_database(
                         video_data[key] = value
                 logger.debug(f"[Merge] Merged playlist info into {video_id}")
 
-            # Insert new entry if not already in DB
-            if video_id not in existing_video_ids:
-                if include_not_status0 or status != 3:
-                    video_data["video_id"] = video_id
-                    insert_video_db(video_data, cur, conn, test_run)
-                    added_ids += 1
-            else:
-                # Possibly update existing DB entry if missing info
-                db_data = get_video_info_from_db(video_id=video_id, cur=cur)
-                db_missing_fields = [k for k in youtube_required_info if not db_data.get(k)]
+            if include_not_status0 or status == 3:
+                video_data["video_id"] = video_id
+                insert_video_db(video_data, cur, conn, test_run)
+                added_ids += 1
 
-                if db_missing_fields:
-                    has_enough_data = all(
-                        key in video_data and video_data[key] is not None for key in youtube_required_info
+                # Progress display
+                if info:
+                    fprint(
+                        "",
+                        f"[Adding IDs] Added {added_ids}"
                     )
-                    if has_enough_data:
-                        update_video_db(video_id, video_data, cur, conn, test_run)
-                        updated_ids += 1
-                else:
-                    correct_ids += 1
-
-            # Progress display
-            if info:
-                fprint(
-                    "",
-                    f"[Adding IDs] Added {added_ids} | Updated {updated_ids} | {correct_ids} already OK",
+            else:
+                logger.info(
+                    "[Adding ids] Did not add either cause status is private or unavailable or already downloaded or not asked to include them"
                 )
 
         except Exception as e:  # pylint: disable=broad-exception-caught
@@ -120,7 +106,6 @@ def add_new_ids_to_database(
     if not test_run:
         conn.commit()
 
-    summary = f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | " + f"{correct_ids} already OK"
+    summary = f"[Adding IDs] Added {added_ids}"
+    # summary = f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | " + f"{correct_ids} already OK"
     logger.info(summary)
-    if info:
-        print(summary)
