@@ -343,35 +343,53 @@ class QuietLogger:
 
 class YdlOpt(TypedDict, total=False):
     """
-    Type safe options for yt-dlp download
+    Type-safe configuration for yt-dlp extraction/download.
+    Mirrors the options supported by YoutubeDL(params=...).
     """
 
-    outtmpl: dict[str, str]
+    # --- Output & file templates ---
+    outtmpl: str | dict[str, str]
+    cachedir: bool
+    _screen_file: object  # for capturing yt-dlp screen output (e.g., io.StringIO)
+
+    # --- General behavior ---
     quiet: bool
-    noprogress: bool
     no_warnings: bool
+    noprogress: bool
     ignoreerrors: bool
-    logger: QuietLogger
     verbose: bool
+    logger: QuietLogger
 
-    format: str
-    postprocessor_args: list[str]
-    add_metadata: bool
-    embed_metadata: bool
-    postprocessors: list[Postprocessor]
-    http_headers: dict[str, str]
-    extractor_args: dict[str, list[str]]
-    fragment_retries: int
+    # --- Proxy / network ---
+    proxy: str | None
     retries: int
+    fragment_retries: int
+    http_headers: dict[str, str]
 
+    # --- Subtitles ---
     writesubtitles: bool
     writeautomaticsub: bool
     subtitlesformat: str
     subtitleslangs: list[str]
 
-    proxy: str
+    # --- Extraction / format ---
+    format: str
     extract_flat: bool
     skip_download: bool
+    extractor_args: dict[str, list[str]]
+
+    # --- Postprocessing ---
+    add_metadata: bool
+    embed_metadata: bool
+    postprocessors: list[dict[str, object]]
+    postprocessor_args: list[str]
+
+    # --- Authentication / cookies ---
+    cookiesfrombrowser: tuple[str, ...]  # e.g., ("firefox",)
+    cookiefile: str
+
+    # --- Internal / custom extensions ---
+    outtmpl_na_placeholder: str
 
 
 def lyrics_lrc_path_for_mp3(mp3_path: Path) -> Path:

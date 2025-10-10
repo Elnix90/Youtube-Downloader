@@ -1,3 +1,4 @@
+import io
 import json
 import re
 import time
@@ -268,17 +269,21 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
         url = f"https://youtube.com/watch?v={id_or_url}"
         video_id = id_or_url
 
+    screen_buffer = io.StringIO()
     ydl_fetch_opt: YdlOpt = {
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
         "noprogress": True,
-        "ignoreerrors": True,
+        "ignoreerrors": False,
         "logger": QuietLogger(),
         "verbose": False,
         "writesubtitles": True,
         "writeautomaticsub": True,
         "subtitlesformat": "vtt",
         "subtitleslangs": ["all"],
+        "outtmpl": "-",
+        "cachedir": False,
+        "_screen_file": screen_buffer,
     }
 
     if proxy:
@@ -286,21 +291,21 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
 
     try:
         with yt_dlp.YoutubeDL(params=ydl_fetch_opt) as ydl:  # pyright: ignore[reportArgumentType]
-            info = cast(
-                ExtractedInfo,
-                cast(object, ydl.extract_info(url=url, download=False)),
-            )
+            info = cast(ExtractedInfo, cast(object, ydl.extract_info(url=url, download=False)))
 
             if not info:
-                # try to get last error
-                last_err = getattr(ydl, "last_error", None)
-                if last_err:
-                    logger.error(f"[Safe Extract] YT-DLP reported: {last_err}")
-                else:
-                    logger.error(f"[Safe Extract] Data is None for {video_id}, unknown reason")
+                screen_output = getattr(ydl, "_screen_file", None)
+                if screen_output and hasattr(screen_output, "getvalue"):  # pyright: ignore[reportAny]
+                    log_content = screen_output.getvalue()  # pyright: ignore[reportAny]
+                    if (
+                        "sign in to confirm" in log_content.lower()  # pyright: ignore[reportAny]
+                        or "consent" in log_content.lower()  # pyright: ignore[reportAny]
+                    ):
+                        logger.error(f"[Safe Extract] YouTube asked for sign-in verification for {url}")
+                        return 2, {}
+                logger.error(f"[Safe Extract] Unknown extraction error for {url}")
                 return 1, {}
 
-            # subtitles
             manual_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=False)
             auto_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=True)
 
@@ -332,18 +337,26 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
             logger.debug(f"[Safe Extract] Data correctly returned for {video_id} -> '{data['title']}'")
             return 0, data
 
-    except Exception as e:
-        err_msg = str(e).lower()
-        if "private" in err_msg:
-            logger.error(f"[Safe Extract] Private video: {video_id}")
+    except DownloadError as e:
+        msg = str(e).lower()
+        if "sign in" in msg or "consent" in msg:
+            logger.warning(f"[Safe Extract] Consent wall encountered for {url}")
             return 2, {}
-        if "sign in" in err_msg or "confirm you're not a bot" in err_msg or "captcha" in err_msg:
-            logger.error(f"[Safe Extract] Blocked / Bot-check for {video_id}: {e}")
+        if "private" in msg:
+            logger.warning(f"[Safe Extract] Private video {video_id}")
+            return 2, {}
+        if "forbidden" in msg or "unavailable" in msg or "403" in msg:
+            logger.error(f"[Safe Extract] Region blocked/unavailable for {video_id}: {e}")
             return 3, {}
-        if "forbidden" in err_msg or "403" in err_msg or "unavailable" in err_msg:
-            logger.error(f"[Safe Extract] Region blocked or forbidden for {video_id}: {e}")
+        logger.error(f"[Safe Extract] yt-dlp error: {e}")
+        return 1, {}
+
+    except Exception as e:
+        msg = str(e).lower()
+        if "sign in" in msg or "consent" in msg or "captcha" in msg:
+            logger.error(f"[Safe Extract] Bot-check for {video_id}: {e}")
             return 3, {}
-        logger.error(f"[Safe Extract] Unknown error for {video_id}: {e}")
+        logger.error(f"[Safe Extract] Unknown exception for {video_id}: {e}")
         return 3, {}
 
 
