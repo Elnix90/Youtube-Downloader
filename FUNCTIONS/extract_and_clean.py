@@ -38,6 +38,11 @@ def extract_and_clean_video_ids(
     valid_files: VideoInfoMap = {}
     checked_files: int = 0
     lrc_or_png: int = 0
+    calculate_progress = 0
+    progress = 0
+
+    total_files = sorted(download_directory.iterdir(), key=lambda x: x.stat().st_mtime)
+    total_files_number = len(total_files)
 
     if not download_directory.exists():
         message = f"[Clean & Extract] Directory does not exist: {download_directory}"
@@ -46,9 +51,12 @@ def extract_and_clean_video_ids(
         logger.warning(message)
         return valid_files
 
-    # for filepath in download_directory.iterdir():
-    for filepath in sorted(download_directory.iterdir(), key=lambda x: x.stat().st_mtime):
+    for filepath in total_files:
         checked_files += 1
+        calculate_progress += 1
+        if calculate_progress == 50:
+            progress = round(100 * checked_files / total_files_number, 2)
+            calculate_progress = 0
 
         if not filepath.is_file():
             logger.warning(f"[Clean & Extract] Not a file, skipping: '{filepath.name}'")
@@ -113,7 +121,7 @@ def extract_and_clean_video_ids(
         if info:
             fprint(
                 "[Clean & Extract] ",
-                f"Checked {checked_files} files, removed {len(removed_files)}, "
+                f"Checked {checked_files} / {total_files_number} files ( {progress} % ), removed {len(removed_files)}, "
                 + f"kept {len(valid_files)} valid MP3s, "
                 + f"{lrc_or_png} valid lyrics or thumbnails",
             )
