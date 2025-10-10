@@ -87,6 +87,7 @@ class LoggingConfig(TypedDict):
 class OtherConfig(TypedDict):
     music_playlist_id: str | None
     clean: bool
+    connect_google_at_start: bool
 
 
 class Config(TypedDict):

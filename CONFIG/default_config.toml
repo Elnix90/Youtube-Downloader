@@ -86,3 +86,4 @@ overwrite_unchanged = true
 
 music_playlist_id = "" # The playlist ID not url (random letters after youtube.com/playlist?v=HERE <----)
 clean = false
+connect_google_at_start = false # If encountering bots walls or login prompts

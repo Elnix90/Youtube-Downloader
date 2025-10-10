@@ -302,7 +302,7 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
                         or "consent" in log_content.lower()  # pyright: ignore[reportAny]
                     ):
                         logger.error(f"[Safe Extract] YouTube asked for sign-in verification for {url}")
-                        return 2, {}
+                        return 3, {}
                 logger.error(f"[Safe Extract] Unknown extraction error for {url}")
                 return 1, {}
 
@@ -341,7 +341,7 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
         msg = str(e).lower()
         if "sign in" in msg or "consent" in msg:
             logger.warning(f"[Safe Extract] Consent wall encountered for {url}")
-            return 2, {}
+            return 3, {}
         if "private" in msg:
             logger.warning(f"[Safe Extract] Private video {video_id}")
             return 2, {}

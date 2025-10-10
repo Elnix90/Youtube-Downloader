@@ -105,7 +105,7 @@ def fetch_playlist_videos(
     file_path: Path,
     test_run: bool,
     clean: bool = False,
-    info: bool = True,
+    info: bool = True
 ) -> None:
     """
     Fetch playlist videos using yt_dlp for public playlists,

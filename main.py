@@ -12,6 +12,7 @@ from CONSTANTS import (
     JSON_DIR,
     PLAYLIST_VIDEOS_FILE,
 )
+from FUNCTIONS.get_creditentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.PROCESS.show_final_stats import show_final_stats
@@ -40,13 +41,19 @@ def main_list_process() -> None:
     CRED_DIR.mkdir(exist_ok=True)
     DOWNLOAD_PATH.mkdir(parents=True, exist_ok=True)
 
+    info = CONFIG["processing"]["info"]
+
+    # step 0: connect if asked to avoid bot walls
+    if CONFIG["other"]["connect_google_at_start"]:
+        _ = get_authenticated_service(info)
+
     # Step 1: Fetch playlist videos
     fetch_playlist_videos(
         playlist_id=CONFIG["processing"]["playlist_id"],
         file_path=PLAYLIST_VIDEOS_FILE,
         test_run=CONFIG["processing"]["test_run"],
         clean=CONFIG["processing"]["clean"],
-        info=CONFIG["processing"]["info"],
+        info=info
     )
 
     # Step 2: Process database and files
@@ -88,7 +95,7 @@ def main_list_process() -> None:
             get_remix_of=CONFIG["processing"]["get_remix_of"],
             force_recompute_remix_of=CONFIG["processing"]["force_recompute_remix_of"],
             # Behavior
-            info=CONFIG["processing"]["info"],
+            info=info,
             error=CONFIG["processing"]["error"],
             test_run=CONFIG["processing"]["test_run"],
             # Clean up

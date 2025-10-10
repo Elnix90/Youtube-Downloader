@@ -50,19 +50,6 @@ def add_new_ids_to_database(
             if vid not in to_add and vid not in existing_video_ids:
                 to_add.insert(0, vid)
 
-    # print(
-    #     "ids_presents size:",
-    #     len(ids_present_in_down_dir),
-    #     "\nplaylist_entries size:",
-    #     len(playlist_entries),
-    #     "\nexisting size:",
-    #     len(existing_video_ids),
-    #     "\nto_add size:",
-    #     len(to_add),
-    #     "\nto_add not in existing:",
-    #     len([i for i in to_add if i not in existing_video_ids]),
-    # )
-
     added_ids = 0
 
     for video_id in to_add:
