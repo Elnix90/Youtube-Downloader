@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
@@ -54,11 +55,14 @@ def add_new_ids_to_database(
     else:
         to_add = [vid for vid in file_video_ids if vid not in existing_video_ids]
 
+    print(json.dumps(ids_present_in_down_dir, indent=4))
+
     print(
         "ids_presents size:", len(ids_present_in_down_dir),
         "\nplaylist_entries size:", len(playlist_entries),
         "\nexisting size:", len(existing_video_ids),
-        "\nto_add size:", len(to_add)
+        "\nto_add size:", len(to_add),
+        "\nto_add not in existing:", len([i for i in to_add if i not in existing_video_ids])
     )
 
     added_ids = updated_ids = correct_ids = 0

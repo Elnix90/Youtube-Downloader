@@ -46,7 +46,8 @@ def extract_and_clean_video_ids(
         logger.warning(message)
         return valid_files
 
-    for filepath in download_directory.iterdir():
+    # for filepath in download_directory.iterdir():
+    for filepath in sorted(download_directory.iterdir(), key=lambda x: x.stat().st_mtime):
         checked_files += 1
 
         if not filepath.is_file():
