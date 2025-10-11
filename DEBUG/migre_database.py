@@ -128,7 +128,6 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
         "title": "TEXT",
         "description": "TEXT",
         "thumbnail_url": "TEXT",
-
         # Channel / uploader info
         "channel_id": "TEXT",
         "channel_url": "TEXT",
@@ -136,22 +135,18 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
         "uploader_id": "TEXT",
         "uploader_url": "TEXT",
         "channel_follower_count": "INTEGER CHECK(channel_follower_count >= 0)",
-
         # YouTube statistics
         "view_count": "INTEGER CHECK(view_count >= 0)",
         "comment_count": "INTEGER CHECK(comment_count >= 0)",
         "like_count": "INTEGER CHECK(like_count >= 0)",
-
         # Publication details
         "upload_date": "TEXT",
         "duration": "INTEGER CHECK(duration >= 0)",
         "duration_string": "TEXT",
         "privacy_status": "TEXT",
-
         # SponsorBlock / skip summary
         "removed_segments_int": "INTEGER DEFAULT 0",
         "removed_segments_duration": "REAL DEFAULT 0.0",
-
         # Lyrics / subtitle information
         "lyrics": "TEXT",
         "subtitles": "TEXT",
@@ -160,7 +155,6 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
         "auto_subs": "TEXT",
         "try_lyrics_if_not": "BOOLEAN NOT NULL CHECK (try_lyrics_if_not IN (0,1)) DEFAULT 1",
         "lyrics_retries": "INTEGER CHECK (lyrics_retries >= 0) DEFAULT 0",
-
         # Maintenance / recomputation flags
         "update_thumbnail": "BOOLEAN NOT NULL CHECK (update_thumbnail IN (0,1)) DEFAULT 0",
         "remove_thumbnail": "BOOLEAN NOT NULL CHECK (remove_thumbnail IN (0,1)) DEFAULT 0",
@@ -168,17 +162,14 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
         "recompute_tags": "BOOLEAN NOT NULL CHECK (recompute_tags IN (0,1)) DEFAULT 1",
         "recompute_album": "BOOLEAN NOT NULL CHECK (recompute_album IN (0,1)) DEFAULT 1",
         "recompute_yt_info": "BOOLEAN NOT NULL CHECK (recompute_yt_info IN (0,1)) DEFAULT 0",
-
         # Remix tracking
         "remix_of": "TEXT",
         "recompute_remix_of": "BOOLEAN NOT NULL CHECK (recompute_remix_of IN (0,1)) DEFAULT 1",
         "confidence": "REAL CHECK (confidence >= 0 AND confidence <= 1)",
-
         # Local file info
         "filename": "TEXT",
         "status": "INTEGER NOT NULL CHECK (status IN (0,1,2,3)) DEFAULT 3",
         "reason": "TEXT",
-
         # Timestamps
         "date_added": "REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)",
         "date_modified": "REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)",

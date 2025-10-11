@@ -1,3 +1,7 @@
+"""
+Computes every ids in the playliost fetch and add  the new ones into the DB
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -75,10 +79,7 @@ def add_new_ids_to_database(
 
                 # Progress display
                 if info:
-                    fprint(
-                        "",
-                        f"[Adding IDs] Added {added_ids}"
-                    )
+                    fprint("", f"[Adding IDs] Added {added_ids}")
             else:
                 logger.info(
                     "[Adding ids] Did not add either cause status is private or unavailable or already downloaded or not asked to include them"

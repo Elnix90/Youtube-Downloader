@@ -1,3 +1,7 @@
+"""
+debug module to show the mp3 metadata of a mp3 file
+"""
+
 import json
 from pathlib import Path
 from typing import Literal
@@ -38,11 +42,11 @@ def write_metadata_to_json(
                                 0
                             ]
                         )
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
                         logger.warning(f"[Get Metadata Tag] Exception during converting to python dict: {e}")
                         return None, 2
                     if data:
-                        with open(file, "w") as f:
+                        with open(file, "w", encoding="utf-8") as f:
                             _ = f.write(json.dumps(data, indent=4))
                         logger.info(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
                         return data, 0
@@ -52,6 +56,6 @@ def write_metadata_to_json(
             return None, 2
         logger.warning(f"[Get Metadata Tag] No audio.tags tags in '{filepath}'")
         return None, 2
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning(f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}")
         return None, 3

@@ -77,11 +77,13 @@ def get_lyrics_from_syncedlyrics(orig_title: str, orig_artist: str) -> tuple[str
 
 class LyricLine(TypedDict, total=False):
     """Type safe definition of a single synchronised lyric line."""
+
     text: str
 
 
 class LyricsResponse(TypedDict, total=False):
     """Type safe definition of the lyrics returned by ytmusicapi."""
+
     lyrics: str | list[LyricLine]
 
 

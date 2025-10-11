@@ -2,6 +2,7 @@
 Process all module, calls every process functions in a loop to process every entry in the db one by one, by downloading,
 putting lyrics and thumbnails, etc...
 """
+
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -81,11 +82,7 @@ def process_all(
     init_db(cur=cur, conn=conn)
 
     ids_present_in_down_dir: VideoInfoMap = extract_and_clean_video_ids(
-        download_path,
-        info=info,
-        test_run=test_run,
-        remove=remove_malformatted,
-        force_mp3_presence=force_mp3_presence
+        download_path, info=info, test_run=test_run, remove=remove_malformatted, force_mp3_presence=force_mp3_presence
     )
 
     include_not_status0: bool = retry_private or retry_unavailable
@@ -99,7 +96,7 @@ def process_all(
         info=info,
         errors=error,
         cur=cur,
-        conn=conn
+        conn=conn,
     )
 
     if remove_no_longer_in_playlist:
@@ -111,7 +108,7 @@ def process_all(
             error=error,
             cur=cur,
             conn=conn,
-            test_run=test_run
+            test_run=test_run,
         )
 
     video_ids: list[str] = get_videos_in_db(include_not_status0, cur)

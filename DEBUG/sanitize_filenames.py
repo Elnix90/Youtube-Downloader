@@ -1,3 +1,7 @@
+"""
+sanitize_filenames module: Sanitize all filenemes in the download dir
+"""
+
 from pathlib import Path
 from sqlite3 import Cursor
 
@@ -36,12 +40,12 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor) -> None:
                         (new_name, old_name),
                     )
                     logger.info(f"[Sanitize All] Updated DB '{old_name}' -> '{new_name}'")
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.error(f"[Sanitize All] Failed to update DB '{old_name}' -> '{new_name}': {e}")
 
                 new_path = file_path.with_name(new_name)
                 try:
                     _ = file_path.rename(new_path)
                     logger.info(f"[Sanitize All] Renamed file '{old_name}' -> '{new_name}'")
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.error(f"[Sanitize All] Failed to rename file '{old_name}' -> '{new_name}': {e}")

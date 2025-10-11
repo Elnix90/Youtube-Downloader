@@ -246,7 +246,6 @@ def _try_fetch_lyrics(
     info: bool,
     progress_prefix: str,
     update_fields: VideoInfo,
-
 ) -> str | None:
     """Fetch lyrics from available sources."""
     lyrics = file_lyrics if file_lyrics and not recompute else None
