@@ -50,8 +50,7 @@ def write_metadata_to_json(
                             _ = f.write(json.dumps(data, indent=4))
                         logger.info(f"[Get Metadata Tag] Sucessfully loaded metadata from '{filepath}'")
                         return data, 0
-                    else:
-                        logger.warning(f"[Get Metadata Tag] Empty data in file '{filepath}'")
+                    logger.warning(f"[Get Metadata Tag] Empty data in file '{filepath}'")
             logger.warning(f"[Get Metadata Tag] No TXXX:{tag} tag field in '{filepath}'")
             return None, 2
         logger.warning(f"[Get Metadata Tag] No audio.tags tags in '{filepath}'")
