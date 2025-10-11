@@ -36,26 +36,26 @@ def load(file_path: Path) -> VideoInfoMap:
     return raw_data
 
 
-def loadlist(file_path: Path) -> list[str]:
-    """
-    Load a JSON file containing playlist video entries and
-    return a list of VideoInfo instances.
-    """
-    if not file_path.exists():
-        msg = f"Error: '{file_path}' does not exist"
-        logger.error(msg)
-        raise FileNotFoundError(msg)
+# def loadlist(file_path: Path) -> list[str]:
+#     """
+#     Load a JSON file containing playlist video entries and
+#     return a list of VideoInfo instances.
+#     """
+#     if not file_path.exists():
+#         msg = f"Error: '{file_path}' does not exist"
+#         logger.error(msg)
+#         raise FileNotFoundError(msg)
 
-    try:
-        with file_path.open("r", encoding="utf-8") as f:
-            raw_data = cast(list[str], json.load(f))
-    except json.JSONDecodeError as exc:
-        msg = f"Error decoding JSON in '{file_path}': {exc}"
-        logger.error(msg)
-        raise ValueError(msg) from exc
+#     try:
+#         with file_path.open("r", encoding="utf-8") as f:
+#             raw_data = cast(list[str], json.load(f))
+#     except json.JSONDecodeError as exc:
+#         msg = f"Error decoding JSON in '{file_path}': {exc}"
+#         logger.error(msg)
+#         raise ValueError(msg) from exc
 
-    logger.debug(f"[Load] Loaded {len(raw_data)} entries from '{file_path}'")
-    return raw_data
+#     logger.debug(f"[Load] Loaded {len(raw_data)} entries from '{file_path}'")
+#     return raw_data
 
 
 def dump(entries: VideoInfoMap | list[str], file_path: Path) -> None:

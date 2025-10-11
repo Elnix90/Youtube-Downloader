@@ -4,7 +4,7 @@ order as in the list got from yt, to sort them by last
 added or whatever order there are in the playlist.
 """
 
-from CONSTANTS import PLAYLIST_VIDEOS_FILE
+from constants import PLAYLIST_VIDEOS_FILE
 from DEBUG.update_date_added import update_date_added
 from FUNCTIONS.sql_requests import get_db_connection
 

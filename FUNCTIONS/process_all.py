@@ -8,7 +8,7 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 from typing import Literal
 
-from CONSTANTS import OVERWRITE_UNCHANGED
+from constants import OVERWRITE_UNCHANGED
 from FUNCTIONS.download import download_video, safe_extract_info
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.HELPERS.fprint import fprint

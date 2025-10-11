@@ -5,7 +5,7 @@ overlapping lines to have a beatiful console output
 
 import shutil
 
-from CONSTANTS import OVERLAP_FPRINT
+from constants import OVERLAP_FPRINT
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
 

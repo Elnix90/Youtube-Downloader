@@ -16,7 +16,7 @@ from googleapiclient.discovery import (
     build,  # pyright: ignore[reportUnknownVariableType]
 )
 
-from CONSTANTS import CLIENT_SECRETS_FILE, TOKEN_FILE
+from constants import CLIENT_SECRETS_FILE, TOKEN_FILE
 from FUNCTIONS.HELPERS.logger import setup_logger
 
 logger = setup_logger(__name__)

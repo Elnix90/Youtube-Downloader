@@ -12,7 +12,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-from CONSTANTS import UNWANTED_PATTERNS_FILE
+from constants import UNWANTED_PATTERNS_FILE
 from FUNCTIONS.HELPERS.logger import setup_logger
 
 logger = setup_logger(__name__)
