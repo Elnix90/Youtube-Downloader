@@ -56,7 +56,7 @@ tag_inner_separator = ","
 force_mp3_presence = false
 force_recompute_yt_info = false
 
-retry_unavailable = true
+retry_unavailable = false
 retry_private = false
 info = true
 error = true
