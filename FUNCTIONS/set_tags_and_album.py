@@ -1,25 +1,19 @@
+"""
+Transforms and set tags from and to str
+"""
+
 from pathlib import Path
 
-
-
+from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.metadata import read_id3_tag, write_id3_tag
 
-from FUNCTIONS.HELPERS.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-
-
-
-def extract_tags_from_str(
-    text: str,
-    sep: str,
-    start_def: str,
-    end_def: str,
-    tag_sep: str
-) -> tuple[str, set[str]]:
+def extract_tags_from_str(text: str, sep: str, start_def: str, end_def: str, tag_sep: str) -> tuple[str, set[str]]:
     """
-    Extract tags and base text from a given string if they are embedded in the form (with default parameters, if you change them the form changes too):
+    Extract tags and base text from a given string if they are embedded in the
+    form (with default parameters, if you change them the form changes too):
     'title ~ [tag1, tag2, tag3]'
     :param text: Input string (e.g., a title).
     :param sep: Separator used before the tags block.
@@ -44,21 +38,17 @@ def extract_tags_from_str(
     return text, set()
 
 
-
-
-
-
-
 def put_tags_in_str(
     base_text: str,
     tags: set[str],
     sep: str,
     start_def: str,
     end_def: str,
-    tag_sep: str
+    tag_sep: str,
 ) -> str:
     """
-    Insert tags into a base string, replacing any existing tags in the form (with default parameters, if you change them the form changes too):
+    Insert tags into a base string, replacing any existing tags in the form
+    (with default parameters, if you change them the form changes too):
     'title ~ [tag1, tag2, tag3]'
 
     :param base_text: Input string (without enforced tags).
@@ -74,7 +64,7 @@ def put_tags_in_str(
 
     # Remove any existing tags part
     if base_text.endswith(end_def) and sep in base_text:
-        base_text = base_text[:base_text.rfind(sep)]
+        base_text = base_text[: base_text.rfind(sep)]
 
     if tags:
         # Ensure tags are lowercase, unique, and sorted for consistency
@@ -84,42 +74,55 @@ def put_tags_in_str(
     return base_text
 
 
-
-
-
-
-
 def set_tags(
     filepath: Path,
     tags: set[str],
-    error: bool,
     test_run: bool,
     sep: str = " ~ ",
     start_def: str = "[",
     end_def: str = "]",
-    tag_sep: str = ","
+    tag_sep: str = ",",
 ) -> bool:
+    """
+    Set the tags into the title of an mp3 file given in entry
+    """
     if filepath.exists():
         tags = {tag.lower() for tag in tags if tag.isalnum()}
-        artist, state = read_id3_tag(filepath=filepath,frame_id="TPE1")
+        artist, state = read_id3_tag(filepath=filepath, frame_id="TPE1")
         if state in (0, 1):
             if isinstance(artist, list):
                 artist = artist[0]
 
-            
-            base_text, tags_set = extract_tags_from_str(text=artist,sep=sep, start_def=start_def, end_def=end_def, tag_sep=tag_sep)
+            base_text, tags_set = extract_tags_from_str(
+                text=artist,
+                sep=sep,
+                start_def=start_def,
+                end_def=end_def,
+                tag_sep=tag_sep,
+            )
             new_tags: set[str] = tags_set.union(tags)
 
-            new_artist: str = put_tags_in_str(base_text=base_text,tags=new_tags, sep=sep, start_def=start_def, end_def=end_def, tag_sep=tag_sep)
+            new_artist: str = put_tags_in_str(
+                base_text=base_text,
+                tags=new_tags,
+                sep=sep,
+                start_def=start_def,
+                end_def=end_def,
+                tag_sep=tag_sep,
+            )
 
             if new_tags != tags_set:
-                sucess = write_id3_tag(filepath=filepath, frame_id="TPE1", data=new_artist, test_run=test_run)
+                sucess = write_id3_tag(
+                    filepath=filepath,
+                    frame_id="TPE1",
+                    data=new_artist,
+                    test_run=test_run,
+                )
                 if sucess:
                     logger.info(f"[Set Tags] Sucessfully set {len(tags)} tags into '{filepath}'")
                     return True
-                else:
-                    logger.error(f"[Set Tags] Error writing {len(tags)} tags into '{filepath}'")
-                    return False
+                logger.error(f"[Set Tags] Error writing {len(tags)} tags into '{filepath}'")
+                return False
             else:
                 logger.info(f"[Set Tags] Tags already present are the same, did nothing in '{filepath}'")
                 return True
@@ -127,18 +130,11 @@ def set_tags(
             logger.error(f"[Set Tags] Exeption during getting tags, did not try to set them in '{filepath}'")
             return False
     else:
-        if error: print(f"\n[Set Tags] Filepath provided doesn't exists: '{filepath}'")
         logger.error(f"[Set Tags] Filepath provided doesn't exists: '{filepath}'")
         return False
-    
 
 
-
-def set_album(
-    filepath: Path,
-    album: str,
-    test_run: bool = False
-) -> bool:
+def set_album(filepath: Path, album: str, test_run: bool = False) -> bool:
     """
     Embed album info into MP3 file and update DB flag `update_album`.
     """

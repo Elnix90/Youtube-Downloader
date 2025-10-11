@@ -1,13 +1,14 @@
-import requests
+import json
 import subprocess
 from pathlib import Path
-import json
+
+import requests
 
 from FUNCTIONS.HELPERS.logger import setup_logger
+
 logger = setup_logger(__name__)
 
 SPONSORBLOCK_API: str = "https://sponsor.ajay.app/api/skipSegments"
-
 
 
 def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float, float]]:
@@ -22,7 +23,9 @@ def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float,
         response = requests.get(url, params=params)
         response.raise_for_status()
         segments = response.json()  # pyright: ignore[reportAny]
-        skips: list[tuple[float, float]] = [(seg["segment"][0], seg["segment"][1]) for seg in segments]  # pyright: ignore[reportAny]
+        skips: list[tuple[float, float]] = [
+            (seg["segment"][0], seg["segment"][1]) for seg in segments  # pyright: ignore[reportAny]
+        ]
         logger.info(f"[Get skips] Sucessfully got {len(skips)} skips for '{video_id}'")
         return skips
     except requests.exceptions.HTTPError as e:
@@ -37,24 +40,45 @@ def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float,
         raise
 
 
-
-def cut_segments_ffmpeg(input_file: Path, output_file: Path, segments: list[tuple[float, float]], test_run: bool) -> float:
+def cut_segments_ffmpeg(
+    input_file: Path,
+    output_file: Path,
+    segments: list[tuple[float, float]],
+    test_run: bool,
+) -> float:
 
     if not segments and not test_run:
         _ = subprocess.run(
-            ["ffmpeg", "-y", "-i", str(input_file), "-c", "copy", str(output_file)],
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(input_file),
+                "-c",
+                "copy",
+                str(output_file),
+            ],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         logger.warning(f"[Cut Segments] No segments provided for '{input_file}'")
-        return 0.0  
+        return 0.0
 
     segments = sorted(segments)
 
-    if not test_run: 
+    if not test_run:
         probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(input_file)],
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "csv=p=0",
+                str(input_file),
+            ],
             text=True,
             check=True,
             stdout=subprocess.PIPE,
@@ -80,10 +104,15 @@ def cut_segments_ffmpeg(input_file: Path, output_file: Path, segments: list[tupl
         filter_complex = ";".join(filter_parts) + f";{concat_inputs}concat=n={len(keep_segments)}:v=0:a=1[outa]"
 
         cmd = [
-            "ffmpeg", "-y", "-i", str(input_file),
-            "-filter_complex", filter_complex,
-            "-map", "[outa]",
-            str(output_file)
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(input_file),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[outa]",
+            str(output_file),
         ]
 
         _ = subprocess.run(

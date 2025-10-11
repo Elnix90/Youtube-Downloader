@@ -3,48 +3,42 @@ Constants loader for YouTube Music Downloader
 Loads config.toml (validated) and exposes constants.
 """
 
-from pathlib import Path
 import logging
-import sys
+from pathlib import Path
 
-from CONFIG.config_loader import Config, load_config
-
-
+from CONFIG.config_loader import load_config
 
 # ---------- Load config ----------
 
 CONFIG_FILE = Path("CONFIG/config.toml")
 
-if not CONFIG_FILE.exists():
-    print(f"Error: Configuration file '{CONFIG_FILE}' does not exist.")
-    print("Please create this file or use config.toml.example as a template.")
-    sys.exit(1)
 
 config = load_config(CONFIG_FILE)
 
 
-
-
 # ---------- Validation ----------
 
+
 def validate_config() -> None:
+    """
+    Loads the config file and checks for any errros to avoid later exceptions
+    """
     required_sections = ["paths", "patterns", "processing", "logging"]
     for section in required_sections:
         if section not in config:
             raise ValueError(f"Missing section in config.toml: [{section}]")
 
     # Check critical paths
-    download_path = Path(config["paths"]["download_path"])
+    download_path = Path(config["paths"]["download_path"]).expanduser().resolve()
     if not download_path.parent.exists():
-        print(f"Warning: Parent directory of download_path does not exist: {download_path.parent}")
+        print(f"Warning: Parent directory of download_path does not exist: {download_path.parent}; will be created")
 
     db_path = Path(config["paths"]["db_path"])
     if not db_path.exists() and not db_path.parent.exists():
         print(f"Warning: Parent directory of db_path does not exist: {db_path.parent}")
 
+
 validate_config()
-
-
 
 
 # ---------- Constants ----------
@@ -79,6 +73,7 @@ TRUSTED_ARTISTS_FILE: Path = PATTERN_DIR / config["patterns"]["trusted_artists_f
 
 # Processing
 MAX_LYRICS_RETRIES: int = config["processing"]["max_lyrics_retries"]
+REMIX_CONFIDENCE_THRESHOLD: float = config["processing"]["remix_confidence_threshold"]
 
 # Logging
 LOGS_CONSOLE_GLOBALLY: bool = config["logging"]["console_globally"]
@@ -86,6 +81,7 @@ OVERLAP_FPRINT: bool = config["logging"]["overlap_fprint"]
 OVERWRITE_UNCHANGED: bool = config["logging"]["overwrite_unchanged"]
 
 LOGGING_LEVELS: dict[str, int] = {
+    "VERBOSE": 5,
     "DEBUG": logging.DEBUG,
     "INFO": logging.INFO,
     "WARNING": logging.WARNING,
@@ -93,13 +89,10 @@ LOGGING_LEVELS: dict[str, int] = {
     "CRITICAL": logging.CRITICAL,
 }
 
-LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS.get(
-    config["logging"]["level_console"].upper(),
-    logging.WARNING
-)
-LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS.get(
-    config["logging"]["level_logfiles"].upper(),
-    logging.DEBUG
-)
+LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[config["logging"]["level_console"].upper()]
 
-CONFIG: Config = config
+LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[config["logging"]["level_logfiles"].upper()]
+
+EXCLUDE_FROM_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
+
+CONFIG = config
