@@ -11,7 +11,7 @@ from typing import Any, cast, override
 from colorama import Fore, Style
 from colorama import init as colorama_init
 
-from CONSTANTS import (
+from constants import (
     LOGGING_LEVEL_CONSOLE,
     LOGGING_LEVEL_LOGFILES,
     LOGS_CONSOLE_GLOBALLY,

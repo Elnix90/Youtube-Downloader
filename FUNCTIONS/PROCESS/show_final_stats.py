@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlite3 import Cursor
 from typing import Literal, cast
 
-from CONSTANTS import CORRECT_NOT_IN_DIR_FILE, UNAVAILABLE_VIDEOS_FILE
+from constants import CORRECT_NOT_IN_DIR_FILE, UNAVAILABLE_VIDEOS_FILE
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.HELPERS.fileops import dump
 from FUNCTIONS.HELPERS.helpers import VideoInfoMap

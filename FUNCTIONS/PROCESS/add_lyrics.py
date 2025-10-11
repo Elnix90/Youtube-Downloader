@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
-from CONSTANTS import MAX_LYRICS_RETRIES
+from constants import MAX_LYRICS_RETRIES
 from FUNCTIONS.extract_lyrics import get_lyrics_from_syncedlyrics
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import VideoInfo

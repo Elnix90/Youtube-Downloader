@@ -2,7 +2,7 @@ import time
 from difflib import SequenceMatcher
 from sqlite3 import Connection, Cursor
 
-from CONSTANTS import REMIX_CONFIDENCE_THRESHOLD
+from constants import REMIX_CONFIDENCE_THRESHOLD
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import clean_song_query

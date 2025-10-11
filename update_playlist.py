@@ -1,4 +1,4 @@
-from CONSTANTS import CONFIG
+from constants import CONFIG
 from DEBUG.add_videos_to_playlist import add_videos
 
 playlist_id = CONFIG['other']['music_playlist_id']

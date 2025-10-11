@@ -1,8 +1,13 @@
+"""
+SQL requests module
+contains function to interract esaely with the database
+"""
+
 import json
 import sqlite3
 from typing import Literal
 
-from CONSTANTS import DB_PATH
+from constants import DB_PATH
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, now_unix
 from FUNCTIONS.HELPERS.logger import setup_logger
 
@@ -33,6 +38,9 @@ def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
 
 
 def commit_changes_to_db(conn: sqlite3.Connection, stop_on_sql_error: bool, test_run: bool = False) -> bool:
+    """
+    Takes the Connection object to commit a change safely, and take in count test run to avoid breaking when debugging
+    """
     try:
         if not test_run:
             conn.commit()
@@ -295,12 +303,14 @@ def insert_video_db(
     conn: sqlite3.Connection,
     test_run: bool,
 ) -> None:
+    """Insert a new entry in the DB"""
+
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
     # Extract valid video fields
-    EXCLUDE_FOR_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position"}
-    video_row = {k: v for k, v in video_data.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
+    exclude_from_main = {"skips", "tags", "playlist_id", "playlist_item_id", "position"}
+    video_row = {k: v for k, v in video_data.items() if k in video_columns and k not in exclude_from_main}
 
     if "video_id" not in video_row:
         logger.error("[Insert Video] Missing 'video_id'")
@@ -331,12 +341,16 @@ def update_video_db(
     conn: sqlite3.Connection,
     test_run: bool,
 ) -> None:
+    """
+    Updates an entry in the DB
+    """
+
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
     # Security: prevent rewriting creation timestamps
-    EXCLUDE_FOR_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
-    video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FOR_MAIN}
+    EXCLUDE_FROM_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
+    video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FROM_MAIN}
 
     # Update modification time
     video_update_data["date_modified"] = now_unix()

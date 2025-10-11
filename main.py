@@ -5,7 +5,7 @@ Main module, launches the downloading programm
 import time
 from datetime import timedelta
 
-from CONSTANTS import (
+from constants import (
     CONFIG,
     CRED_DIR,
     DOWNLOAD_PATH,

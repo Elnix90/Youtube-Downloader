@@ -11,7 +11,7 @@ from typing import TypedDict, cast
 import syncedlyrics
 from ytmusicapi import YTMusic
 
-from CONSTANTS import REMIX_PATTERNS_FILE, TRUSTED_ARTISTS_FILE
+from constants import REMIX_PATTERNS_FILE, TRUSTED_ARTISTS_FILE
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import (
     clean_song_query,

@@ -4,7 +4,7 @@ Modules that contains compute_tags and compute_albums functions
 
 from typing import Literal
 
-from CONSTANTS import PRIVATE_PATTERNS_FILE, TAGS_DIR, TRUSTED_ARTISTS_FILE
+from constants import PRIVATE_PATTERNS_FILE, TAGS_DIR, TRUSTED_ARTISTS_FILE
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.tag_helpers import (
     compute_tag_set_from_file,

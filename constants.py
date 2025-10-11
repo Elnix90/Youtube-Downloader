@@ -20,6 +20,9 @@ config = load_config(CONFIG_FILE)
 
 
 def validate_config() -> None:
+    """
+    Loads the config file and checks for any errros to avoid later exceptions
+    """
     required_sections = ["paths", "patterns", "processing", "logging"]
     for section in required_sections:
         if section not in config:
@@ -89,5 +92,7 @@ LOGGING_LEVELS: dict[str, int] = {
 LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[config["logging"]["level_console"].upper()]
 
 LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[config["logging"]["level_logfiles"].upper()]
+
+EXCLUDE_FROM_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
 
 CONFIG = config
