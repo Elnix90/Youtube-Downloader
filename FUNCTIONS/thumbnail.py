@@ -1,3 +1,8 @@
+"""
+Thumbnail module: Downloads, crop and processes the youtube thumbnails from url and put them in the downlod dir,
+correctly named after the mp3 file name
+"""
+
 from io import BytesIO
 from pathlib import Path
 from typing import Literal
@@ -23,7 +28,7 @@ def download_and_pad_image(image_url: str, save_path: Path, thumbnail_format: Li
     """
     try:
         # Download the image
-        response = requests.get(image_url)
+        response = requests.get(image_url, timeout=20)
         response.raise_for_status()
 
         img_bytes = BytesIO(response.content)
@@ -50,7 +55,7 @@ def download_and_pad_image(image_url: str, save_path: Path, thumbnail_format: Li
         logger.debug(f"[Down+Crop] Successfully downloaded and padded '{image_url}'")
         return True
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Down+Crop] Error while processing '{image_url}' : {e}")
         return False
 
@@ -97,7 +102,7 @@ def embed_image_in_mp3(mp3_path: Path, image_path: Path, test_run: bool) -> bool
         logger.info(f"[Embed Cover] Successfully embedded cover into '{mp3_path.name}'")
         return True
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Embed Cover] Failed to embed cover into '{mp3_path.name}': {e}")
         return False
 
@@ -145,7 +150,7 @@ def remove_image_from_mp3(mp3_path: Path, image_path: Path, test_run: bool) -> b
         )
         return True
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Remove Cover] Failed to remove cover art from '{mp3_path.name}': {e}")
         return False
 
@@ -189,6 +194,6 @@ def has_embedded_cover(mp3_path: Path) -> bytes | None:
         logger.debug(f"[Cover Check] No embedded cover image found in '{mp3_path.name}'")
         return None
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caughtgi
         logger.error(f"[Cover Check] Error reading '{mp3_path.name}': {e}")
         return None
