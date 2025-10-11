@@ -5,6 +5,7 @@ Migrate an old database to the latest version
 import sqlite3
 
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.sql_requests import commit_changes_to_db
 
 logger = setup_logger(__name__)
 
@@ -194,5 +195,5 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
     else:
         logger.debug("[DB MIGRATION] No new columns were added.")
 
-    conn.commit()
+    _ = commit_changes_to_db(conn, True)
     logger.info("[DB MIGRATION] Database schema now synchronized with init_db().")

@@ -32,6 +32,21 @@ def get_db_connection(create_if_not: bool = True) -> sqlite3.Connection:
     return conn
 
 
+def commit_changes_to_db(conn: sqlite3.Connection, stop_on_sql_error: bool, test_run: bool = False) -> bool:
+    try:
+        if not test_run:
+            conn.commit()
+            logger.verbose("[Commiting changes] Changes commited")
+        else:
+            logger.verbose("[Commiting changes] Test run was enabled, no changes commited")
+        return True
+    except sqlite3.OperationalError as e:
+        if not stop_on_sql_error:
+            logger.error(f"[Commiting changes] Error while commiting in the db: {e}")
+            return False
+        raise sqlite3.OperationalError(e)
+
+
 def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
     """
     Initialize the SQLite database with all required tables and constraints.
@@ -209,7 +224,7 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
     # ============================================================
     #                           COMMIT
     # ============================================================
-    conn.commit()
+    _ = commit_changes_to_db(conn, True)
     logger.info("[Init DB] Database fully initialized successfully")
 
 
@@ -303,7 +318,7 @@ def insert_video_db(
     _apply_playlists(video_row["video_id"], video_data, cur)  # pyright: ignore[reportArgumentType]
 
     if not test_run:
-        conn.commit()
+        _ = commit_changes_to_db(conn, True)
         logger.info(f"[Insert Video] Inserted '{video_row['video_id']}' with {len(video_row)} fields")
     else:
         logger.info("[Insert Video] Test_run enabled, no insert committed.")
@@ -337,11 +352,7 @@ def update_video_db(
     _apply_skips_and_tags(video_id, update_fields, cur)
     _apply_playlists(video_id, update_fields, cur)
 
-    if not test_run:
-        conn.commit()
-        logger.debug(f"[Update Video] Updated '{video_id}' with {len(video_update_data)} fields")
-    else:
-        logger.info("[Update Video] Test_run enabled, no update committed.")
+    _ = commit_changes_to_db(conn, True, test_run)
 
 
 def remove_video(
@@ -363,7 +374,7 @@ def remove_video(
         logger.warning(f"[Remove Video] No video found with id '{video_id}'")
 
     if not test_run:
-        conn.commit()
+        _ = commit_changes_to_db(conn, True, test_run)
         logger.debug(f"[Remove Video] Removed '{video_id}' from database")
     else:
         logger.info("[Remove Video] Test_run enabled, no removal committed.")
