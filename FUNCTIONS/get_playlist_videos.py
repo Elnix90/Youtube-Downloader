@@ -80,7 +80,7 @@ def get_playlist_with_ytdlp(
         if "This playlist is private" in str(exc):
             return 1, None
         return 2, None
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception(f"yt-dlp failed: {exc}")
         return 2, None
 
@@ -192,7 +192,7 @@ def fetch_playlist_videos(
     # -----------------------------------------------------------------------
     else:
         cached_videos = load(file_path)
-        msg = f"[Fetching videos] Loaded {len(cached_videos)}" + f"cached videos from '{file_path}'"
+        msg = f"[Fetching videos] Loaded {len(cached_videos)}" + f" cached videos from '{file_path}'"
         if info:
             fprint("", msg)
         logger.info(msg)
