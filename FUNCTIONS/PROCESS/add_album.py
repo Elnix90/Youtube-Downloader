@@ -1,17 +1,19 @@
-from pathlib import Path
-import time
+"""
+This module processes the album metadata for individual video files.
+It can compute the album from the uploader/title, read existing ID3 tags,
+and embed the album into an MP3 file.
+"""
 
+import time
+from pathlib import Path
 
 from FUNCTIONS.HELPERS.compute_tags_and_album import compute_album
 from FUNCTIONS.HELPERS.fprint import fprint
-from FUNCTIONS.set_tags_and_album import set_album
-from FUNCTIONS.metadata import read_id3_tag
-
-
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.metadata import read_id3_tag
+from FUNCTIONS.set_tags_and_album import set_album
+
 logger = setup_logger(__name__)
-
-
 
 
 def process_album_for_video(
@@ -21,7 +23,6 @@ def process_album_for_video(
     progress_prefix: str,
     info: bool,
     recompute_album: bool,
-    error: bool,
     test_run: bool,
 ) -> float:
     """
@@ -31,11 +32,13 @@ def process_album_for_video(
 
     start_processing: float = time.time()
 
-    if info:fprint(progress_prefix, f"Getting album for ?", title)
+    if info:
+        fprint(progress_prefix, "Getting album for ?", title)
+
     logger.debug(f"[Album] Getting album for '{title}'")
-    actual_album, state = read_id3_tag(filepath=filepath,frame_id="TALB")
-    
+    actual_album, state = read_id3_tag(filepath=filepath, frame_id="TALB")
     computed_album: str = "Private"
+
     if title and uploader and recompute_album:
         computed_album = compute_album(title=title, uploader=uploader)
 
@@ -43,12 +46,12 @@ def process_album_for_video(
     if state == 0:
         if isinstance(actual_album, list):
             actual_album = str(actual_album[0])
-        else: actual_album = str(actual_album)
+        else:
+            actual_album = str(actual_album)
         if computed_album != actual_album:
             update_album = True
     else:
         update_album = True
-
 
     if update_album:
         success: bool = set_album(
@@ -58,10 +61,15 @@ def process_album_for_video(
         )
 
         if success:
-            if info: fprint(progress_prefix,f"Embedded album '{computed_album}' into ?",title)
+            if info:
+                fprint(
+                    progress_prefix,
+                    f"Embedded album '{computed_album}' into ?",
+                    title,
+                )
             logger.info(f"[Album] Embedded album '{computed_album}' into '{title}'")
+
         else:
-            if error: print(f"\n[Album] Error embedding album into '{title}'")
             logger.error(f"[Album] Error embedding album into '{title}'")
 
     return time.time() - start_processing

@@ -1,6 +1,14 @@
+"""
+Compares 2 dicts and prints the differences
+"""
+
 from typing import Any
 
-def compare_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> None:  # pyright: ignore[reportExplicitAny]
+
+def compare_dicts(
+    dict1: dict[str, Any],  # pyright: ignore[reportExplicitAny]
+    dict2: dict[str, Any],  # pyright: ignore[reportExplicitAny]
+) -> None:
     """
     Compare two dictionaries and print the differences.
     Shows keys missing, extra, or with different values.
@@ -19,4 +27,4 @@ def compare_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> None:  # pyri
     # Keys present in both, but with different values
     for key in keys1 & keys2:
         if dict1[key] != dict2[key]:
-            print(f"Different value for key '{key}': dict1 = {dict1[key]} | dict2 = {dict2[key]}")
+            print(f"Different value for key '{key}': dict1 = {dict1[key]} | " + f"dict2 = {dict2[key]}")
