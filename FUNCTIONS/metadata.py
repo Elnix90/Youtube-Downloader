@@ -1,3 +1,6 @@
+"""
+metadata module: processes all kinds of mp3 metadata things
+"""
 import json
 from pathlib import Path
 from typing import Literal
@@ -40,7 +43,7 @@ def get_metadata_tag(filepath: Path, tag: str = 'metadata') -> tuple[VideoInfo |
                                 0
                             ]
                         )
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
                         logger.warning(f"[Get Metadata Tag] Exception during converting to python dict: {e}")
                         return None, 2
                     if data:
@@ -55,7 +58,7 @@ def get_metadata_tag(filepath: Path, tag: str = 'metadata') -> tuple[VideoInfo |
         logger.warning(f"[Get Metadata Tag] No audio.tags tags in '{filepath}'")
         return None, 2
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning(f"[Get Metadata Tag] Failed to read data, file '{filepath}' corrupted : {e}")
         return None, 3
 
@@ -83,7 +86,7 @@ def repair_mp3_file(filepath: Path, test_run: bool) -> bool:
     except MutagenError as e:
         logger.error(f"[Repair MP3] Mutagen error on file '{filepath}': {e}")
         return False
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Repair MP3] Unexpected error on file '{filepath}': {e}")
         return False
 
@@ -125,7 +128,7 @@ def read_id3_tag(filepath: Path, frame_id: str) -> tuple[list[str] | str, Litera
 
         logger.info(f"[Read Tag] No '{frame_id}' tag to read from '{filepath}'")
         return [], 1
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Read Tag] Failed to read tag '{frame_id}' from '{filepath}': {e}")
         return [], 2
 
@@ -185,6 +188,6 @@ def write_id3_tag(
         logger.verbose(f"[Write Tag] Successfully written tag '{frame_id}' into '{filepath.name}'")
         return True
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Write Tag] Failed to write tag '{frame_id}' into '{filepath.name}': {e}")
         return False
