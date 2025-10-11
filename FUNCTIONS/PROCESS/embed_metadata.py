@@ -29,7 +29,8 @@ def embed_metadata_for_video(
     test_run: bool,
     cur: Cursor,
     info: bool,
-    error: bool,
+    force_update_date: bool,
+    force_update_metadata: bool
 ) -> tuple[float, bool]:
     """
     Embed metadata from DB into a single MP3 file using get_video_info.
@@ -51,7 +52,7 @@ def embed_metadata_for_video(
 
     file_date, state = read_id3_tag(filepath=filepath, frame_id="TDRC")
 
-    update_date: bool = False
+    update_date: bool = force_update_date
     if state == 0:
         if isinstance(file_date, list):
             file_date = str(file_date[0])
@@ -68,8 +69,6 @@ def embed_metadata_for_video(
         if date:
             success_date = write_id3_tag(filepath=filepath, frame_id="TDRC", data=tm, test_run=test_run)
             if not success_date:
-                if error:
-                    print(f"\n[Metadata] Failed to embed date '{tm}' for '{title}'")
                 logger.warning(f"[Metadata] Failed to embed date '{tm}' for '{title}'")
             else:
                 if info:
@@ -83,7 +82,7 @@ def embed_metadata_for_video(
     file_video_info, _ = get_metadata_tag(filepath=filepath)
     data: str = json.dumps(video_info, indent=4, ensure_ascii=True)
 
-    update_data: bool = True
+    update_data: bool = force_update_metadata
     if file_video_info:
         cleaned_file_info: VideoInfo = remove_data_from_video_info(
             data=file_video_info, to_remove=["date_added", "date_modified"]
@@ -110,8 +109,6 @@ def embed_metadata_for_video(
         )
 
         if not success_meta:
-            if error:
-                print(f"\n[Metadata] Failed to embed metadata for '{title}'")
             logger.warning(f"[Metadata] Failed to embed metadata for '{title}'")
         else:
             if info:
