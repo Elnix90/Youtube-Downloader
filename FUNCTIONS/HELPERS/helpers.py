@@ -425,11 +425,15 @@ def timestamp_to_id3_unique(ts: float | int, include_time: bool = False) -> str:
     Returns:
         str: Date string in format 'YYYY-MM-DD' or 'YYYY-MM-DD_HH-MM-SS'.
     """
+    # If ts is in milliseconds, convert to seconds
+    if ts > 1e12:  # simple heuristic
+        ts = ts / 1000
+
     dt = datetime.fromtimestamp(ts)
     if include_time:
         return dt.strftime("%Y-%m-%d_%H-%M-%S")
-    else:
-        return dt.strftime("%Y-%m-%d")
+
+    return dt.strftime("%Y-%m-%d")
 
 
 def normalize_skips(info: VideoInfo) -> VideoInfo:

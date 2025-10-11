@@ -1,3 +1,7 @@
+"""
+Embed DB metadata into the video itself to ensure security in case of loosing the DB,
+and also the data edded to sort it in the music player
+"""
 import json
 import time
 from pathlib import Path
@@ -36,7 +40,7 @@ def embed_metadata_for_video(
 
     video_info: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)
     date: float = video_info.get('date_added', 0.0)
-    tm: str = timestamp_to_id3_unique(ts=date)
+    tm: str = timestamp_to_id3_unique(date, True)
     title: str = video_info.get("title", "")
 
     if info:
