@@ -43,7 +43,7 @@ def remove_ids_not_in_list(
 
     try:
         playlist_entries = load(video_id_file)
-        video_ids = set(entry.video_id for entry in playlist_entries if entry.video_id)
+        video_ids = set(playlist_entries.keys())
     except Exception as e:
         logger.error(f"[Removing Ids] Failed to load '{video_id_file}': {e}")
         if error:
@@ -86,7 +86,6 @@ def remove_ids_not_in_list(
 
         if info:
             fprint("", f"[Removing Ids] Removed {removed_ids} from list")
-
 
     _ = commit_changes_to_db(conn, True, test_run)
 
