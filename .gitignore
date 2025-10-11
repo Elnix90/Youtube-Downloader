@@ -13,6 +13,6 @@ LOGS
 music.db
 music.db-journal
 typings
-config.toml
+CONFIG/config.toml
 .ruff_cache
 .flake8

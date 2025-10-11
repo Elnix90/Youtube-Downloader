@@ -12,6 +12,7 @@ import tomli
 
 
 class PathsConfig(TypedDict):
+    """Paths configuration"""
     json_dir: str
     cred_dir: str
     logs_dir: str
@@ -24,6 +25,7 @@ class PathsConfig(TypedDict):
 
 
 class PatternsConfig(TypedDict):
+    """Patterns configuration"""
     unwanted_patterns_file: str
     remix_patterns_file: str
     private_patterns_file: str
@@ -31,6 +33,7 @@ class PatternsConfig(TypedDict):
 
 
 class ProcessingConfig(TypedDict):
+    """Processing configuration (settings)"""
     max_lyrics_retries: int
     playlist_id: str
 
@@ -77,6 +80,7 @@ class ProcessingConfig(TypedDict):
 
 
 class LoggingConfig(TypedDict):
+    """Logs configuration"""
     console_globally: bool
     level_console: str
     level_logfiles: str
@@ -85,12 +89,14 @@ class LoggingConfig(TypedDict):
 
 
 class OtherConfig(TypedDict):
+    """Random other things configuration"""
     music_playlist_id: str | None
     clean: bool
     connect_google_at_start: bool
 
 
 class Config(TypedDict):
+    """Main configuration"""
     paths: PathsConfig
     patterns: PatternsConfig
     processing: ProcessingConfig
@@ -116,4 +122,4 @@ def load_config(config_file: Path) -> Config:
             _config_cache: Config = tomli.load(f)  # pyright: ignore[reportAssignmentType]
         return _config_cache
     except tomli.TOMLDecodeError as e:
-        raise ValueError(f"Syntax error in config.toml: {e}")
+        raise ValueError(f"Syntax error in config.toml: {e}") from e
