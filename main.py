@@ -53,7 +53,7 @@ def main_list_process() -> None:
         file_path=PLAYLIST_VIDEOS_FILE,
         test_run=CONFIG["processing"]["test_run"],
         clean=CONFIG["processing"]["clean"],
-        info=info
+        info=info,
     )
 
     # Step 2: Process database and files

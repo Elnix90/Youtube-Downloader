@@ -101,11 +101,7 @@ def is_special_playlist(playlist_id: str) -> bool:
 
 
 def fetch_playlist_videos(
-    playlist_id: str,
-    file_path: Path,
-    test_run: bool,
-    clean: bool = False,
-    info: bool = True
+    playlist_id: str, file_path: Path, test_run: bool, clean: bool = False, info: bool = True
 ) -> None:
     """
     Fetch playlist videos using yt_dlp for public playlists,
