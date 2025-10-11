@@ -7,7 +7,7 @@ import json
 import sqlite3
 from typing import Literal
 
-from constants import DB_PATH
+from constants import DB_PATH, EXCLUDE_FROM_MAIN
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, now_unix
 from FUNCTIONS.HELPERS.logger import setup_logger
 
@@ -349,7 +349,6 @@ def update_video_db(
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
     # Security: prevent rewriting creation timestamps
-    EXCLUDE_FROM_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
     video_update_data = {k: v for k, v in update_fields.items() if k in video_columns and k not in EXCLUDE_FROM_MAIN}
 
     # Update modification time
@@ -395,6 +394,10 @@ def remove_video(
 
 
 def get_videos_in_db(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str]:
+    """
+    Fetch the DB and return a list of ids in the ascendind order (older before),
+    at least this is what i want the real result is messy thanks to my skill issue
+    """
     if include_not_status0:
         _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
     else:
@@ -407,40 +410,39 @@ def get_videos_in_db(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str
 # Safe helper functions
 # -----------------------------
 def safe_str(row: sqlite3.Row, key: VideoInfoKey) -> str:
+    """Return a srt from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     return value if isinstance(value, str) else ""
 
 
 def safe_int(row: sqlite3.Row, key: VideoInfoKey) -> int:
+    """Return a int from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     return value if isinstance(value, int) else 0
 
 
 def safe_status(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2, 3]:
+    """Return a status literal from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     if isinstance(value, int) and value in (0, 1, 2, 3):
         return value
     return 3  # Unknown
 
 
-def safe_lyrics_to_use(row: sqlite3.Row, key: VideoInfoKey) -> Literal[0, 1, 2]:
-    value = row[key] if key in row.keys() else None
-    if isinstance(value, int) and value in (0, 1, 2):
-        return value
-    return 0
-
-
 def safe_float(row: sqlite3.Row, key: VideoInfoKey) -> float:
+    """Return a float from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     return float(value) if isinstance(value, (int, float)) else 0.0
 
 
 def safe_bool(row: sqlite3.Row, key: VideoInfoKey) -> bool:
+    """Return a bool from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     return bool(value) if isinstance(value, int) else False
 
 
 def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
+    """Return a list[str] from a Row object, type safe"""
     value = row[key] if key in row.keys() else None
     if isinstance(value, str):
         try:
@@ -449,7 +451,7 @@ def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
                 isinstance(x, str) for x in parsed  # pyright: ignore[reportUnknownVariableType]
             ):
                 return parsed  # pyright: ignore[reportUnknownVariableType]
-        except Exception:
+        except json.JSONDecodeError:
             return []
     return []
 
