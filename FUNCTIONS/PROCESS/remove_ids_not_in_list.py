@@ -9,7 +9,7 @@ from sqlite3 import Connection, Cursor
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.sql_requests import get_video_info_from_db, get_videos_in_db
+from FUNCTIONS.sql_requests import commit_changes_to_db, get_video_info_from_db, get_videos_in_db
 
 logger = setup_logger(__name__)
 
@@ -87,8 +87,8 @@ def remove_ids_not_in_list(
         if info:
             fprint("", f"[Removing Ids] Removed {removed_ids} from list")
 
-    if not test_run:
-        conn.commit()
+
+    _ = commit_changes_to_db(conn, True, test_run)
 
     if removed_ids == 0:
         logger.info("[Removing Ids] No videos to remove from the database")

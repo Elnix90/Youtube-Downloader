@@ -7,7 +7,7 @@ from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoMap
 from FUNCTIONS.HELPERS.logger import setup_logger
-from FUNCTIONS.sql_requests import get_videos_in_db, insert_video_db
+from FUNCTIONS.sql_requests import commit_changes_to_db, get_videos_in_db, insert_video_db
 
 logger = setup_logger(__name__)
 
@@ -90,8 +90,7 @@ def add_new_ids_to_database(
             if errors:
                 print(msg)
 
-    if not test_run:
-        conn.commit()
+    _ = commit_changes_to_db(conn, True, test_run)
 
     summary = f"[Adding IDs] Added {added_ids}"
     # summary = f"[Adding IDs] Added {added_ids} | " + f"Updated {updated_ids} | " + f"{correct_ids} already OK"

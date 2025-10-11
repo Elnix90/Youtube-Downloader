@@ -10,6 +10,7 @@ from pathlib import Path
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.logger import setup_logger
+from FUNCTIONS.sql_requests import commit_changes_to_db
 
 logger = setup_logger(__name__)
 
@@ -65,7 +66,7 @@ def update_date_added(
 
         time.sleep(0.1)
 
-    conn.commit()
+    _ = commit_changes_to_db(conn, True)
 
     total_duration = str(timedelta(seconds=int(time.time() - start_time)))
     fprint(
