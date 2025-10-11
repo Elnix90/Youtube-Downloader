@@ -43,6 +43,8 @@ force_recompute_lyrics = false
 force_recompute_thumbnails = false
 force_recompute_tags = true
 force_recompute_album = true
+force_update_date = true
+force_update_metadata = true
 
 thumbnail_format = "pad"  # "pad" or "crop"
 

@@ -48,6 +48,8 @@ class ProcessingConfig(TypedDict):
     force_recompute_thumbnails: bool
     force_recompute_tags: bool
     force_recompute_album: bool
+    force_update_date: bool
+    force_update_metadata: bool
 
     thumbnail_format: Literal['pad', 'crop']
 

@@ -54,6 +54,8 @@ def process_all(
     force_recompute_album: bool,
     force_recompute_yt_info: bool,
     force_recompute_remix_of: bool,
+    force_update_date: bool,
+    force_update_metadata: bool,
     sponsorblock_categories: list[str],
     thumbnail_format: Literal["pad", "crop"],
     sep: str,
@@ -74,9 +76,9 @@ def process_all(
     conn: Connection,
 ) -> dict[str, float | None]:
 
-    # --- Process all videos ---
+    """Process all videos"""
 
-    Processing_start_time: float = time.time()
+    processing_start_time: float = time.time()
 
     # Initialise the database if not (create it)
     init_db(cur=cur, conn=conn)
@@ -325,10 +327,11 @@ def process_all(
                 video_id=video_id,
                 filepath=filepath,
                 progress_prefix=progress_prefix,
+                test_run=test_run,
                 cur=cur,
                 info=info,
-                error=error,
-                test_run=test_run,
+                force_update_date=force_update_date,
+                force_update_metadata=force_update_metadata
             )
             metadata_duration += metadata_time
 
@@ -360,11 +363,11 @@ def process_all(
     if info:
         print()
 
-    Processing_end_time: float = time.time()
-    Processing_total_time: float = Processing_end_time - Processing_start_time
+    processing_end_time: float = time.time()
+    processing_total_time: float = processing_end_time - processing_start_time
 
     return {
-        "total": Processing_total_time,
+        "total": processing_total_time,
         "calculating_duration": calculating_duration,
         "download_duration": download_duration if download_duration else None,
         "cut_duration": cut_duration,
