@@ -194,6 +194,6 @@ def has_embedded_cover(mp3_path: Path) -> bytes | None:
         logger.debug(f"[Cover Check] No embedded cover image found in '{mp3_path.name}'")
         return None
 
-    except Exception as e:  # pylint: disable=broad-exception-caughtgi
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Cover Check] Error reading '{mp3_path.name}': {e}")
         return None
