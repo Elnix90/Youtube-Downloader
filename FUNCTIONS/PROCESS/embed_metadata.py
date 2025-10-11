@@ -82,8 +82,8 @@ def embed_metadata_for_video(
     file_video_info, _ = get_metadata_tag(filepath=filepath)
     data: str = json.dumps(video_info, indent=4, ensure_ascii=True)
 
-    update_data: bool = force_update_metadata
-    if file_video_info:
+    update_data: bool = True
+    if file_video_info and not force_update_metadata:
         cleaned_file_info: VideoInfo = remove_data_from_video_info(
             data=file_video_info, to_remove=["date_added", "date_modified"]
         )
@@ -95,10 +95,6 @@ def embed_metadata_for_video(
         if cleaned_file_info == cleaned_data:
             if cleaned_data:
                 update_data = False
-
-        # Debug feature to see why they are updating
-        # else:
-        # compare_dicts(cleaned_data, cleaned_file_info)
 
     if update_data:
         success_meta: bool = write_id3_tag(
