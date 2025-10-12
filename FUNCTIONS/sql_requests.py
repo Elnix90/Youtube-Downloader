@@ -590,5 +590,5 @@ def get_entry_id(video_id: str, cur: sqlite3.Cursor) -> int:
             SELECT id FROM ids WHERE video_id = ?
             """,
             (video_id,)
-        ).fetchone()
+        ).fetchone()[0]
     )

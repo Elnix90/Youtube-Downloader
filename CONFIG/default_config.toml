@@ -62,6 +62,7 @@ force_recompute_yt_info = false
 
 retry_unavailable = false
 retry_private = false
+
 info = true
 error = true
 test_run = false
@@ -88,6 +89,6 @@ overwrite_unchanged = true
 [other]
 # Some other stuff that isn't necessary
 
-music_playlist_id = "" # The playlist ID not url (random letters after youtube.com/playlist?v=HERE <----)
+music_playlist_id = "PLnVyge3em-a2ElGZrft3LHoh64YnGhPsh" # The playlist ID not url (random letters after youtube.com/playlist?v=HERE <----)
 clean = false
 connect_google_at_start = false # If encountering bots walls or login prompts
