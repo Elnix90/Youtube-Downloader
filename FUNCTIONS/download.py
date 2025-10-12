@@ -395,7 +395,7 @@ def download_yt_dlp(
     if not sanitized_title:
         sanitized_title = "sanitized_name"
 
-    final_filename: str = _get_unique_filename(loc, base, ".mp3", video_id)
+    final_filename: str = _get_unique_filename(loc, sanitized_title, ".mp3", video_id)
 
     # Add the entry_id to the title CAUSE FUCK MY MUSIC PLAYER
     # # I CANNOT GET MY MUSICS IN THE ORDER I WANT WHO DEV THAT SHIT
