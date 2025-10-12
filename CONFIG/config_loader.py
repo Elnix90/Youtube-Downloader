@@ -60,6 +60,8 @@ class ProcessingConfig(TypedDict):
     tag_end_delimiter: str
     tag_inner_separator: str
 
+    entry_id_separator: str
+
     retry_unavailable: bool
     retry_private: bool
 

@@ -15,6 +15,7 @@ import yt_dlp
 from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 
+from constants import ENTRY_ID_SEPARATOR
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (
     ExtractedInfo,
@@ -26,12 +27,12 @@ from FUNCTIONS.HELPERS.helpers import (
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
-from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
+from FUNCTIONS.sql_requests import get_entry_id, get_video_info_from_db, update_video_db
 
 logger = setup_logger(__name__)
 
 
-def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
+def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str, cur: Cursor) -> str:
     """
     Returns a unique filename not already present in the download dir.
     If file exists and contains matching metadata ID, reuse it.
@@ -39,6 +40,7 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
     counter = 1
     filename = base
     filepath = loc / f"{filename}{ext}"
+    entry_id = get_entry_id(video_id, cur)
 
     while filepath.exists():
         data, state = get_metadata_tag(filepath)
@@ -48,7 +50,7 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
                 if vid == video_id:
                     return filename
 
-        filename = f"{base}_{counter}"
+        filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{base}_{counter}"
         filepath = loc / f"{filename}{ext}"
         counter += 1
 
@@ -372,6 +374,7 @@ def download_yt_dlp(
     video_id: str,
     title: str,
     uploader: str,
+    cur: Cursor,
     max_retries: int = 3,
     retry_delay: int = 5,
 ) -> tuple[bool, str, str | None]:
@@ -391,9 +394,9 @@ def download_yt_dlp(
     if not base:
         base = "sanitized_name"
 
-    final_filename: str = _get_unique_filename(loc=loc, base=base, ext=".mp3", video_id=video_id)
+    final_filename: str = _get_unique_filename(loc, base, ".mp3", video_id, cur)
     final_filename_with_ext: str = final_filename + ".mp3"
-    ydl_opts: YdlOpt = _build_ydl_opts(loc=loc, filename=final_filename, format_str="bestaudio/best")
+    ydl_opts: YdlOpt = _build_ydl_opts(loc, final_filename, "bestaudio/best")
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -523,10 +526,11 @@ def download_video(
 
         if not test_run:
             download_success, message, final_filename = download_yt_dlp(
-                loc=download_path,
-                video_id=video_id,
-                title=title,
-                uploader=uploader,
+                download_path,
+                video_id,
+                title,
+                uploader,
+                cur
             )
 
             if download_success and final_filename:

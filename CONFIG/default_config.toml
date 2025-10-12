@@ -55,6 +55,8 @@ tag_start_delimiter = "["
 tag_end_delimiter = "]"
 tag_inner_separator = ","
 
+entry_id_separator = "---"
+
 force_mp3_presence = false
 force_recompute_yt_info = false
 
