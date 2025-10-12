@@ -77,7 +77,7 @@ def main_list_process() -> None:
             embed_metadata=CONFIG["processing"]["embed_metadata"],
             add_tags=CONFIG["processing"]["add_tags"],
             force_recompute_tags=CONFIG["processing"]["force_recompute_tags"],
-            force_update_date=CONFIG["processing"]["force_update_date"],
+            # force_update_date=CONFIG["processing"]["force_update_date"],
             force_update_metadata=CONFIG["processing"]["force_update_metadata"],
             # Album
             add_album=CONFIG["processing"]["add_album"],

@@ -54,7 +54,7 @@ def process_all(
     force_recompute_album: bool,
     force_recompute_yt_info: bool,
     force_recompute_remix_of: bool,
-    force_update_date: bool,
+    # force_update_date: bool,
     force_update_metadata: bool,
     sponsorblock_categories: list[str],
     thumbnail_format: Literal["pad", "crop"],
@@ -330,7 +330,7 @@ def process_all(
                 test_run=test_run,
                 cur=cur,
                 info=info,
-                force_update_date=force_update_date,
+                # force_update_date=force_update_date,
                 force_update_metadata=force_update_metadata
             )
             metadata_duration += metadata_time
