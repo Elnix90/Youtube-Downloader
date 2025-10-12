@@ -138,22 +138,12 @@ python main.py
 test_run = true
 ```
 
-```bash
-# Then run:
-python main.py
-```
-
 **Download a specific playlist:**
 
 ```bash
 # Edit config.toml:
 [processing]
 playlist_id = "PLnVyge3em-a2ElGZrft3LHoh64YnGhPsh"  # Replace with your playlist ID
-```
-
-```bash
-# Then run:
-python main.py
 ```
 
 **Simple download without lyrics or tags:**
@@ -164,11 +154,6 @@ python main.py
 get_lyrics = false
 add_tags = false
 use_sponsorblock = false
-```
-
-```bash
-# Then run:
-python main.py
 ```
 
 ---
@@ -191,7 +176,7 @@ python main.py
 
 - `tag_rock.txt` - Words that trigger "rock" tag
 - `tag_french.txt` - Words that trigger "french" tag
-- `notag_instrumental.txt` - Words that prevent tagging
+- `notag_instrumental.txt` - Words that prevent tagging if word in list of words, else it gives the tag
 
 **Pattern Cleaning**: Edit `CONFIG/PATTERNS/unwanted_patterns.txt` to improve lyrics matching by removing common words like "official", "lyrics", etc.
 
@@ -200,66 +185,20 @@ python main.py
 ## 📂 Project Structure
 
 ```text
-├── .gitignore                               # Git ignore file for excluding files/folders from version control
-├── CONFIG                                   # Configuration directory
-│   ├── PATTERNS                             # Pattern files for processing music metadata
-│   │   ├── private_patterns.txt             # Patterns marking content as private
-│   │   ├── remix_patterns.txt               # Patterns marking remixes
-│   │   ├── trusted_artists.txt              # Patterns identifying trusted/public artists
-│   │   └── unwanted_patterns.txt            # Patterns to remove from song titles
-│   ├── TAGS                                 # Tagging rules directory
-│   │   ├── notag_normalmusic.txt            # Keywords preventing normal music tagging
-│   │   ├── tag_femalemusic.txt              # Keywords to tag female music
-│   │   ├── tag_frenchmusic.txt              # Keywords to tag French music
-│   │   ├── tag_normalmusic.txt              # Keywords for normal music tagging
-│   │   ├── tag_publicmusic.txt              # Keywords for public music tagging
-│   │   └── tag_remixmusic.txt               # Keywords for remix music tagging
-│   └── config_loader.py                     # Loads and validates the configuration from config.toml
-├── CONSTANTS.py                             # Defines constants and paths used across the project
-├── DEBUG                                    # Scripts for testing, debugging, and experimenting
-│   ├── compare_dicts.py                     # Compare dictionaries for debugging
-│   ├── mp3_metadata.py                      # Inspect and debug MP3 metadata
-│   ├── sanitize_filenames.py                # Test filename sanitization functions
-│   ├── tree_view.py                         # Visualize project folder structure
-│   └── update_date_added.py                 # Debug date-added updates for music files
-├── FUNCTIONS                                # Core functionality of the project
-│   ├── HELPERS                              # Utility/helper functions used across modules
-│   │   ├── compute_tags_and_album.py        # Compute tags and album assignments
-│   │   ├── fileops.py                       # File input/output helper functions
-│   │   ├── fprint.py                        # Enhanced print function for console output
-│   │   ├── helpers.py                       # General-purpose helper functions
-│   │   ├── logger.py                        # Logger setup and management
-│   │   ├── tag_helpers.py                   # Helpers for tag processing
-│   │   └── text_helpers.py                  # Helpers for text normalization and cleaning
-│   ├── PROCESS                              # Processing modules for different music operations
-│   │   ├── add_album.py                     # Add album information to music files
-│   │   ├── add_lyrics.py                    # Add lyrics to music files
-│   │   ├── add_new_ids.py                   # Add new video IDs to database
-│   │   ├── add_tags.py                      # Add tags to music files
-│   │   ├── add_thumbails.py                 # Add thumbnails to music files
-│   │   ├── check_file_integrity.py          # Check file integrity and consistency
-│   │   ├── embed_metadata.py                # Embed metadata into music files
-│   │   ├── remove_ids_not_in_list.py        # Remove IDs not present in playlist
-│   │   ├── remove_sponsorblock_segments.py  # Remove unwanted sponsor segments
-│   │   └── show_final_stats.py              # Display final processing statistics
-│   ├── clean_song_query.py                  # Clean and normalize song query strings
-│   ├── download.py                          # Download songs/videos from YouTube
-│   ├── extract_and_clean.py                 # Extract data and clean it
-│   ├── extract_lyrics.py                    # Extract lyrics from sources
-│   ├── get_creditentials.py                 # Fetch credentials for APIs
-│   ├── get_playlist_videos.py               # Get videos from playlists
-│   ├── lyrics.py                            # Lyrics processing
-│   ├── metadata.py                          # Metadata processing
-│   ├── process_all.py                       # Run all processing steps for files
-│   ├── set_tags_and_album.py                # Assign tags and album info
-│   ├── sponsorblock.py                      # SponsorBlock integration for segment removal
-│   ├── sql_requests.py                      # SQL database operations
-│   └── thumbnail.py                         # Thumbnail processing
-├── MIGRATION.MD                             # Migration guide for upgrading to new version
-├── README.md                                # Project overview and instructions
-├── main.py                                  # Main entry point for the program
-├── requirements.txt                         # Python dependencies
-
+├── CREDS                             # Google creditentials tokens
+├── .gitignore                        # Git ignore file for excluding files/folders from version control
+├── CONFIG                            # Configuration directory
+│   ├── PATTERNS                      # Pattern files for processing music metadata
+│   ├── TAGS                          # Tagging rules directory
+│   └── config_loader.py              # Loads and validates the configuration from config.toml
+├── CONSTANTS.py                      # Defines constants and paths used across the project
+├── DEBUG                             # Scripts for testing and/or debugging
+├── FUNCTIONS                         # Core functionality of the project
+│   ├── HELPERS                       # Utility/helper functions used across modules
+│   └──PROCESS                        # Processing modules for different music operations
+├── README.md                         # Project overview and instructions
+├── main.py                           # Main entry point for the program
+└── requirements.txt                  # Python dependencies
 ```
 
 ---
@@ -280,13 +219,8 @@ python main.py
 - Enhanced configuration validation and error handling
 - Batch processing with progress bars (partially implemented)
 - Easier customisation of tags and lyrics
-- Support for additional audio formats
 
 ---
-
-## 📝 Migration from .env
-
-If you're upgrading from a previous version that used `.env` files, see `MIGRATION.md` for detailed migration instructions.
 
 ## 📝 License
 
