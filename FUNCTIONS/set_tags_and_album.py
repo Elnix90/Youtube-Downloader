@@ -78,10 +78,10 @@ def set_tags(
     filepath: Path,
     tags: set[str],
     test_run: bool,
-    sep: str = " ~ ",
-    start_def: str = "[",
-    end_def: str = "]",
-    tag_sep: str = ",",
+    sep: str,
+    start_def: str,
+    end_def: str,
+    tag_sep: str,
 ) -> bool:
     """
     Set the tags into the title of an mp3 file given in entry
