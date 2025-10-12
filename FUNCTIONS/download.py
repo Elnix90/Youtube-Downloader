@@ -32,7 +32,7 @@ from FUNCTIONS.sql_requests import get_entry_id, get_video_info_from_db, update_
 logger = setup_logger(__name__)
 
 
-def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str, cur: Cursor) -> str:
+def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
     """
     Returns a unique filename not already present in the download dir.
     If file exists and contains matching metadata ID, reuse it.
@@ -40,7 +40,7 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str, cur: Cur
     counter = 1
     filename = base
     filepath = loc / f"{filename}{ext}"
-    entry_id = get_entry_id(video_id, cur)
+    # entry_id = get_entry_id(video_id, cur)
 
     while filepath.exists():
         data, state = get_metadata_tag(filepath)
@@ -50,7 +50,8 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str, cur: Cur
                 if vid == video_id:
                     return filename
 
-        filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{base}_{counter}"
+        filename = f"{base}_{counter}"
+        # filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{base}_{counter}"
         filepath = loc / f"{filename}{ext}"
         counter += 1
 
@@ -389,12 +390,19 @@ def download_yt_dlp(
     url: str = f"https://youtube.com/watch?v={video_id}"
     loc.mkdir(parents=True, exist_ok=True)
 
-    base: str = sanitize_text(text=title)
+    sanitized_title: str = sanitize_text(text=title)
     # To ensure the files will have a name, due to the strict sanitize
-    if not base:
-        base = "sanitized_name"
+    if not sanitized_title:
+        sanitized_title = "sanitized_name"
 
-    final_filename: str = _get_unique_filename(loc, base, ".mp3", video_id, cur)
+    final_filename: str = _get_unique_filename(loc, base, ".mp3", video_id)
+
+    # Add the entry_id to the title CAUSE FUCK MY MUSIC PLAYER
+    # # I CANNOT GET MY MUSICS IN THE ORDER I WANT WHO DEV THAT SHIT
+
+    # entry_id = get_entry_id(video_id, cur)
+    # final_filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{sanitized_title}"
+
     final_filename_with_ext: str = final_filename + ".mp3"
     ydl_opts: YdlOpt = _build_ydl_opts(loc, final_filename, "bestaudio/best")
 
