@@ -5,6 +5,7 @@ sanitize_filenames module: Sanitize all filenemes in the download dir
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
+from constants import ENTRY_ID_SEPARATOR
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
 from FUNCTIONS.sql_requests import commit_changes_to_db, get_entry_id
@@ -12,19 +13,19 @@ from FUNCTIONS.sql_requests import commit_changes_to_db, get_entry_id
 logger = setup_logger(__name__)
 
 
-def _split_filename_parts(filename: str, separator: str = "---") -> str:
+def _split_filename_parts(filename: str) -> str:
     """
     Split a sanitized filename into to get the filename without the entry_id.
     Returns stem_without_suffix.
     """
     stem = Path(filename).stem
-    if separator in stem:
-        _, rest = stem.split(separator, 1)
+    if ENTRY_ID_SEPARATOR in stem:
+        _, rest = stem.split(ENTRY_ID_SEPARATOR, 1)
         return rest
     return stem
 
 
-def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection, separator: str) -> None:
+def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection) -> None:
     """
     Recursively sanitize all filenames in the download directory.
     Keeps file extensions intact while cleaning only the stem.
@@ -39,7 +40,7 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection, se
 
             old_name = file_path.name
             stem_and_entry_id, suffix = file_path.stem, file_path.suffix
-            stem = _split_filename_parts(stem_and_entry_id, separator)
+            stem = _split_filename_parts(stem_and_entry_id)
 
             video_row = cur.execute(  # pyright: ignore[reportAny]
                 "SELECT video_id FROM Videos WHERE filename = ?", (old_name,)
@@ -53,7 +54,7 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection, se
             entry_id = str(get_entry_id(video_id, cur))  # pyright: ignore[reportAny]
 
             new_stem = sanitize_text(stem)
-            new_name = f"{entry_id}{separator}{new_stem}{suffix}"  # re-attach original extension + entry_id
+            new_name = f"{entry_id}{ENTRY_ID_SEPARATOR}{new_stem}{suffix}"  # re-attach original extension + entry_id
 
             if new_name != old_name:
                 try:
