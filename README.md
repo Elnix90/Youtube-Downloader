@@ -11,7 +11,7 @@ You can also automatically add lyrics or tags by fetching the title and uploader
 
 - **Fetch & Download**
   - Download videos or audio from any playlist (default liked_videos).
-  - Supports only `mp3` due to tags, lyrics and metadatas usage but may extend to other formats in the future
+  - Supports only `mp3` due to tags, lyrics and metadatas usage ~~but may extend to other formats in the future~~
   - Skips videos that are private or unavailable.
 
 - **Metadata & Lyrics**
