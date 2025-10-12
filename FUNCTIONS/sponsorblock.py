@@ -1,3 +1,6 @@
+"""
+Sponsorblock module: fetch segments to skip and cut them for a video_id / file
+"""
 import json
 import subprocess
 from pathlib import Path
@@ -12,6 +15,9 @@ SPONSORBLOCK_API: str = "https://sponsor.ajay.app/api/skipSegments"
 
 
 def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float, float]]:
+    """
+    Fetch segmtents to skip for a video_id given in args, and returns them in a list of tuple float
+    """
 
     # Properly encode categories list for URL parameter
     params = {
@@ -20,7 +26,7 @@ def get_skip_segments(video_id: str, categories: list[str]) -> list[tuple[float,
     }
     try:
         url = SPONSORBLOCK_API
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=20)
         response.raise_for_status()
         segments = response.json()  # pyright: ignore[reportAny]
         skips: list[tuple[float, float]] = [
@@ -46,6 +52,9 @@ def cut_segments_ffmpeg(
     segments: list[tuple[float, float]],
     test_run: bool,
 ) -> float:
+    """
+    Cut the given segments in entry from a mp3 file
+    """
 
     if not segments and not test_run:
         _ = subprocess.run(
