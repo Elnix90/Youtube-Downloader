@@ -69,6 +69,11 @@ def migrate_database_schema(conn: sqlite3.Connection, cur: sqlite3.Cursor) -> No
             date_modified REAL DEFAULT ((julianday('now') - 2440587.5) * 86400.0)
         );
 
+        CREATE TABLE IF NOT EXISTS ids (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id TEXT UNIQUE NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS playlists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             playlist_id TEXT UNIQUE NOT NULL,
