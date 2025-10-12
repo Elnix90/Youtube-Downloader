@@ -61,6 +61,8 @@ class VideoInfo(TypedDict, total=False):
     Types for VideoInfo dict
     """
 
+    entry_id: int
+
     position: int
     playlist_item_id: str
     playlist_id: str
@@ -119,6 +121,7 @@ class VideoInfo(TypedDict, total=False):
 
 
 VideoInfoKey = Literal[
+    "id",
     "position",
     "playlist_item_id",
     "playlist_id",

@@ -5,7 +5,7 @@ contains function to interract esaely with the database
 
 import json
 import sqlite3
-from typing import Literal
+from typing import Literal, cast
 
 from constants import DB_PATH, EXCLUDE_FROM_MAIN
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, now_unix
@@ -130,6 +130,19 @@ def init_db(cur: sqlite3.Cursor, conn: sqlite3.Connection) -> None:
         """
     )
     logger.debug("[Init DB] Initialized 'videos' table")
+
+    # ============================================================
+    #                       IDS TABLE
+    # ============================================================
+    _ = cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ids (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id TEXT UNIQUE NOT NULL
+        );
+        """
+    )
+    logger.debug("[Init DB] Initialized 'ids' table")
 
     # ============================================================
     #                       PLAYLISTS TABLE
@@ -305,6 +318,8 @@ def insert_video_db(
 ) -> None:
     """Insert a new entry in the DB"""
 
+    video_id = video_data.get("video_id")
+
     _ = cur.execute("PRAGMA table_info(videos)")
     video_columns = {row["name"] for row in cur.fetchall()}  # pyright: ignore[reportAny]
 
@@ -320,6 +335,9 @@ def insert_video_db(
     columns = ", ".join(video_row.keys())
     sql = f"INSERT OR IGNORE INTO videos ({columns}) VALUES ({placeholders})"
     _ = cur.execute(sql, tuple(video_row.values()))
+
+    # --- Ids ---
+    _ = cur.execute(f"INSERT OR IGNORE INTO ids ({video_id})")
 
     # --- Skips & Tags ---
     _apply_skips_and_tags(video_row["video_id"], video_data, cur)  # pyright: ignore[reportArgumentType]
@@ -532,20 +550,45 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
     if skips:
         video_info["skips"] = skips
 
-    # --- Playlist association ---
+    # --- Ids ---
     _ = cur.execute(
-        """
-        SELECT p.playlist_id, pv.playlist_item_id, pv.position
-        FROM playlists p
-        JOIN playlist_videos pv ON pv.playlist_id = p.playlist_id
-        WHERE pv.video_id = ?
-        """,
-        (video_id,),
+        "SELECT id FROM ids WHERE ids.video_id = ?",
+        (video_id,)
     )
-    pl_row = cur.fetchone()  # pyright: ignore[reportAny]
-    if pl_row:
-        video_info["playlist_id"] = pl_row["playlist_id"]
-        video_info["playlist_item_id"] = pl_row["playlist_item_id"]
-        video_info["position"] = pl_row["position"]
+    entry_id = cur.fetchone()  # pyright: ignore[reportAny]
+    if isinstance(entry_id, int):
+        video_info["entry_id"] = entry_id
+
+    # USELESS
+    # --- Playlist association ---
+    # _ = cur.execute(
+    #     """
+    #     SELECT p.playlist_id, pv.playlist_item_id, pv.position
+    #     FROM playlists p
+    #     JOIN playlist_videos pv ON pv.playlist_id = p.playlist_id
+    #     WHERE pv.video_id = ?
+    #     """,
+    #     (video_id,),
+    # )
+    # pl_row = cur.fetchone()
+    # if pl_row:
+    #     video_info["playlist_id"] = pl_row["playlist_id"]
+    #     video_info["playlist_item_id"] = pl_row["playlist_item_id"]
+    #     video_info["position"] = pl_row["position"]
 
     return video_info
+
+
+def get_entry_id(video_id: str, cur: sqlite3.Cursor) -> int:
+    """
+    Fetch the DB and returns the corresponding entry_id (to sort correctly the videos)
+    """
+    return cast(
+        int,
+        cur.execute(
+            """
+            SELECT id FROM ids WHERE video_id = ?
+            """,
+            (video_id,)
+        ).fetchone()
+    )
