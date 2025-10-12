@@ -1,3 +1,6 @@
+"""
+Remix of computing, does not work for the moment
+"""
 import time
 from difflib import SequenceMatcher
 from sqlite3 import Connection, Cursor
