@@ -1,3 +1,6 @@
+"""
+Download module, fetch and download yt videos with yt-dlp
+"""
 import io
 import json
 import re
@@ -89,18 +92,22 @@ def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "b
 
 # --- Safe conversion helpers ---
 def safe_str(value: object, default: str = "") -> str:
+    """Returns a str from a yt-dlp object fetch"""
     return str(value) if isinstance(value, str) else default if value is None else str(value)
 
 
 def safe_int(value: object, default: int = 0) -> int:
+    """Returns a int from a yt-dlp object fetch"""
     return int(value) if isinstance(value, int) else default
 
 
 def safe_float(value: object, default: float = 0.0) -> float:
+    """Returns a float from a yt-dlp object fetch"""
     return float(value) if isinstance(value, float) else default
 
 
 def safe_bool(value: object, default: bool = False) -> bool:
+    """Returns a bool from a yt-dlp object fetch"""
     return bool(value) if value is not None else default
 
 
@@ -245,7 +252,7 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
                             print("\nFound subtitles!")
                         # print(f"\nFound {'auto' if auto else 'manual'} subtitles!")
                         return _srt_to_synced(text)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"[Sub Fetch] Failed to fetch {'automatic' if auto else 'manual'} subtitles: {e}")
                 return []
     return []
@@ -351,7 +358,7 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
         logger.error(f"[Safe Extract] yt-dlp error: {e}")
         return 1, {}
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         msg = str(e).lower()
         if "sign in" in msg or "consent" in msg or "captcha" in msg:
             logger.error(f"[Safe Extract] Bot-check for {video_id}: {e}")
@@ -422,7 +429,7 @@ def download_yt_dlp(
             logger.error(f"[Download] File after download missing: {e}")
             return False, str(e), None
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"[Download] Unexpected error on attempt {attempt}: {e}")
             logger.debug("Exception details:", exc_info=True)
             if attempt < max_retries:
@@ -449,8 +456,11 @@ def download_video(
     conn: Connection,
     test_run: bool,
 ) -> float:
+    """
+    Download a given video id, tries to not fetch if enough data is given in entry
+    """
 
-    Download_start_time: float = time.time()
+    download_start_time: float = time.time()
 
     download_path.mkdir(parents=True, exist_ok=True)
 
@@ -469,7 +479,7 @@ def download_video(
             f"Video '{video_id}' already marked as unavailable, skipping",
         )
         logger.info(f"Video '{video_id}' already marked as unavailable, skipping")
-        return time.time() - Download_start_time
+        return time.time() - download_start_time
 
     elif state == 2 and not retry_private:
         fprint(
@@ -477,7 +487,7 @@ def download_video(
             f"Video '{video_id}' already marked as private, skipping",
         )
         logger.info(f"Video '{video_id}' already marked as private, skipping")
-        return time.time() - Download_start_time
+        return time.time() - download_start_time
 
     if not all(key in youtube_required_info and value for key, value in data.items()):
         state, data = safe_extract_info(id_or_url=video_id)
@@ -506,7 +516,7 @@ def download_video(
             logger.error(
                 f"[Download] title and/or uploader returned not str, probalby a fetching error, skipping video '{video_id}'"
             )
-            return time.time() - Download_start_time
+            return time.time() - download_start_time
 
         if info:
             fprint(progress_prefix, "Downloading ?", title)
@@ -548,7 +558,7 @@ def download_video(
                         )
                     logger.error("[Download] Downloaded file is corrupted, skipping rest of processing")
 
-                return time.time() - Download_start_time
+                return time.time() - download_start_time
 
             else:
                 if message == "Private video":
@@ -575,10 +585,10 @@ def download_video(
                     conn=conn,
                     test_run=test_run,
                 )
-                return time.time() - Download_start_time
+                return time.time() - download_start_time
         else:
             logger.warning("[Download] Test run was enabled, no download attemps made")
-            return time.time() - Download_start_time
+            return time.time() - download_start_time
 
     else:  # Data is null or unavavailable, probalby unavailable video, skipping
         data["status"] = 1
@@ -595,4 +605,4 @@ def download_video(
             conn=conn,
             test_run=test_run,
         )
-        return time.time() - Download_start_time
+        return time.time() - download_start_time
