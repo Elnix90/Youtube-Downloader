@@ -44,7 +44,6 @@ def process_lyrics_for_video(
     filepath: Path,
     progress_prefix: str,
     info: bool,
-    error: bool,
     cur: Cursor,
     conn: Connection,
     test_run: bool,
@@ -104,7 +103,6 @@ def process_lyrics_for_video(
                 skips=skips,
                 orig_duration=orig_duration,
                 info=info,
-                error=error,
                 test_run=test_run,
                 progress_prefix=progress_prefix,
                 title=title,
@@ -150,7 +148,6 @@ def process_lyrics_for_video(
                 skips=skips,
                 orig_duration=orig_duration,
                 info=info,
-                error=error,
                 title=title,
                 test_run=test_run,
                 progress_prefix=progress_prefix,
@@ -168,7 +165,6 @@ def process_lyrics_for_video(
             video_id=video_id,
             title=title,
             info=info,
-            error=error,
             test_run=test_run,
             progress_prefix=progress_prefix,
             update_fields=update_fields,
@@ -203,7 +199,6 @@ def _embed_remix_lyrics(
     skips: list[tuple[float, float]] | None,
     orig_duration: int | None,
     info: bool,
-    error: bool,
     test_run: bool,
     progress_prefix: str,
     title: str,
@@ -229,9 +224,9 @@ def _embed_remix_lyrics(
                 )
             logger.info(f"[Lyrics] Embedded remix lyrics from '{remix_of}' " + f"into '{title}'")
         else:
-            _log_error(f"Failed to write remix lyrics for '{title}'", error=error)
+            logger.error(f"Failed to write remix lyrics for '{title}'")
     except OSError as exc:
-        _log_error(f"OS error embedding remix lyrics: {exc}", error=error)
+        logger.error(f"OS error embedding remix lyrics: {exc}")
 
 
 def _try_fetch_lyrics(
@@ -285,7 +280,6 @@ def _embed_lyrics_to_mp3(
     skips: list[tuple[float, float]] | None,
     orig_duration: int | None,
     info: bool,
-    error: bool,
     title: str,
     test_run: bool,
     progress_prefix: str,
@@ -307,14 +301,12 @@ def _embed_lyrics_to_mp3(
                 fprint(progress_prefix, "Lyrics updated for ?", title)
             logger.info(f"[Lyrics] Lyrics updated for '{title}'")
         else:
-            _log_error(
-                f"Failed to write lyrics .lrc for '{title}'",
-                error=error,
+            logger.error(
+                f"Failed to write lyrics .lrc for '{title}'"
             )
     except OSError as exc:
-        _log_error(
-            f"OS error embedding lyrics: {exc}",
-            error=error,
+        logger.error(
+            f"OS error embedding lyrics: {exc}"
         )
 
 
@@ -324,27 +316,19 @@ def _remove_lyrics_from_file(
     video_id: str,
     title: str,
     info: bool,
-    error: bool,
     test_run: bool,
     progress_prefix: str,
     update_fields: VideoInfo,
 ) -> None:
     """Remove lyrics from a file and update DB fields."""
     try:
-        success = remove_lyrics_from_mp3(filepath, error, test_run)
+        success = remove_lyrics_from_mp3(filepath, test_run)
         if success:
             update_fields["remove_lyrics"] = False
             if info:
                 fprint(progress_prefix, "Lyrics removed from ?", title)
             logger.info(f"[Lyrics] Lyrics removed from '{title}'")
         else:
-            _log_error(f"Failed to remove lyrics for '{title}'", error=error)
+            logger.error(f"Failed to remove lyrics for '{title}'")
     except OSError as exc:
-        _log_error(f"OS error removing lyrics from '{video_id}': {exc}", error=error)
-
-
-def _log_error(msg: str, *, error: bool) -> None:
-    """Print and log an error message."""
-    if error:
-        print(f"\n{msg}")
-    logger.error(msg)
+        logger.error(f"OS error removing lyrics from '{video_id}': {exc}")
