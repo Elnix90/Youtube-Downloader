@@ -2,10 +2,13 @@
 sanitize_filenames module: Sanitize all filenemes in the download dir
 """
 
+import time
+from datetime import timedelta
 from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from constants import ENTRY_ID_SEPARATOR
+from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import lyrics_lrc_path_for_mp3, thumbnail_png_path_for_mp3
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
@@ -26,7 +29,7 @@ def _split_filename_parts(filename: str) -> str:
     return stem
 
 
-def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection) -> None:
+def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection, add: bool = True) -> None:
     """
     Recursively sanitize all filenames in the download directory.
     Keeps file extensions intact while cleaning only the stem.
@@ -35,8 +38,17 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection) ->
         logger.warning(f"[Sanitize All] Download directory does not exist: {download_dir}")
         return
 
+    files = list(download_dir.rglob("*"))
+    total_files = len(files)
+    if total_files == 0:
+        logger.info("[Sanitize Titles] No MP3 files found.")
+        return
+
+    start_time = time.time()
+    processed = 0
+
     # Iterate recursively through all files
-    for file_path in download_dir.rglob("*"):
+    for file_path in files:
         if file_path.is_file() and file_path.suffix == ".mp3":
 
             old_name = file_path.name
@@ -56,8 +68,10 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection) ->
             # print(entry_id)
 
             new_stem = sanitize_text(stem)
-            new_name = f"{entry_id}{ENTRY_ID_SEPARATOR}{new_stem}{suffix}"  # re-attach original extension + entry_id
-            # new_name = f"{new_stem}{suffix}"  # remove the entry_id & sep top debug
+            if add:
+                new_name = f"{entry_id}{ENTRY_ID_SEPARATOR}{new_stem}{suffix}"  # re-attach original extension + entry_id
+            else:
+                new_name = f"{new_stem}{suffix}"  # remove the entry_id & sep top debug
 
             if new_name != old_name:
                 try:
@@ -94,4 +108,22 @@ def sanitize_all_filenames(download_dir: Path, cur: Cursor, conn: Connection) ->
                 except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.error(f"[Sanitize All] Failed to rename file '{old_name}' -> '{new_name}': {e}")
 
+        # Progress + ETA
+        processed += 1
+        elapsed = time.time() - start_time
+        avg_time = elapsed / processed if processed > 0 else 0
+        remaining = total_files - processed
+        eta_seconds = remaining * avg_time
+        eta_formatted = str(timedelta(seconds=int(eta_seconds)))
+
+        percent = (processed / total_files) * 100
+        bar_len = 30
+        filled_len = int(bar_len * processed // total_files)
+        progress_bar = "█" * filled_len + "-" * (bar_len - filled_len)
+
+        fprint(f"[{progress_bar}] {percent:6.2f}% | {processed}/{total_files} | ETA: {eta_formatted}", "")
+
     _ = commit_changes_to_db(conn, True)
+
+    total_time = str(timedelta(seconds=int(time.time() - start_time)))
+    logger.debug(f"[Sanitize Filenames] Completed in {total_time} ({total_files} files processed).")

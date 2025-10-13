@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, NotRequired, TypeAlias, TypedDict
 
+from constants import ENTRY_ID_SEPARATOR
+
 # ---------------------------------------------------------------------------
 # TypedDict structures for YouTube API responses
 # ---------------------------------------------------------------------------
@@ -453,3 +455,10 @@ def normalize_skips(info: VideoInfo) -> VideoInfo:
 def now_unix() -> float:
     """Return current Unix timestamp as float for SQLite."""
     return time.time()
+
+
+def has_entry_id_prefix(title: str, entry_id: str) -> bool:
+    """Return True if title starts with '<entry_id>{SEP}' or equals entry_id."""
+    if not title:
+        return False
+    return title == entry_id or title.startswith(f"{entry_id}{ENTRY_ID_SEPARATOR}")

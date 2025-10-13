@@ -7,12 +7,18 @@ import time
 from pathlib import Path
 from sqlite3 import Cursor
 
-# from DEBUG.compare_dicts import compare_dicts
+from constants import ADD_ENTRY_ID_TO_TITLE, ENTRY_ID_SEPARATOR, INCLUDE_TIME_IN_EMBEDDED_TIME
 from FUNCTIONS.HELPERS.fprint import fprint
-from FUNCTIONS.HELPERS.helpers import VideoInfo, normalize_skips, remove_data_from_video_info, timestamp_to_id3_unique
+from FUNCTIONS.HELPERS.helpers import (
+    VideoInfo,
+    has_entry_id_prefix,
+    normalize_skips,
+    remove_data_from_video_info,
+    timestamp_to_id3_unique,
+)
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.metadata import get_metadata_tag, read_id3_tag, write_id3_tag
-from FUNCTIONS.sql_requests import get_video_info_from_db
+from FUNCTIONS.sql_requests import get_entry_id, get_video_info_from_db
 
 logger = setup_logger(__name__)
 
@@ -36,20 +42,16 @@ def embed_metadata_for_video(
 
     video_info: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)
     date: float = video_info.get('date_added', 0.0)
-    tm: str = timestamp_to_id3_unique(date, False)
+    tm: str = timestamp_to_id3_unique(date, INCLUDE_TIME_IN_EMBEDDED_TIME)
     title: str = video_info.get("title", "")
 
     if info:
         fprint(progress_prefix, "Embedding metadata for ?", title)
     logger.verbose(f"[Metadata] Embedding metadata for '{title}'")
 
-    # -----------------------------------------------
-    # SCREW IT IT DOESN'T WORK ON MY MUSIC PLAYER
-    # -----------------------------------------------
+    # Embed the date field
 
-    # Embed the id in the dat field, to sort the video in the player
-
-    file_date, state = read_id3_tag(filepath=filepath, frame_id="TDRC")
+    file_date, state = read_id3_tag(filepath, "TDRC")
 
     update_date: bool = force_update_date
     if state == 0:
@@ -66,7 +68,7 @@ def embed_metadata_for_video(
     if update_date:
         success_date: bool = True
         if date:
-            success_date = write_id3_tag(filepath=filepath, frame_id="TDRC", data=tm, test_run=test_run)
+            success_date = write_id3_tag(filepath, "TDRC", tm, test_run)
             if not success_date:
                 logger.warning(f"[Metadata] Failed to embed date '{tm}' for '{title}'")
             else:
@@ -75,6 +77,64 @@ def embed_metadata_for_video(
                 logger.info(f"[Metadata] Embedded date '{tm}' for '{title}'")
     else:
         fprint(progress_prefix, "No need to change date, skipping")
+
+    # Embed entry_id into the title
+
+    filename = filepath.name
+
+    # Get db fields: video_id and canonical title
+    row = cur.execute(  # pyright: ignore[reportAny]
+        "SELECT title FROM Videos WHERE filename = ?", (filename,)
+    ).fetchone()
+    if not row:
+        logger.warning(f"[Sanitize Titles] No DB entry for file: {filename}")
+
+    else:
+        db_title = row[0]  # pyright: ignore[reportAny]
+        db_title = db_title or ""
+
+        entry_id = str(get_entry_id(video_id, cur))
+
+        # Read current TIT2
+        title_data, status = read_id3_tag(filepath, "TIT2")
+        current_title = title_data[0].strip() if (status == 0 and title_data) else ""
+
+        has_prefix = has_entry_id_prefix(current_title, entry_id)
+
+        if ADD_ENTRY_ID_TO_TITLE:
+            # Decide base title: prefer DB.title, fallback to current tag if DB missing
+            base_title = db_title if db_title else current_title
+            if not base_title:
+                logger.warning(f"[Sanitize Titles] No title available to prefix for '{filename}'")
+
+            else:
+                if has_prefix:
+                    logger.debug(f"[Sanitize Titles] Skipping (already prefixed): {current_title} ({filename})")
+                else:
+                    new_title = f"{entry_id}{ENTRY_ID_SEPARATOR}{base_title}"
+                    logger.info(f"[Sanitize Titles] Will add prefix for '{filename}': '{current_title}' -> '{new_title}'")
+                    if not test_run:
+                        ok = write_id3_tag(filepath, "TIT2", new_title, test_run)
+                        if not ok:
+                            logger.error(f"[Sanitize Titles] Failed to write title for '{filename}'")
+        else:
+            # Remove prefix if present
+            if not has_prefix:
+                logger.debug(f"[Sanitize Titles] Skipping (no prefix): {current_title} ({filename})")
+            else:
+                # remove only the first occurrence and strip whitespace
+                remainder = (
+                    current_title.split(ENTRY_ID_SEPARATOR, 1)[1].strip() if ENTRY_ID_SEPARATOR in current_title else ""
+                )
+                # if remainder is empty, restore DB title (so we don't blank titles)
+                new_title = remainder if remainder else db_title
+                logger.info(
+                    f"[Sanitize Titles] Will remove prefix for '{filename}': '{current_title}' -> '{new_title}'"
+                )
+                if not test_run:
+                    ok = write_id3_tag(filepath, "TIT2", new_title, test_run)
+                    if not ok:
+                        logger.error(f"[Sanitize Titles] Failed to write title for '{filename}'")
 
     # Embed full metadata as JSON
 
@@ -110,8 +170,7 @@ def embed_metadata_for_video(
                 fprint(progress_prefix, "Embedded metadata for ?", title)
             logger.info(f"[Metadata] Embedded metadata for '{title}'")
         return time.time() - start_processing, False
-    else:
 
-        fprint(progress_prefix, "No need to embed metadata for ?", title)
-        logger.info(f"No need to embed metadata for {title}")
-        return time.time() - start_processing, True
+    fprint(progress_prefix, "No need to embed metadata for ?", title)
+    logger.info(f"No need to embed metadata for {title}")
+    return time.time() - start_processing, True

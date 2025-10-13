@@ -60,7 +60,9 @@ class ProcessingConfig(TypedDict):
     tag_end_delimiter: str
     tag_inner_separator: str
 
+    add_entry_id_to_title: bool
     entry_id_separator: str
+    entry_id_size: int
 
     retry_unavailable: bool
     retry_private: bool
@@ -81,6 +83,8 @@ class ProcessingConfig(TypedDict):
     remove_malformatted: bool
     create_db_if_not: bool
     add_folder_files_not_in_list: bool
+
+    include_time_in_embedded_date: bool
 
 
 class LoggingConfig(TypedDict):

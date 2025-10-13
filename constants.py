@@ -74,12 +74,17 @@ TRUSTED_ARTISTS_FILE: Path = PATTERN_DIR / CONFIG["patterns"]["trusted_artists_f
 # Processing
 MAX_LYRICS_RETRIES: int = CONFIG["processing"]["max_lyrics_retries"]
 REMIX_CONFIDENCE_THRESHOLD: float = CONFIG["processing"]["remix_confidence_threshold"]
+
+ADD_ENTRY_ID_TO_TITLE = CONFIG["processing"]["add_entry_id_to_title"]
 ENTRY_ID_SEPARATOR = CONFIG["processing"]["entry_id_separator"]
+ENTRY_ID_SIZE = CONFIG["processing"]["entry_id_size"]
 
 # Logging
 LOGS_CONSOLE_GLOBALLY: bool = CONFIG["logging"]["console_globally"]
 OVERLAP_FPRINT: bool = CONFIG["logging"]["overlap_fprint"]
 OVERWRITE_UNCHANGED: bool = CONFIG["logging"]["overwrite_unchanged"]
+
+INCLUDE_TIME_IN_EMBEDDED_TIME = CONFIG["processing"]["include_time_in_embedded_date"]
 
 LOGGING_LEVELS: dict[str, int] = {
     "VERBOSE": 5,

@@ -55,7 +55,11 @@ tag_start_delimiter = "["
 tag_end_delimiter = "]"
 tag_inner_separator = ","
 
+add_entry_id_to_title = true
 entry_id_separator = "---"
+entry_id_size = 6
+
+include_time_in_embedded_date = true
 
 force_mp3_presence = false
 force_recompute_yt_info = false

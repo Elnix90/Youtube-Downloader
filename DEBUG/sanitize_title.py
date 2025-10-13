@@ -11,18 +11,12 @@ from sqlite3 import Cursor
 
 from constants import ENTRY_ID_SEPARATOR
 from FUNCTIONS.HELPERS.fprint import fprint
+from FUNCTIONS.HELPERS.helpers import has_entry_id_prefix
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.metadata import read_id3_tag, write_id3_tag
 from FUNCTIONS.sql_requests import get_entry_id
 
 logger = setup_logger(__name__)
-
-
-def _has_entry_id_prefix(title: str, entry_id: str) -> bool:
-    """Return True if title starts with '<entry_id>{SEP}' or equals entry_id."""
-    if not title:
-        return False
-    return title == entry_id or title.startswith(f"{entry_id}{ENTRY_ID_SEPARATOR}")
 
 
 def set_titles_from_db(
@@ -144,7 +138,7 @@ def sanitize_all_titles(
         title_data, status = read_id3_tag(file_path, "TIT2")
         current_title = title_data[0].strip() if (status == 0 and title_data) else ""
 
-        has_prefix = _has_entry_id_prefix(current_title, entry_id)
+        has_prefix = has_entry_id_prefix(current_title, entry_id)
 
         if add:
             # Decide base title: prefer DB.title, fallback to current tag if DB missing

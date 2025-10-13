@@ -15,7 +15,6 @@ import yt_dlp
 from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 
-from constants import ENTRY_ID_SEPARATOR
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (
     ExtractedInfo,
@@ -27,7 +26,7 @@ from FUNCTIONS.HELPERS.helpers import (
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
-from FUNCTIONS.sql_requests import get_entry_id, get_video_info_from_db, update_video_db
+from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
 
 logger = setup_logger(__name__)
 
@@ -375,7 +374,6 @@ def download_yt_dlp(
     video_id: str,
     title: str,
     uploader: str,
-    cur: Cursor,
     max_retries: int = 3,
     retry_delay: int = 5,
 ) -> tuple[bool, str, str | None]:
@@ -537,8 +535,7 @@ def download_video(
                 download_path,
                 video_id,
                 title,
-                uploader,
-                cur
+                uploader
             )
 
             if download_success and final_filename:

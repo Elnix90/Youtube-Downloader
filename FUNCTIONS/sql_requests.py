@@ -7,7 +7,7 @@ import json
 import sqlite3
 from typing import Literal, cast
 
-from constants import DB_PATH, EXCLUDE_FROM_MAIN
+from constants import DB_PATH, ENTRY_ID_SIZE, EXCLUDE_FROM_MAIN
 from FUNCTIONS.HELPERS.helpers import VideoInfo, VideoInfoKey, now_unix
 from FUNCTIONS.HELPERS.logger import setup_logger
 
@@ -579,16 +579,25 @@ def get_video_info_from_db(video_id: str, cur: sqlite3.Cursor) -> VideoInfo:
     return video_info
 
 
-def get_entry_id(video_id: str, cur: sqlite3.Cursor) -> int:
+def get_entry_id(video_id: str, cur: sqlite3.Cursor) -> str:
     """
     Fetch the DB and returns the corresponding entry_id (to sort correctly the videos)
     """
-    return cast(
-        int,
-        cur.execute(
-            """
-            SELECT id FROM ids WHERE video_id = ?
-            """,
-            (video_id,)
-        ).fetchone()[0]
+    entry_id = str(
+        cast(
+            int,
+            cur.execute(
+                """
+                SELECT id FROM ids WHERE video_id = ?
+                """,
+                (video_id,)
+            ).fetchone()[0]
+        )
     )
+
+    entry_id_len = len(str(entry_id))
+
+    if entry_id_len > ENTRY_ID_SIZE:
+        raise ValueError("Entry id size higher than ENTRY_ID_SIZE")
+
+    return "0" * (ENTRY_ID_SIZE - entry_id_len) + entry_id
