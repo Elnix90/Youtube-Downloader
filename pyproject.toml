@@ -12,4 +12,4 @@ select = ["E", "F", "W", "I"]
 max-line-length = 120
 
 [tool.pylint.messages_control]
-disable = ["C0301"]
+disable = ["C0301","E1136"]
