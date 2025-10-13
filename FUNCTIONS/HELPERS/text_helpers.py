@@ -110,8 +110,9 @@ def contains_whole_word(text: str, word: str) -> bool:
 
 
 def clean_song_query(query: str) -> str:
-    old_query = query
     """Normalize and clean a song query string"""
+
+    old_query = query
     query = query.lower()
 
     # Normalize accents: à, é, ê -> a, e, e

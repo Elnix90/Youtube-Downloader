@@ -66,41 +66,41 @@ def show_final_stats(
 
     final_stats: list[str] = []
 
+    if not not_in_dir:
+        final_stats.append(
+            f" - {len(list_without_unavailable)}" + "ids are in the database and correctly downloaded"
+        )
+    else:
+        final_stats.append(
+            f" - {len(infos) - len(not_in_dir)}" + "ids have not been downloaded, marked as unavailable"
+        )
+        if len(not_in_dir) < 10:
+            for vid in not_in_dir:
+                final_stats.append(f"   • {vid}")
+            final_stats.append("")
+        else:
+            dump(list(not_in_dir), UNAVAILABLE_VIDEOS_FILE)
+            final_stats.append(f"   • List written in {UNAVAILABLE_VIDEOS_FILE}")
+
+    if not not_in_list:
+        final_stats.append(" - All downloaded files are in the database and correctly formatted")
+    else:
+        final_stats.append(
+            f" - {len(not_in_list)}"
+            + "correctly formatted files are in the download directory but"
+            + "not in the database"
+            + "(pass add_folder_files_not_in_list = True to add them to the database)"
+        )
+        if len(not_in_list) < 10:
+            for vid in not_in_list:
+                final_stats.append(f"   • {vid}")
+            final_stats.append("\n")
+        else:
+            dump(list(not_in_list), CORRECT_NOT_IN_DIR_FILE)
+            final_stats.append(f"   • List written in {CORRECT_NOT_IN_DIR_FILE}")
+
     if not not_in_dir and not not_in_list:
         final_stats.append(" ✅ The database and the download dir have been successfully synchronized")
-    else:
-        if not not_in_dir:
-            final_stats.append(
-                f" - {len(list_without_unavailable)}" + "ids are in the database and correctly downloaded"
-            )
-        else:
-            final_stats.append(
-                f" - {len(infos) - len(not_in_dir)}" + "ids have not been downloaded, marked as unavailable"
-            )
-            if len(not_in_dir) < 10:
-                for vid in not_in_dir:
-                    final_stats.append(f"   • {vid}")
-                final_stats.append("")
-            else:
-                dump(list(not_in_dir), UNAVAILABLE_VIDEOS_FILE)
-                final_stats.append(f"   • List written in {UNAVAILABLE_VIDEOS_FILE}")
-
-        if not not_in_list:
-            final_stats.append(" - All downloaded files are in the database and correctly formatted")
-        else:
-            final_stats.append(
-                f" - {len(not_in_list)}"
-                + "correctly formatted files are in the download directory but"
-                + "not in the database"
-                + "(pass add_folder_files_not_in_list = True to add them to the database)"
-            )
-            if len(not_in_list) < 10:
-                for vid in not_in_list:
-                    final_stats.append(f"   • {vid}")
-                final_stats.append("\n")
-            else:
-                dump(list(not_in_list), CORRECT_NOT_IN_DIR_FILE)
-                final_stats.append(f"   • List written in {CORRECT_NOT_IN_DIR_FILE}")
 
     # Print summary
     print(

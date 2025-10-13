@@ -4,6 +4,7 @@ overlapping lines to have a beatiful console output
 """
 
 import shutil
+from pathlib import Path
 
 from constants import OVERLAP_FPRINT
 from FUNCTIONS.HELPERS.logger import setup_logger
@@ -15,9 +16,10 @@ logger = setup_logger(__name__)
 def fprint(
     prefix: str,
     title: str,
-    *to_sanitize: str,
-    overwrite: bool = True,
+    *to_sanitize: str | Path,
+    overwrite: bool = False,
     flush: bool = True,
+    put_between_apostrophy: bool = True
 ) -> None:
     """
     Print a formatted message with optional substitution of '?' placeholders
@@ -31,11 +33,15 @@ def fprint(
     # replace each "?" in title with a sanitized arg
     sanitized_title = title
     for value in to_sanitize:
+        value = str(value)
         if "?" in sanitized_title:
 
-            s_text: str = sanitize_text(value)
+            s_text = sanitize_text(value)
             if not s_text:
                 s_text = "sanitized_name"
+
+            if put_between_apostrophy:
+                s_text = "'" + s_text + "'"
 
             sanitized_title = sanitized_title.replace("?", s_text, 1)
         else:
