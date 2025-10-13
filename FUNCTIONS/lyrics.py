@@ -1,3 +1,7 @@
+"""
+Processes lyrics module:
+Can scale and adapt lyrics if there are skips in the video or is the video is a remix and the orig duration is known
+"""
 import json
 import re
 from pathlib import Path
@@ -34,7 +38,7 @@ def embed_lyrics_into_mp3(
                 original_duration=(float(original_duration) if original_duration else None),
             )
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"[Embed lyrics] Failed to sanitize/adjust lyrics: {e}")
             # fallback to raw lyrics
             lrc_text = lyrics
@@ -48,12 +52,12 @@ def embed_lyrics_into_mp3(
                 _ = f.write(lrc_text)
         logger.info(f"[Embed lyrics] Wrote lyrics file '{lrc_path.name}' for '{filepath.name}'")
         return True, lrc_text
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Embed lyrics] Failed to write LRC file for '{filepath}': {e}")
         return False, ""
 
 
-def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
+def remove_lyrics_from_mp3(filepath: Path, test_run: bool) -> bool:
     """
     Remove the corresponding .lrc file (if present). Keep the same signature for compatibility.
     """
@@ -66,10 +70,8 @@ def remove_lyrics_from_mp3(filepath: Path, error: bool, test_run: bool) -> bool:
             lrc_path.unlink()
         logger.info(f"[Remove lyrics] Removed lyrics file '{lrc_path}'")
         return True
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Remove lyrics] Failed to remove .lrc for '{filepath}': {e}")
-        if error:
-            print(f"\nError removing lyrics file for {filepath}: {e}")
         return False
 
 
@@ -89,10 +91,10 @@ def has_lyrics(mp3_path: Path) -> str | None:
                 return txt
             logger.warning(f"[Lyrics Check] .lrc file empty for '{mp3_path.name}'")
             return None
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"[Lyrics Check] Error reading .lrc file for '{mp3_path.name}': {e}")
             return None
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"[Lyrics Check] Error checking lyrics for '{mp3_path.name}': {e}")
         return None
 
@@ -119,7 +121,7 @@ def _parse_timestamp_to_seconds(ts: str) -> float:
             ss = float(parts[2])
             return hh * 3600.0 + mm * 60.0 + ss
         return float(ts)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning(f"[Parse Timestamp] Failed to parse '{ts}': {e}")
         return 0.0
 
@@ -141,6 +143,9 @@ def _format_seconds_to_lrc(ts_seconds: float, centis: int = 2) -> str:
 
 # ---------- 1. Detect synchronized lyrics ----------
 def is_synchronized_lyrics(text: str) -> bool:
+    """
+    Returns True if the lyrics it gets are synchronized, else False
+    """
     if not text:
         return False
 
@@ -158,7 +163,7 @@ def is_synchronized_lyrics(text: str) -> bool:
         ):
             logger.debug("[Lyrics Detection] Text is synchronized (JSON triplets)")
             return True
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         pass
 
     logger.debug("[Lyrics Detection] Text is NOT synchronized")
@@ -167,6 +172,9 @@ def is_synchronized_lyrics(text: str) -> bool:
 
 # ---------- 2. Parse LRC ----------
 def parse_lrc(lyrics: str) -> list[tuple[float, str]]:
+    """
+    Parse str lyrics to a list of tuple with time and text
+    """
     out: list[tuple[float, str]] = []
     if not lyrics:
         return out
@@ -185,6 +193,9 @@ def parse_lrc(lyrics: str) -> list[tuple[float, str]]:
 
 # ---------- 3. Compose LRC ----------
 def compose_lrc(entries: list[tuple[float, str]], centis: int = 2) -> str:
+    """
+    Inverts of parse lyrics, transforms a tlist of tuple lyrics to a str lyrics
+    """
     lines = [f"{_format_seconds_to_lrc(t, centis)}{txt}" for t, txt in entries]
     logger.debug(f"[Compose LRC] Composed {len(lines)} lines")
     return "\n".join(lines)
@@ -192,6 +203,9 @@ def compose_lrc(entries: list[tuple[float, str]], centis: int = 2) -> str:
 
 # ---------- 4. Shift timestamps ----------
 def shift_lrc_timestamps(lyrics: str, offset_seconds: float, drop_before_zero: bool = True) -> str:
+    """
+    Shift lyrics timestamp by an offset given, cna by positive or negative
+    """
     entries = parse_lrc(lyrics)
     shifted: list[tuple[float, str]] = []
     for t, txt in entries:
@@ -205,6 +219,9 @@ def shift_lrc_timestamps(lyrics: str, offset_seconds: float, drop_before_zero: b
 
 # ---------- 5. Apply removed segments (shift timestamps) ----------
 def apply_removed_segments_to_lrc(lyrics: str, removed_segments: list[tuple[float, float]]) -> str:
+    """
+    Shift the lyrics if there are segments on the timestamps of the lyrics
+    """
     if not removed_segments:
         logger.debug("[Apply Skips] No segments to apply")
         return lyrics
@@ -232,6 +249,9 @@ def apply_removed_segments_to_lrc(lyrics: str, removed_segments: list[tuple[floa
 
 # ---------- 6. Scale timestamps ----------
 def scale_lrc_timestamps(lyrics: str, scale: float) -> str:
+    """
+    Same as shift lyrics, but this time scale them
+    """
     entries = parse_lrc(lyrics)
     scaled = [(t * scale, txt) for t, txt in entries]
     logger.debug(f"[Scale LRC] Scaled {len(scaled)} lines by factor {scale}")
@@ -245,6 +265,10 @@ def sanitize_lyrics_to_lrc(
     file_duration: float,
     original_duration: float | None,
 ) -> str:
+    """
+    Takes a list of tuple of timestamp and text, and apply the semgents and the scaling using the previous functions
+    """
+
     if not lyrics:
         return ""
 
@@ -275,7 +299,7 @@ def sanitize_lyrics_to_lrc(
                         else str(item[1])  # pyright: ignore[reportUnknownArgumentType]
                     )
                     parsed_triplets.append((s, e, t))
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         parsed_triplets = []
 
     if not parsed_triplets:
@@ -322,9 +346,9 @@ def sanitize_lyrics_to_lrc(
 
     # Deduplicate
     cleaned: list[tuple[float, str]] = []
-    last = None
+    last: tuple[float, str] | None = None
     for item in final_entries:
-        if last and item[0] == last[0] and item[1] == last[1]:
+        if last is not None and item[0] == last[0] and item[1] == last[1]:
             continue
         cleaned.append(item)
         last = item
