@@ -447,8 +447,8 @@ def normalize_skips(info: VideoInfo) -> VideoInfo:
     real tuples for later iteration
     """
     if "skips" in info:
-        info["skips"] = list(info["skips"])
-        # info["skips"] = [(x, y) for x, y in info["skips"]]
+        # info["skips"] = list(info["skips"])
+        info["skips"] = [(x, y) for x, y in info["skips"]]
     return info
 
 
