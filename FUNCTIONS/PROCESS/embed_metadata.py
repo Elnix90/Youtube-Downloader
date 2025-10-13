@@ -8,6 +8,8 @@ from pathlib import Path
 from sqlite3 import Cursor
 
 from constants import ADD_ENTRY_ID_TO_TITLE, ENTRY_ID_SEPARATOR, INCLUDE_TIME_IN_EMBEDDED_TIME
+
+# from DEBUG.compare_dicts import compare_dicts
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (
     VideoInfo,
@@ -49,7 +51,9 @@ def embed_metadata_for_video(
         fprint(progress_prefix, "Embedding metadata for ?", title)
     logger.verbose(f"[Metadata] Embedding metadata for '{title}'")
 
+    # -----------------------------
     # Embed the date field
+    # -----------------------------
 
     file_date, state = read_id3_tag(filepath, "TDRC")
 
@@ -78,7 +82,9 @@ def embed_metadata_for_video(
     else:
         fprint(progress_prefix, "No need to change date, skipping")
 
+    # -----------------------------
     # Embed entry_id into the title
+    # -----------------------------
 
     filename = filepath.name
 
@@ -136,7 +142,9 @@ def embed_metadata_for_video(
                     if not ok:
                         logger.error(f"[Sanitize Titles] Failed to write title for '{filename}'")
 
+    # -----------------------------
     # Embed full metadata as JSON
+    # -----------------------------
 
     file_video_info, _ = get_metadata_tag(filepath=filepath)
     data: str = json.dumps(video_info, indent=4, ensure_ascii=True)
@@ -154,6 +162,10 @@ def embed_metadata_for_video(
         if cleaned_file_info == cleaned_data:
             if cleaned_data:
                 update_data = False
+
+        # Debug feature to see what's the difference, and why the code updates the tags
+        # else:
+        #     print(compare_dicts(cleaned_file_info, cleaned_data))
 
     if update_data:
         success_meta: bool = write_id3_tag(
