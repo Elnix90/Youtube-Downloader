@@ -17,7 +17,7 @@ def fprint(
     prefix: str,
     title: str,
     *to_sanitize: str | Path,
-    overwrite: bool = False,
+    overwrite: bool | None = None,
     flush: bool = True,
     put_between_apostrophy: bool = True
 ) -> None:
@@ -53,8 +53,15 @@ def fprint(
     else:
         space_nb = max_len - len(sanitized_title)
 
+    if overwrite is None:
+        will_overwrite = OVERLAP_FPRINT
+    elif overwrite:
+        will_overwrite = True
+    else:
+        will_overwrite = False
+
     print(
-        f"{'\r\033[K' if overwrite else ''}" + f"{prefix}" + f"{sanitized_title}" + f"{' ' * space_nb}",
-        end="" if overwrite or OVERLAP_FPRINT else "\n",
+        f"{'\r\033[K' if will_overwrite else ''}" + f"{prefix}" + f"{sanitized_title}" + f"{' ' * space_nb}",
+        end="" if will_overwrite else "\n",
         flush=flush,
     )
