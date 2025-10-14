@@ -142,21 +142,21 @@ def _format_seconds_to_lrc(ts_seconds: float, centis: int = 2) -> str:
 
 
 # ---------- 1. Detect synchronized lyrics ----------
-def is_synchronized_lyrics(text: str) -> bool:
+def is_synchronized_lyrics(lyrics: str) -> bool:
     """
     Returns True if the lyrics it gets are synchronized, else False
     """
-    if not text:
+    if not lyrics:
         return False
 
     # Case 1: LRC, SRT, VTT
-    if _ts_lrc_re.search(text) or _srt_time_re.search(text) or _vtt_re.search(text):
+    if _ts_lrc_re.search(lyrics) or _srt_time_re.search(lyrics) or _vtt_re.search(lyrics):
         logger.debug("[Lyrics Detection] Text is synchronized (LRC/SRT/VTT)")
         return True
 
     # Case 2: JSON-based subtitles (YouTube style: [[start, end, text], ...])
     try:
-        maybe = json.loads(text)  # pyright: ignore[reportAny]
+        maybe = json.loads(lyrics)  # pyright: ignore[reportAny]
         if isinstance(maybe, list) and all(
             isinstance(item, (list, tuple)) and len(item) in (2, 3)  # pyright: ignore[reportUnknownArgumentType]
             for item in maybe  # pyright: ignore[reportUnknownVariableType]
