@@ -58,7 +58,11 @@ def _get_unique_filename(loc: Path, base: str, ext: str, video_id: str) -> str:
     return filename
 
 
-def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "bestaudio/best") -> YdlOpt:
+def _build_ydl_opts(
+        loc: Path,
+        cookies_file: Path,
+        filename: str | None = None,
+) -> YdlOpt:
     """
     Returns yt-dlp options with proper format, output path, and headers.
     """
@@ -66,10 +70,9 @@ def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "b
 
     return {
         "outtmpl": {"default": outtmpl},
-        "format": format_str,
+        "format": "m4a/bestaudio/best",
         "add_metadata": True,
         "embed_metadata": True,
-        "verbose": False,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -78,12 +81,15 @@ def _build_ydl_opts(loc: Path, filename: str | None = None, format_str: str = "b
             },
             {"key": "FFmpegMetadata"},
         ],
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        },
+        # 'http_headers': {
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        # },
         'extractor_args': {'youtube': ['formats=never_pot']},
         'fragment_retries': 2,
         'retries': 3,
+
+        # Logging things, turned off by default to let me handle errors cleany inline in the logs
+        "verbose": True,
         "quiet": True,
         "noprogress": True,
         "no_warnings": True,
@@ -307,8 +313,8 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
                 if screen_output and hasattr(screen_output, "getvalue"):  # pyright: ignore[reportAny]
                     log_content = screen_output.getvalue()  # pyright: ignore[reportAny]
                     if (
-                        "sign in to confirm" in log_content.lower()  # pyright: ignore[reportAny]
-                        or "consent" in log_content.lower()  # pyright: ignore[reportAny]
+                            "sign in to confirm" in log_content.lower()  # pyright: ignore[reportAny]
+                            or "consent" in log_content.lower()  # pyright: ignore[reportAny]
                     ):
                         logger.error(f"[Safe Extract] YouTube asked for sign-in verification for {url}")
                         return 3, {}
@@ -370,12 +376,13 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
 
 
 def download_yt_dlp(
-    loc: Path,
-    video_id: str,
-    title: str,
-    uploader: str,
-    max_retries: int = 3,
-    retry_delay: int = 5,
+        loc: Path,
+        cookiesfile: Path,
+        video_id: str,
+        title: str,
+        uploader: str,
+        max_retries: int = 3,
+        retry_delay: int = 5,
 ) -> tuple[bool, str, str | None]:
     """
     Download YouTube video as mp3 with retries and detailed error handling.
@@ -402,14 +409,14 @@ def download_yt_dlp(
     # final_filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{sanitized_title}"
 
     final_filename_with_ext: str = final_filename + ".mp3"
-    ydl_opts: YdlOpt = _build_ydl_opts(loc, final_filename, "bestaudio/best")
+    ydl_opts: YdlOpt = _build_ydl_opts(loc, cookiesfile, final_filename)
 
     for attempt in range(1, max_retries + 1):
         try:
             logger.debug(f"[Download] Attempt {attempt} for video {video_id}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
                 ydl.download([url])
-            # Check file after download - optional: add call to your repair_mp3_file here
+            # Check file after download
             final_path = loc / final_filename_with_ext
             if not final_path.exists():
                 raise FileNotFoundError(f"Expected file '{final_path}' not exists after download")
@@ -417,11 +424,23 @@ def download_yt_dlp(
             logger.info(f"[Download] Finished successfully: '{final_filename_with_ext}' from '{uploader}'")
             return True, "", final_filename_with_ext
 
+        except DownloadError as e:
+            error_msg = str(e)
+            # Check if it's a JS challenge error
+            if "challenge" in error_msg.lower() or "js" in error_msg.lower():
+                logger.warning(f"[Download] JS challenge failed - Deno may not be installed: {e}")
+                return False, "JavaScript challenge solver not available. Install deno.", None
+            logger.warning(f"[Download] Download error on attempt {attempt}: {e}")
+
+            if attempt < max_retries:
+                logger.debug(f"[Download] Retrying in {retry_delay} seconds")
+                time.sleep(retry_delay)
+            else:
+                return False, f"Download failed after {max_retries} attempts: {e}", None
         except (
-            HTTPError,
-            DownloadError,
-            ExtractorError,
-            UnavailableVideoError,
+                HTTPError,
+                ExtractorError,
+                UnavailableVideoError,
         ) as e:
             logger.warning(f"[Download] Download error on attempt {attempt}: {e}")
             if attempt < max_retries:
@@ -455,15 +474,16 @@ def download_yt_dlp(
 
 
 def download_video(
-    download_path: Path,
-    video_id: str,
-    retry_unavailable: bool,
-    retry_private: bool,
-    progress_prefix: str,
-    info: bool,
-    cur: Cursor,
-    conn: Connection,
-    test_run: bool,
+        download_path: Path,
+        cookiefile: Path,
+        video_id: str,
+        retry_unavailable: bool,
+        retry_private: bool,
+        progress_prefix: str,
+        info: bool,
+        cur: Cursor,
+        conn: Connection,
+        test_run: bool,
 ) -> float:
     """
     Download a given video id, tries to not fetch if enough data is given in entry
@@ -533,6 +553,7 @@ def download_video(
         if not test_run:
             download_success, message, final_filename = download_yt_dlp(
                 download_path,
+                cookiefile,
                 video_id,
                 title,
                 uploader

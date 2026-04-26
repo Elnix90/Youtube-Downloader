@@ -12,7 +12,7 @@ import yt_dlp
 from googleapiclient.errors import HttpError
 from yt_dlp.utils import DownloadError
 
-from FUNCTIONS.get_creditentials import get_authenticated_service
+from FUNCTIONS.get_credentials import get_authenticated_service
 from FUNCTIONS.HELPERS.fileops import dump, load
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (

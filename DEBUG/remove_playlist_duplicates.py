@@ -6,7 +6,7 @@ from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
 from constants import PLAYLIST_VIDEOS_FILE
-from FUNCTIONS.get_creditentials import get_authenticated_service
+from FUNCTIONS.get_credentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
 from FUNCTIONS.HELPERS.fileops import load
 from FUNCTIONS.HELPERS.fprint import fprint

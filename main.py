@@ -13,7 +13,7 @@ from constants import (
     PLAYLIST_VIDEOS_FILE,
     COOKIE_FILE,
 )
-from FUNCTIONS.get_creditentials import get_authenticated_service
+from FUNCTIONS.get_credentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
 from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.PROCESS.show_final_stats import show_final_stats

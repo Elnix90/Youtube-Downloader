@@ -26,7 +26,7 @@ API_SERVICE_NAME: str = "youtube"
 API_VERSION: str = "v3"
 
 
-def get_authenticcreditaated_service(info: bool = True) -> Resource:
+def get_authenticated_service(info: bool = True) -> Resource:
     """
     Authenticate with the YouTube Data API and return a typed service object.
 
