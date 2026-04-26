@@ -70,7 +70,6 @@ def embed_metadata_for_video(
         update_date = True
 
     if update_date:
-        success_date: bool = True
         if date:
             success_date = write_id3_tag(filepath, "TDRC", tm, test_run)
             if not success_date:
