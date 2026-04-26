@@ -25,7 +25,7 @@ def fprint(
     Print a formatted message with optional substitution of '?' placeholders
     by sanitized strings passed in *to_sanitize.
     """
-    term_width: int = shutil.get_terminal_size(fallback=(80, 20)).columns
+    term_width: int = shutil.get_terminal_size(fallback=(200, 20)).columns
     max_len: int = term_width - len(prefix)
     if max_len < 1:
         max_len = 1
