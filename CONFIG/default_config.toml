@@ -72,7 +72,7 @@ info = true
 error = true
 test_run = false
 
-get_remix_of = true
+get_remix_of = false
 remix_confidence_threshold = 0.8
 force_recompute_remix_of = false
 
@@ -86,7 +86,7 @@ add_folder_files_not_in_list = true
 # Logging configuration
 
 console_globally = true
-level_console = "WARNING"  # VERBOSE, DEBUG, INFO, WARNING, ERROR, CRITICAL
+level_console = "ERROR"  # VERBOSE, DEBUG, INFO, WARNING, ERROR, CRITICAL
 level_logfiles = "VERBOSE"
 overlap_fprint = true # Display a clean output in console, by ovrelapping similar previous logs
 overwrite_unchanged = true # Overwrite videos in the output if they haven't being touched by the programm (already downloaded and formatted)

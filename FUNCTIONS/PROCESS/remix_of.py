@@ -28,6 +28,8 @@ def process_remix_of_for_video(
     If recompute_remix_of is True, the remix_of field is re-evaluated.
     """
 
+    # TODO this is completely shitty, it doesn't work when a  video contains strange chars and stirps useful infos, such as UNWANTED_PATTERNS from video, where I could use "Remix" in the title to deduce the video is a remix
+
     start_processing: float = time.time()
 
     # Recompute only if requested and remix_of candidate exists

@@ -131,7 +131,7 @@ def clean_song_query(query: str) -> str:
     # Remove "feat ..." or "ft ..." with the artist name
     query = re.sub(r'\b(feat|ft)\.? [\w\s]+', '', query, flags=re.IGNORECASE)
 
-    # Remove anything that's not a-z, A-Z, 0-9, space, apostropthy, or hyphen
+    # Remove anything that's not a-z, A-Z, 0-9, space, apostrophe, or hyphen
     query = re.sub(r"[^a-zA-Z0-9\s'-]", '', query)
 
     # Remove hyphens surrounded by spaces
