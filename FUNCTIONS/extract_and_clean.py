@@ -34,6 +34,8 @@ def extract_and_clean_video_ids(
     Returns:
         VideoInfoMap: mapping of video_id -> metadata (with filepath added)
     """
+    delete_files: bool = not test_run and remove
+
     removed_files: dict[str, str] = {}
     valid_files: VideoInfoMap = {}
     checked_files: int = 0
@@ -76,8 +78,8 @@ def extract_and_clean_video_ids(
                     lrc_or_png += 1
                     continue
 
-            removed_files[filepath.name] = "Not MP3"
-            if not test_run and remove:
+            if delete_files:
+                removed_files[filepath.name] = "Not MP3"
                 filepath.unlink(missing_ok=True)
             logger.warning(f"[Clean & Extract] Removed '{filepath.name}': Not an MP3")
             continue
@@ -101,8 +103,8 @@ def extract_and_clean_video_ids(
                 else:
                     logger.error(f"[Clean & Extract] data_filename isn't str for: {filepath.name}")
             else:
-                removed_files[filepath.name] = "Missing video ID in metadata"
-                if not test_run and remove:
+                if delete_files:
+                    removed_files[filepath.name] = "Missing video ID in metadata"
                     filepath.unlink(missing_ok=True)
                 logger.info(f"[Clean & Extract] Removed '{filepath.name}': Missing video ID in metadata")
         else:
@@ -113,8 +115,8 @@ def extract_and_clean_video_ids(
             else:
                 reason = "Empty data"
 
-            removed_files[filepath.name] = reason
-            if not test_run and remove:
+            if delete_files:
+                removed_files[filepath.name] = reason
                 filepath.unlink(missing_ok=True)
             logger.info(f"[Clean & Extract] Removed '{filepath.name}': {reason}")
 
