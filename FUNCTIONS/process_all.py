@@ -177,7 +177,7 @@ def process_all(
                 data.get("title") or 'no title provided',
             )
             logger.debug("[Process] Re-fetch yt data")
-            state, new_info = safe_extract_info(id_or_url=video_id)
+            state, new_info = safe_extract_info(id_or_url=video_id, cookies_file=cookiefile)
 
             if state == 0:
                 data.update(new_info)

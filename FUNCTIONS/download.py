@@ -71,6 +71,7 @@ def _build_ydl_opts(
     return {
         "outtmpl": {"default": outtmpl},
         "format": "m4a/bestaudio/best",
+        "cookiefile": str(cookies_file),
         "add_metadata": True,
         "embed_metadata": True,
         "postprocessors": [
@@ -266,7 +267,9 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
     return []
 
 
-def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal[0, 1, 2, 3], VideoInfo]:
+def safe_extract_info(id_or_url: str,
+                      cookies_file: Path,
+                      proxy: str | None = None) -> tuple[Literal[0, 1, 2, 3], VideoInfo]:
     """
     Fetches and returns the video info for a YouTube id or URL.
     Returns a tuple of (state, data):
@@ -286,6 +289,7 @@ def safe_extract_info(id_or_url: str, proxy: str | None = None) -> tuple[Literal
 
     screen_buffer = io.StringIO()
     ydl_fetch_opt: YdlOpt = {
+        "cookiefile": str(cookies_file),
         "quiet": False,
         "no_warnings": False,
         "noprogress": True,
@@ -519,7 +523,7 @@ def download_video(
         return time.time() - download_start_time
 
     if not all(key in youtube_required_info and value for key, value in data.items()):
-        state, data = safe_extract_info(id_or_url=video_id)
+        state, data = safe_extract_info(id_or_url=video_id, cookies_file=cookiefile)
     else:
         logger.debug("[Extract] Enough data in db, no need to fetch yt_dlp")
 
