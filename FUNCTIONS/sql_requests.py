@@ -311,10 +311,10 @@ def _apply_playlists(video_id: str, data: VideoInfo, cur: sqlite3.Cursor) -> Non
 
 
 def insert_video_db(
-    video_data: VideoInfo,
-    cur: sqlite3.Cursor,
-    conn: sqlite3.Connection,
-    test_run: bool,
+        video_data: VideoInfo,
+        cur: sqlite3.Cursor,
+        conn: sqlite3.Connection,
+        test_run: bool,
 ) -> None:
     """Insert a new entry in the DB"""
 
@@ -337,7 +337,7 @@ def insert_video_db(
     _ = cur.execute(sql, tuple(video_row.values()))
 
     # --- Ids ---
-    _ = cur.execute(f"INSERT OR IGNORE INTO ids ({video_id})")
+    _ = cur.execute(f"INSERT OR IGNORE INTO ids (video_id) VALUES (?)", (video_id,))
 
     # --- Skips & Tags ---
     _apply_skips_and_tags(video_row["video_id"], video_data, cur)  # pyright: ignore[reportArgumentType]
@@ -353,11 +353,11 @@ def insert_video_db(
 
 
 def update_video_db(
-    video_id: str,
-    update_fields: VideoInfo,
-    cur: sqlite3.Cursor,
-    conn: sqlite3.Connection,
-    test_run: bool,
+        video_id: str,
+        update_fields: VideoInfo,
+        cur: sqlite3.Cursor,
+        conn: sqlite3.Connection,
+        test_run: bool,
 ) -> None:
     """
     Updates an entry in the DB
@@ -387,10 +387,10 @@ def update_video_db(
 
 
 def remove_video(
-    video_id: str,
-    cur: sqlite3.Cursor,
-    conn: sqlite3.Connection,
-    test_run: bool,
+        video_id: str,
+        cur: sqlite3.Cursor,
+        conn: sqlite3.Connection,
+        test_run: bool,
 ) -> None:
     """
     Remove a video and all related data (tags, skips, playlists) from the database.
@@ -466,7 +466,7 @@ def safe_str_list(row: sqlite3.Row, key: VideoInfoKey) -> list[str]:
         try:
             parsed = json.loads(value)  # pyright: ignore[reportAny]
             if isinstance(parsed, list) and all(
-                isinstance(x, str) for x in parsed  # pyright: ignore[reportUnknownVariableType]
+                    isinstance(x, str) for x in parsed  # pyright: ignore[reportUnknownVariableType]
             ):
                 return parsed  # pyright: ignore[reportUnknownVariableType]
         except json.JSONDecodeError:
@@ -583,17 +583,18 @@ def get_entry_id(video_id: str, cur: sqlite3.Cursor) -> str:
     """
     Fetch the DB and returns the corresponding entry_id (to sort correctly the videos)
     """
-    entry_id = str(
-        cast(
-            int,
-            cur.execute(
-                """
-                SELECT id FROM ids WHERE video_id = ?
-                """,
-                (video_id,)
-            ).fetchone()[0]
-        )
-    )
+
+    entry_id_raw = cur.execute(
+        """SELECT id FROM ids WHERE video_id = ?""",
+        (video_id,)
+    ).fetchone()[0]
+
+    if entry_id_raw is None:
+        raise ValueError("Entry Id not found in DB")
+    elif isinstance(entry_id_raw, str):
+        entry_id = entry_id_raw
+    else:
+        entry_id = str(entry_id_raw)
 
     entry_id_len = len(str(entry_id))
 
