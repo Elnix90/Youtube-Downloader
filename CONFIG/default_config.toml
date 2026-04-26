@@ -31,12 +31,12 @@ trusted_artists_file = "trusted_artists.txt"
 # Main processing configuration
 
 playlist_id = "LL"  # "LL" = liked videos
-max_lyrics_retries = 1
+max_lyrics_retries = 1 # How many tries the programm do when sarching lyrics, before giving up. (if the music is a non-lyrics music, it'll try once, and then skip it)
 
-use_sponsorblock = true
-get_lyrics = true
-get_thumbnail = true
-add_tags = true
+use_sponsorblock = true # Whether to fetch sponsorblock api to cut segments in the song. segments are customizables in sponsorblock_categories
+get_lyrics = true #  Whether to fetch lyrics using syncedlyrics
+get_thumbnail = true # Download Youtube thumbnail
+add_tags = true # Add auto tags based on the filters in CONFIG/TAGS
 add_album = true
 embed_metadata = true
 
@@ -65,7 +65,7 @@ include_time_in_embedded_date = true
 force_mp3_presence = false
 force_recompute_yt_info = false
 
-retry_unavailable = false
+retry_unavailable = true
 retry_private = false
 
 info = true
