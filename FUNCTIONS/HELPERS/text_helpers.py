@@ -29,7 +29,6 @@ def sanitize_text(text: str) -> str:
         A cleaned and title-cased string safe for use in filenames
         or text comparison.
     """
-    original: str = text
     text = (text or "").strip()
 
     # Normalize Unicode (NFKD decomposes accents and emoji)
@@ -48,12 +47,11 @@ def sanitize_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
 
     # Allow only safe characters
-    text = re.sub(r"[^A-Za-z0-9 _\-\(\).]", "", text)
+    text = re.sub(r"[^A-Za-z0-9 _\-().]", "", text)
 
     # Trim trailing dots/spaces again
     text = text.rstrip(". ").strip()
 
-    logger.verbose(f"[Sanitize] '{original}' → '{text}'")
     return text.title()
 
 
