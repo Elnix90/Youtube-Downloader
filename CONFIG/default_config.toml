@@ -16,6 +16,7 @@ db_path = "music.db"
 client_secrets_file = "client_secret.json"
 token_file = "token.json"
 playlist_videos_file = "playlist_videos.json"
+cookies_file = "cookies.txt
 
 
 
@@ -87,8 +88,8 @@ add_folder_files_not_in_list = true
 console_globally = true
 level_console = "WARNING"  # VERBOSE, DEBUG, INFO, WARNING, ERROR, CRITICAL
 level_logfiles = "VERBOSE"
-overlap_fprint = true
-overwrite_unchanged = true
+overlap_fprint = true # Display a clean output in console, by ovrelapping similar previous logs
+overwrite_unchanged = true # Overwrite videos in the output if they haven't being touched by the programm (already downloaded and formatted)
 
 [other]
 # Some other stuff that isn't necessary

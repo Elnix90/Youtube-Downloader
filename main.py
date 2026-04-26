@@ -11,6 +11,7 @@ from constants import (
     DOWNLOAD_PATH,
     JSON_DIR,
     PLAYLIST_VIDEOS_FILE,
+    COOKIE_FILE,
 )
 from FUNCTIONS.get_creditentials import get_authenticated_service
 from FUNCTIONS.get_playlist_videos import fetch_playlist_videos
@@ -62,6 +63,7 @@ def main_list_process() -> None:
 
         processing_time: dict[str, float | None] = process_all(
             download_path=DOWNLOAD_PATH,
+            cookiefile=COOKIE_FILE,
             playlist_video_file=PLAYLIST_VIDEOS_FILE,
             # SponsorBlock
             use_sponsorblock=CONFIG["processing"]["use_sponsorblock"],

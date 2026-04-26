@@ -41,6 +41,7 @@ logger = setup_logger(__name__)
 
 def process_all(
     download_path: Path,
+    cookiefile: Path,
     playlist_video_file: Path,
     use_sponsorblock: bool,
     get_lyrics: bool,
@@ -154,6 +155,7 @@ def process_all(
         if need_download:
             download_duration += download_video(
                 download_path=download_path,
+                cookiefile=cookiefile,
                 video_id=video_id,
                 retry_unavailable=retry_unavailable,
                 retry_private=retry_private,

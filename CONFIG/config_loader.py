@@ -8,6 +8,7 @@ from typing import Literal, TypedDict
 
 import tomli
 
+
 # ---------- Config schema ----------
 
 
@@ -22,6 +23,7 @@ class PathsConfig(TypedDict):
     client_secrets_file: str
     token_file: str
     playlist_videos_file: str
+    cookies_file: str
 
 
 class PatternsConfig(TypedDict):
@@ -123,7 +125,7 @@ def load_config(config_file: Path) -> Config:
             f"Error: Configuration file '{config_file}' does not exist, using default config."
             + "Please create this file or use config.toml.example as a template."
         )
-        config_file = Path("default_config.toml")
+        config_file = Path("CONFIG/default_config.toml")
 
     try:
         with open(config_file, "rb") as f:

@@ -55,11 +55,12 @@ TAGS_DIR: Path = CONFIG_DIR / "TAGS"
 # Critical paths
 DOWNLOAD_PATH: Path = Path(CONFIG["paths"]["download_path"]).expanduser().resolve()
 DB_PATH: Path = Path(CONFIG["paths"]["db_path"])
+PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / CONFIG["paths"]["playlist_videos_file"]
 
 # Creds files
 CLIENT_SECRETS_FILE: Path = CRED_DIR / CONFIG["paths"]["client_secrets_file"]
 TOKEN_FILE: Path = CRED_DIR / CONFIG["paths"]["token_file"]
-PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / CONFIG["paths"]["playlist_videos_file"]
+COOKIE_FILE: Path = CRED_DIR / CONFIG["paths"]["cookies_file"]
 
 # Stats files
 CORRECT_NOT_IN_DIR_FILE: Path = JSON_DIR / "correct_not_in_db.json"
