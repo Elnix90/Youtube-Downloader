@@ -16,3 +16,4 @@ typings
 CONFIG/config.toml
 .ruff_cache
 .flake8
+.idea
