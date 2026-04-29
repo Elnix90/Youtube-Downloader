@@ -94,6 +94,8 @@ class LoggingConfig(TypedDict):
     console_globally: bool
     level_console: str
     level_logfiles: str
+    log_yt_dlp_info: bool
+    log_yt_dlp_verbose: bool
     overlap_fprint: bool
     overwrite_unchanged: bool
 

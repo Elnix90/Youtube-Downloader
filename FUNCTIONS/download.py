@@ -12,6 +12,7 @@ from typing import Literal, TypeAlias, cast
 
 import requests
 import yt_dlp
+from pycparser.c_ast import Constant
 from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 
@@ -27,6 +28,7 @@ from FUNCTIONS.HELPERS.logger import setup_logger
 from FUNCTIONS.HELPERS.text_helpers import sanitize_text
 from FUNCTIONS.metadata import get_metadata_tag, repair_mp3_file
 from FUNCTIONS.sql_requests import get_video_info_from_db, update_video_db
+from constants import LOG_YT_DLP_INFO, LOG_YT_DLP_VERBOSE
 
 logger = setup_logger(__name__)
 
@@ -90,11 +92,11 @@ def _build_ydl_opts(
         'retries': 3,
 
         # Logging things, turned off by default to let me handle errors cleany inline in the logs
-        "verbose": True,
-        "quiet": True,
-        "noprogress": True,
-        "no_warnings": True,
-        "ignoreerrors": True,
+        "verbose": LOG_YT_DLP_VERBOSE,
+        "quiet": LOG_YT_DLP_INFO,
+        "noprogress": LOG_YT_DLP_INFO,
+        "no_warnings": LOG_YT_DLP_INFO,
+        "ignoreerrors": LOG_YT_DLP_INFO,
         "logger": QuietLogger(),
     }
 
@@ -290,12 +292,12 @@ def safe_extract_info(id_or_url: str,
     screen_buffer = io.StringIO()
     ydl_fetch_opt: YdlOpt = {
         "cookiefile": str(cookies_file),
-        "quiet": False,
-        "no_warnings": False,
-        "noprogress": True,
-        "ignoreerrors": False,
+        "verbose": LOG_YT_DLP_VERBOSE,
+        "quiet": LOG_YT_DLP_INFO,
+        "noprogress": LOG_YT_DLP_INFO,
+        "no_warnings": LOG_YT_DLP_INFO,
+        "ignoreerrors": LOG_YT_DLP_INFO,
         "logger": QuietLogger(),
-        "verbose": False,
         "writesubtitles": True,
         "writeautomaticsub": True,
         "subtitlesformat": "vtt",

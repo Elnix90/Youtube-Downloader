@@ -88,6 +88,8 @@ add_folder_files_not_in_list = true
 console_globally = true
 level_console = "ERROR"  # VERBOSE, DEBUG, INFO, WARNING, ERROR, CRITICAL
 level_logfiles = "VERBOSE"
+log_yt_dlp_info = false # Log most of useful things yt-dlp says
+log_yt_dlp_verbose = false # Log ALL what yt_dlp says
 overlap_fprint = true # Display a clean output in console, by ovrelapping similar previous logs
 overwrite_unchanged = true # Overwrite videos in the output if they haven't being touched by the programm (already downloaded and formatted)
 

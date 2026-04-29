@@ -97,7 +97,9 @@ LOGGING_LEVELS: dict[str, int] = {
 }
 
 LOGGING_LEVEL_CONSOLE: int = LOGGING_LEVELS[CONFIG["logging"]["level_console"].upper()]
-
 LOGGING_LEVEL_LOGFILES: int = LOGGING_LEVELS[CONFIG["logging"]["level_logfiles"].upper()]
+
+LOG_YT_DLP_INFO: bool = CONFIG["logging"]["log_yt_dlp_info"]
+LOG_YT_DLP_VERBOSE: bool = CONFIG["logging"]["log_yt_dlp_verbose"]
 
 EXCLUDE_FROM_MAIN = {"skips", "tags", "playlist_id", "playlist_item_id", "position", "date_added"}
