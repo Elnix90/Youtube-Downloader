@@ -16,6 +16,7 @@ from pycparser.c_ast import Constant
 from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.utils import DownloadError, ExtractorError, UnavailableVideoError
 
+from FUNCTIONS.HELPERS.ProxyManager import ProxyManager
 from FUNCTIONS.HELPERS.fprint import fprint
 from FUNCTIONS.HELPERS.helpers import (
     ExtractedInfo,
@@ -70,7 +71,7 @@ def _build_ydl_opts(
     """
     outtmpl = str(loc / (filename if filename else "%(title)s.%(ext)s"))
 
-    return {
+    ydl_fetch_opt: YdlOpt = {
         "outtmpl": {"default": outtmpl},
         "format": "m4a/bestaudio/best",
         "cookiefile": str(cookies_file),
@@ -89,16 +90,19 @@ def _build_ydl_opts(
         # },
         'extractor_args': {'youtube': ['formats=never_pot']},
         'fragment_retries': 2,
-        'retries': 3,
-
-        # Logging things, turned off by default to let me handle errors cleany inline in the logs
-        "verbose": LOG_YT_DLP_VERBOSE,
-        "quiet": LOG_YT_DLP_INFO,
-        "noprogress": LOG_YT_DLP_INFO,
-        "no_warnings": LOG_YT_DLP_INFO,
-        "ignoreerrors": LOG_YT_DLP_INFO,
-        "logger": QuietLogger(),
+        'retries': 3
     }
+    if not LOG_YT_DLP_INFO:
+        ydl_fetch_opt["logger"] = QuietLogger()
+        ydl_fetch_opt["quiet"] = True
+        ydl_fetch_opt["noprogress"] = True
+        ydl_fetch_opt["no_warnings"] = True
+        ydl_fetch_opt["ignoreerrors"] = True
+
+    if LOG_YT_DLP_VERBOSE:
+        ydl_fetch_opt["verbose"] = True
+
+    return ydl_fetch_opt
 
 
 # --- Safe conversion helpers ---
@@ -269,9 +273,11 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
     return []
 
 
-def safe_extract_info(id_or_url: str,
-                      cookies_file: Path,
-                      proxy: str | None = None) -> tuple[Literal[0, 1, 2, 3], VideoInfo]:
+def safe_extract_info(
+        id_or_url: str,
+        cookies_file: Path,
+        proxy_manager: ProxyManager
+) -> tuple[Literal[0, 1, 2, 3], VideoInfo]:
     """
     Fetches and returns the video info for a YouTube id or URL.
     Returns a tuple of (state, data):
@@ -279,7 +285,6 @@ def safe_extract_info(id_or_url: str,
       1 -> no data returned (null)
       2 -> private video
       3 -> unavailable video (blocked / bot-check (requires cookies or VPN/proxy))
-
     """
 
     if "youtube.com/watch?v=" in id_or_url:
@@ -292,21 +297,25 @@ def safe_extract_info(id_or_url: str,
     screen_buffer = io.StringIO()
     ydl_fetch_opt: YdlOpt = {
         "cookiefile": str(cookies_file),
-        "verbose": LOG_YT_DLP_VERBOSE,
-        "quiet": LOG_YT_DLP_INFO,
-        "noprogress": LOG_YT_DLP_INFO,
-        "no_warnings": LOG_YT_DLP_INFO,
-        "ignoreerrors": LOG_YT_DLP_INFO,
-        "logger": QuietLogger(),
         "writesubtitles": True,
         "writeautomaticsub": True,
         "subtitlesformat": "vtt",
         "subtitleslangs": ["all"],
         "outtmpl": "-",
         "cachedir": False,
-        "_screen_file": screen_buffer,
+        "_screen_file": screen_buffer
     }
+    if not LOG_YT_DLP_INFO:
+        ydl_fetch_opt["logger"] = QuietLogger()
+        ydl_fetch_opt["quiet"] = True
+        ydl_fetch_opt["noprogress"] = True
+        ydl_fetch_opt["no_warnings"] = True
+        ydl_fetch_opt["ignoreerrors"] = True
 
+    if LOG_YT_DLP_VERBOSE:
+        ydl_fetch_opt["verbose"] = True
+
+    proxy = proxy_manager.get_current_proxy()
     if proxy:
         ydl_fetch_opt["proxy"] = proxy
 
@@ -325,6 +334,7 @@ def safe_extract_info(id_or_url: str,
                         logger.error(f"[Safe Extract] YouTube asked for sign-in verification for {url}")
                         return 3, {}
                 logger.error(f"[Safe Extract] Unknown extraction error for {url}")
+                proxy_manager.next_proxy()
                 return 1, {}
 
             manual_subs: list[SubtitleLine] = _pick_subtitles(info=info, auto=False)
@@ -360,35 +370,43 @@ def safe_extract_info(id_or_url: str,
 
     except DownloadError as e:
         msg = str(e).lower()
-        if "sign in" in msg or "consent" in msg:
+        connection_errors = ["Socks5Error", "connectionreseterror", "remotedisconnected", "connecttimeouterror", "Host unreachable", "proxy" "Too Many Requests", "SocksHTTPSConnection"] # Help
+        if  any(i.lower() in msg.lower() for i in connection_errors):
+            logger.error(f"[Safe Extract] Proxy {proxy} reset connection, trying again with next one")
+            return 3, {}
+        elif "sign in" in msg or "consent" in msg:
             logger.warning(f"[Safe Extract] Consent wall encountered for {url}")
             return 3, {}
-        if "private" in msg:
+        elif "private" in msg:
             logger.warning(f"[Safe Extract] Private video {video_id}")
             return 2, {}
-        if "forbidden" in msg or "unavailable" in msg or "403" in msg:
+        elif "forbidden" in msg or "unavailable" in msg or "403" in msg:
             logger.error(f"[Safe Extract] Region blocked/unavailable for {video_id}: {e}")
             return 3, {}
-        logger.error(f"[Safe Extract] yt-dlp error: {e}")
-        return 1, {}
+        else:
+            logger.error(f"[Safe Extract] yt-dlp error: {e}")
+            return 1, {}
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         msg = str(e).lower()
         if "sign in" in msg or "consent" in msg or "captcha" in msg:
             logger.error(f"[Safe Extract] Bot-check for {video_id}: {e}")
+            proxy_manager.next_proxy()
             return 3, {}
-        logger.error(f"[Safe Extract] Unknown exception for {video_id}: {e}")
-        return 3, {}
+        else:
+            logger.error(f"[Safe Extract] Unknown exception for {video_id}: {e}")
+            return 3, {}
 
 
 def download_yt_dlp(
         loc: Path,
-        cookiesfile: Path,
+        cookies_file: Path,
         video_id: str,
         title: str,
         uploader: str,
+        proxy_manager: ProxyManager,
         max_retries: int = 3,
-        retry_delay: int = 5,
+        retry_delay: int = 5
 ) -> tuple[bool, str, str | None]:
     """
     Download YouTube video as mp3 with retries and detailed error handling.
@@ -415,7 +433,11 @@ def download_yt_dlp(
     # final_filename = f"{entry_id}{ENTRY_ID_SEPARATOR}{sanitized_title}"
 
     final_filename_with_ext: str = final_filename + ".mp3"
-    ydl_opts: YdlOpt = _build_ydl_opts(loc, cookiesfile, final_filename)
+    ydl_opts: YdlOpt = _build_ydl_opts(loc, cookies_file, final_filename)
+
+    proxy = proxy_manager.get_current_proxy()
+    if proxy:
+        ydl_opts["proxy"] = proxy
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -490,6 +512,7 @@ def download_video(
         cur: Cursor,
         conn: Connection,
         test_run: bool,
+        proxy_manager: ProxyManager
 ) -> float:
     """
     Download a given video id, tries to not fetch if enough data is given in entry
@@ -503,7 +526,7 @@ def download_video(
         fprint(progress_prefix, f"Fetching infos for '{video_id}'")
     logger.info(f"[Download] Fetching infos for '{video_id}'")
 
-    # Extracts youtube video's infos if the already present isn't enough
+    # Extracts YouTube video infos if the already present isn't enough
 
     data = get_video_info_from_db(video_id=video_id, cur=cur)
     state = data.get("status", 0)
@@ -525,7 +548,18 @@ def download_video(
         return time.time() - download_start_time
 
     if not all(key in youtube_required_info and value for key, value in data.items()):
-        state, data = safe_extract_info(id_or_url=video_id, cookies_file=cookiefile)
+        attempt = 0
+        max_attempts = 10
+        while attempt < max_attempts:
+            state, data = safe_extract_info(
+                id_or_url=video_id,
+                cookies_file=cookiefile,
+                proxy_manager=proxy_manager
+            )
+            if state == 3:
+                proxy_manager.next_proxy()
+                attempt += 1
+            else: break
     else:
         logger.debug("[Extract] Enough data in db, no need to fetch yt_dlp")
 
@@ -558,11 +592,12 @@ def download_video(
 
         if not test_run:
             download_success, message, final_filename = download_yt_dlp(
-                download_path,
-                cookiefile,
-                video_id,
-                title,
-                uploader
+                loc=download_path,
+                cookies_file=cookiefile,
+                video_id=video_id,
+                title=title,
+                uploader=uploader,
+                proxy_manager=proxy_manager
             )
 
             if download_success and final_filename:

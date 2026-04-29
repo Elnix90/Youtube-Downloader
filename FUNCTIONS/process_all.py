@@ -9,7 +9,8 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 from typing import Literal
 
-from constants import OVERWRITE_UNCHANGED
+from FUNCTIONS.HELPERS.ProxyManager import ProxyManager
+from constants import OVERWRITE_UNCHANGED, PROXIES_FILE
 from FUNCTIONS.download import download_video, safe_extract_info
 from FUNCTIONS.extract_and_clean import extract_and_clean_video_ids
 from FUNCTIONS.HELPERS.fprint import fprint
@@ -80,6 +81,8 @@ def process_all(
     """Process all videos"""
 
     processing_start_time: float = time.time()
+
+    proxy_manager = ProxyManager()
 
     # Initialise the database if not (create it)
     init_db(cur=cur, conn=conn)
@@ -164,6 +167,7 @@ def process_all(
                 cur=cur,
                 conn=conn,
                 test_run=test_run,
+                proxy_manager = proxy_manager
             )
 
         data: VideoInfo = get_video_info_from_db(video_id=video_id, cur=cur)

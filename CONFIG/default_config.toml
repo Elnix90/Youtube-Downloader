@@ -16,8 +16,9 @@ db_path = "music.db"
 client_secrets_file = "client_secret.json"
 token_file = "token.json"
 playlist_videos_file = "playlist_videos.json"
-cookies_file = "cookies.txt
-
+cookies_file = "cookies.txt" # Optional cookies file, that'll be used if exists as cookies to authenticate
+proxies_file = "proxies.txt" # Optional proxies file, that'll be used if exists as a list of proxies to use, each one of them that aren't availeble will be automatically skipped
+last_proxy_file = "last_proxy.txt" # Persists the last used proxy here
 
 
 [patterns]

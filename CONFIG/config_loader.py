@@ -24,6 +24,8 @@ class PathsConfig(TypedDict):
     token_file: str
     playlist_videos_file: str
     cookies_file: str
+    proxies_file: str
+    last_proxy_file: str
 
 
 class PatternsConfig(TypedDict):

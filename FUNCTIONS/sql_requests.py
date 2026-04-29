@@ -417,9 +417,9 @@ def get_videos_in_db(include_not_status0: bool, cur: sqlite3.Cursor) -> list[str
     at least this is what i want the real result is messy thanks to my skill issue
     """
     if include_not_status0:
-        _ = cur.execute("SELECT video_id FROM videos ORDER BY date_added DESC")
+        _ = cur.execute("SELECT video_id FROM videos ORDER BY status DESC")
     else:
-        _ = cur.execute("SELECT video_id FROM videos WHERE status IN (0,3) ORDER BY date_added ASC")
+        _ = cur.execute("SELECT video_id FROM videos WHERE status IN (0,3) ORDER BY status ASC")
     rows = cur.fetchall()
     return [row["video_id"] for row in rows]  # pyright: ignore[reportAny]
 

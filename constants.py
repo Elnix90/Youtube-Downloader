@@ -61,6 +61,8 @@ PLAYLIST_VIDEOS_FILE: Path = JSON_DIR / CONFIG["paths"]["playlist_videos_file"]
 CLIENT_SECRETS_FILE: Path = CRED_DIR / CONFIG["paths"]["client_secrets_file"]
 TOKEN_FILE: Path = CRED_DIR / CONFIG["paths"]["token_file"]
 COOKIE_FILE: Path = CRED_DIR / CONFIG["paths"]["cookies_file"]
+PROXIES_FILE: Path = CRED_DIR / CONFIG["paths"]["proxies_file"]
+LAST_PROXY_FILE: Path = CRED_DIR / CONFIG["paths"]["last_proxy_file"]
 
 # Stats files
 CORRECT_NOT_IN_DIR_FILE: Path = JSON_DIR / "correct_not_in_db.json"
