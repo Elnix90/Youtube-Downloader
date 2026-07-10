@@ -258,14 +258,8 @@ def _pick_subtitles(info: ExtractedInfo, auto: bool = False) -> list[SubtitleLin
                 if r.status_code == 200:
                     text = r.text
                     if ext == "vtt":
-                        if not auto:
-                            print("\nFound subtitles!")
-                        # print(f"\nFound {'auto' if auto else 'manual'} subtitles!")
                         return _vtt_to_synced(text)
                     elif ext == "srt":
-                        if not auto:
-                            print("\nFound subtitles!")
-                        # print(f"\nFound {'auto' if auto else 'manual'} subtitles!")
                         return _srt_to_synced(text)
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"[Sub Fetch] Failed to fetch {'automatic' if auto else 'manual'} subtitles: {e}")
